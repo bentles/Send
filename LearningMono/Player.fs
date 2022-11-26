@@ -37,7 +37,7 @@ type Model =
 
       Vel: Vector2 }
 
-let getconfig s = //is there an idiomatic way to do this??
+let getconfig s = 
     match s with
     | BigChar -> bigCharSprite
     | SmallChar -> smallCharSprite
