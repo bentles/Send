@@ -108,23 +108,26 @@ let animTick model dt =
         | false -> model.LastFrameTime, 0
 
     let oldX = model.FrameXPos
+    let nextX = oldX + inc
 
     let (newPos, event) =
         if model.AnimationState = Stopped then
             model.FrameXPos, Events.None
         else if model.AnimationState = Looping then
             ((oldX + inc) % model.CurrentImage.Columns), Events.None
-        else
+        else            
             let lastFrame = model.CurrentImage.Columns - 1
-            match (oldX + inc) with
-                | x when x = lastFrame ->  x, Events.AnimationComplete model.RelativeYPos // TODO: this should be the absolute pos
-                | x when x > lastFrame -> lastFrame, Events.None
-                | x -> x, Events.None
-            
+            if nextX > oldX && nextX = lastFrame then
+                lastFrame, Events.AnimationComplete 1 //TODO: actual animation number
+            else if nextX > lastFrame then
+                lastFrame, Events.None
+            else
+                nextX, Events.None            
 
     { model with
         FrameXPos = newPos
-        LastFrameTime = t }, Events.None
+        LastFrameTime = t }, event
+
 
 let update message model =
     match message with
@@ -136,6 +139,7 @@ let update message model =
     | SwitchAnimation(which, increment) ->
         let (img, yPos) = currentImageConfigAndRelativePos model.Images (0, which)
         { model with
+            AnimationState = Stopped
             CurrentImage = img
             RelativeYPos = yPos
             FrameXPos = 0

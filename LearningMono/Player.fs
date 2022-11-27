@@ -138,7 +138,7 @@ let update message model =
 
         let cmd =
             match event with
-            | Sprite.AnimationComplete animationNumber -> 
+            | Sprite.AnimationComplete _ -> 
                 (Cmd.ofMsg << SpriteMessage << Sprite.SwitchAnimation) (getWalkAnimation model, 80)
             | Sprite.None -> Cmd.none
 
