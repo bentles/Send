@@ -28,7 +28,7 @@ let smallCharImage =
       TextureName = "smallChar" }
 
 let CharAnimations = {|
-    BigWalk = 3
+    BigWalk = 4
     SmallWalk = 0
 |}
 

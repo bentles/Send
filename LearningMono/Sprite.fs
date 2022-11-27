@@ -26,11 +26,11 @@ let currentImageConfigAndRelativePos images pos =
 
     let rec getImage yPos imagesList =
         match imagesList with
-        | [] -> failwith "At least one image per sprite pls programmer san"
+        | [] -> failwith "At least one image per sprite pls programmer sama"
         | lastImage :: [] -> lastImage, yPos
         | image :: rest ->
-            let rem = image.Rows - 1 - yPos
-            if rem >= 0 then image, yPos else getImage -rem rest
+            let rem = image.Rows - yPos
+            if rem > 0 then image, yPos else getImage -rem rest
 
     getImage y images
 
