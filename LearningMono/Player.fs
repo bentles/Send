@@ -81,16 +81,16 @@ let physics model time =
     //velocity must be modified by acc
     let (vel, velLength) = calcVelocity model acc dt
 
-    let dirCommands =
+    let directionCommands =
         if sign (vel.X) <> sign (model.Vel.X) && vel.X <> 0f then
-            [ Cmd.ofMsg (SpriteMessage(Sprite.SetDir(vel.X < 0f))) ]
+            [ Cmd.ofMsg (SpriteMessage(Sprite.SetDirection(vel.X < 0f))) ]
         else
             []
 
     // todo only send a command if the velocity goes above/below a treshold
     let oldVelLength = model.Vel.Length()
 
-    let aniCommands =
+    let animationCommands =
         match (oldVelLength, velLength) with
         | (0f, v) when v > 0f ->
             let walkAnimation =
@@ -98,9 +98,11 @@ let physics model time =
                 | true -> CharAnimations.SmallWalk
                 | false -> CharAnimations.BigWalk
 
-            let switchAni = (Cmd.ofMsg<<SpriteMessage<<Sprite.SwitchAnimation) (walkAnimation, 80)            
-            let startAni = (Cmd.ofMsg<<SpriteMessage) Sprite.StartAnimation
-            [ switchAni; startAni ] //do this on X changing
+            let switchToWalkAnimation =
+                (Cmd.ofMsg << SpriteMessage << Sprite.SwitchAnimation) (walkAnimation, 80)
+
+            let startWalkAnimation = (Cmd.ofMsg << SpriteMessage) Sprite.StartLoopingAnimation
+            [ switchToWalkAnimation; startWalkAnimation ] //do this on X changing
         | (ov, 0f) when ov > 0f -> [ Cmd.ofMsg (SpriteMessage(Sprite.Stop)) ]
         | (_, _) -> []
 
@@ -113,19 +115,41 @@ let physics model time =
 
     let setPosMsg = Cmd.ofMsg (SpriteMessage(Sprite.SetPos pos))
 
-    { model with Vel = vel; Pos = pos }, Cmd.batch [ setPosMsg; yield! aniCommands; yield! dirCommands ]
+    { model with Vel = vel; Pos = pos }, Cmd.batch [ setPosMsg; yield! animationCommands; yield! directionCommands ]
+
+let getSwitchAnimation model =
+    if model.IsSmallCharacter then
+        CharAnimations.BigToSmall
+    else
+        CharAnimations.SmallToBig
+
+let getWalkAnimation model =
+    if model.IsSmallCharacter then
+        CharAnimations.SmallWalk
+    else
+        CharAnimations.BigWalk
 
 let update message model =
     match message with
     | Move dir -> { model with Input = dir }, Cmd.none
     | PhysicsTick time -> physics model time
     | SpriteMessage sm ->
-        let (newSprite, cmd) = Sprite.update sm model.SpriteInfo
+        let (newSprite, event) = Sprite.update sm model.SpriteInfo
+
+        let cmd =
+            match event with
+            | Sprite.AnimationComplete animationNumber -> 
+                (Cmd.ofMsg << SpriteMessage << Sprite.SwitchAnimation) (getWalkAnimation model, 80)
+            | Sprite.None -> Cmd.none
+
         { model with SpriteInfo = newSprite }, cmd
     | SwitchCharacter ->
-        let walk = if model.IsSmallCharacter then CharAnimations.BigWalk else CharAnimations.SmallWalk
+        let switchAnimation = getSwitchAnimation model
+
         { model with IsSmallCharacter = not model.IsSmallCharacter },
-        (Cmd.ofMsg << SpriteMessage << Sprite.SwitchAnimation) (walk, 80)
+        Cmd.batch
+            [ (Cmd.ofMsg << SpriteMessage << Sprite.SwitchAnimation) (switchAnimation, 80)
+              (Cmd.ofMsg << SpriteMessage) Sprite.StartOnceOffAnimation ]
 
 let view model (dispatch: Message -> unit) =
     [ yield! Sprite.view model.SpriteInfo (SpriteMessage >> dispatch)

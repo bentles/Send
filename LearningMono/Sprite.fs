@@ -6,6 +6,8 @@ open Elmish
 open Xelmish.Viewables
 open Config
 
+type AnimationState = Stopped | Looping | OnceOff
+
 type Model =
     { Images: ImageConfig list
 
@@ -13,7 +15,7 @@ type Model =
       RelativeYPos: int
 
       FrameXPos: int
-      AnimationRunning: bool
+      AnimationState: AnimationState
 
       Tint: Color
       LastFrameTime: int64
@@ -47,7 +49,7 @@ let init pos (config: SpriteConfig) =
 
       FrameXPos = fst(config.InitPos)
       Tint = config.Tint
-      AnimationRunning = false
+      AnimationState = Stopped
       FlipH = false
 
       LastFrameTime = 0L
@@ -57,11 +59,15 @@ let init pos (config: SpriteConfig) =
 type Message =
     | Stop
     | SwitchAnimation of int * int64 
-    | StartAnimation
+    | StartLoopingAnimation
+    | StartOnceOffAnimation
     | AnimTick of int64
     | SetPos of Vector2
-    | SetDir of bool
+    | SetDirection of bool
 
+type Events = 
+    | None
+    | AnimationComplete of int
 
 let spriteSourceRect (spriteInfo: ImageConfig) pos =
     let totalWidth, totalHeight = spriteInfo.PixelSize
@@ -97,29 +103,36 @@ let animTick model dt =
     let t = model.LastFrameTime + dt
 
     let (t, inc) =
-        match t > model.FrameLength with
+        match (t > model.FrameLength) with
         | true -> (model.LastFrameTime - model.FrameLength, 1)
         | false -> model.LastFrameTime, 0
 
     let oldX = model.FrameXPos
 
-    let newPos =
-        if not model.AnimationRunning then
-            model.FrameXPos
+    let (newPos, event) =
+        if model.AnimationState = Stopped then
+            model.FrameXPos, Events.None
+        else if model.AnimationState = Looping then
+            ((oldX + inc) % model.CurrentImage.Columns), Events.None
         else
-            (oldX + inc) % model.CurrentImage.Columns
+            let lastFrame = model.CurrentImage.Columns - 1
+            match (oldX + inc) with
+                | x when x = lastFrame ->  x, Events.AnimationComplete model.RelativeYPos // TODO: this should be the absolute pos
+                | x when x > lastFrame -> lastFrame, Events.None
+                | x -> x, Events.None
+            
 
     { model with
         FrameXPos = newPos
-        LastFrameTime = t }
+        LastFrameTime = t }, Events.None
 
 let update message model =
     match message with
     | Stop ->
         { model with
             FrameXPos = model.FrameXPos
-            AnimationRunning = false },
-        Cmd.none
+            AnimationState = Stopped },
+        Events.None
     | SwitchAnimation(which, increment) ->
         let (img, yPos) = currentImageConfigAndRelativePos model.Images (0, which)
         { model with
@@ -127,12 +140,13 @@ let update message model =
             RelativeYPos = yPos
             FrameXPos = 0
             FrameLength = increment },
-        Cmd.none
-    | StartAnimation -> { model with AnimationRunning = true }, Cmd.none
-    | AnimTick dt -> animTick model dt, Cmd.none
+        Events.None
+    | StartLoopingAnimation -> { model with AnimationState = Looping }, Events.None
+    | StartOnceOffAnimation -> { model with AnimationState = OnceOff }, Events.None
+    | AnimTick dt -> animTick model dt
     | SetPos p ->
-        { model with ScreenPos = p }, Cmd.none
-    | SetDir flipH -> { model with FlipH = flipH }, Cmd.none
+        { model with ScreenPos = p }, Events.None
+    | SetDirection flipH -> { model with FlipH = flipH }, Events.None
 
 
 let view model (dispatch: Message -> unit) =

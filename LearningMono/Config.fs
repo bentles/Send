@@ -11,8 +11,6 @@ type ImageConfig =
 
 type SpriteConfig =
     { Images: ImageConfig list
-
-
       InitPos: int * int
       Tint: Color
       FrameLength: int64 }
@@ -32,8 +30,10 @@ let smallCharImage =
       Offset = Vector2(0f, -18f) }
 
 let CharAnimations = {|
-    BigWalk = 4
     SmallWalk = 0
+    SmallToBig = 3 
+    BigToSmall = 4
+    BigWalk = 5
 |}
 
 let CharConfig = {|
