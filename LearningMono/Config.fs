@@ -28,8 +28,13 @@ let smallCharImage =
       TextureName = "smallChar" }
 
 let CharAnimations = {|
-    BigWalk = 4
+    BigWalk = 3
     SmallWalk = 0
+|}
+
+let CharConfig = {|
+    BigSpeed = 80
+    SmallSpeed = 120
 |}
 
 let charSprite =

@@ -98,8 +98,9 @@ let physics model time =
                 | true -> CharAnimations.SmallWalk
                 | false -> CharAnimations.BigWalk
 
-            let animMessage = SpriteMessage(Sprite.Animate(walkAnimation, 80))
-            [ Cmd.ofMsg animMessage ] //do this on X changing
+            let switchAni = (Cmd.ofMsg<<SpriteMessage<<Sprite.SwitchAnimation) (walkAnimation, 80)            
+            let startAni = (Cmd.ofMsg<<SpriteMessage) Sprite.StartAnimation
+            [ switchAni; startAni ] //do this on X changing
         | (ov, 0f) when ov > 0f -> [ Cmd.ofMsg (SpriteMessage(Sprite.Stop)) ]
         | (_, _) -> []
 
@@ -121,7 +122,10 @@ let update message model =
     | SpriteMessage sm ->
         let (newSprite, cmd) = Sprite.update sm model.SpriteInfo
         { model with SpriteInfo = newSprite }, cmd
-    | SwitchCharacter -> { model with IsSmallCharacter = not model.IsSmallCharacter }, Cmd.none
+    | SwitchCharacter ->
+        let walk = if model.IsSmallCharacter then CharAnimations.BigWalk else CharAnimations.SmallWalk
+        { model with IsSmallCharacter = not model.IsSmallCharacter },
+        (Cmd.ofMsg << SpriteMessage << Sprite.SwitchAnimation) (walk, 80)
 
 let view model (dispatch: Message -> unit) =
     [ yield! Sprite.view model.SpriteInfo (SpriteMessage >> dispatch)

@@ -53,7 +53,8 @@ let init pos (config: SpriteConfig) =
 
 type Message =
     | Stop
-    | Animate of int * int64
+    | SwitchAnimation of int * int64 
+    | StartAnimation
     | AnimTick of int64
     | SetPos of Vector2
     | SetDir of bool
@@ -116,15 +117,15 @@ let update message model =
             FrameXPos = model.FrameXPos
             AnimationRunning = false },
         Cmd.none
-    | Animate(which, increment) ->
+    | SwitchAnimation(which, increment) ->
         let (img, yPos) = currentImageConfigAndRelativePos model.Images (0, which)
         { model with
             CurrentImage = img
             RelativeYPos = yPos
             FrameXPos = 0
-            FrameLength = increment
-            AnimationRunning = true },
+            FrameLength = increment },
         Cmd.none
+    | StartAnimation -> { model with AnimationRunning = true }, Cmd.none
     | AnimTick dt -> animTick model dt, Cmd.none
     | SetPos p ->
         { model with ScreenPos = p }, Cmd.none
