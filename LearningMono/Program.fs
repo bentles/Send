@@ -8,7 +8,7 @@ type Model = { player: Player.Model }
 
 
 let init () =
-    { player = Player.init 100 100 6f 60f 40f Player.SmallChar }, Cmd.none
+    { player = Player.init 100 100 6f 60f 40f charSprite }, Cmd.none
 
 type Message =
     | PlayerMessage of Player.Message

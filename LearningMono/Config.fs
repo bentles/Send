@@ -2,29 +2,44 @@
 
 open Microsoft.Xna.Framework
 
-type SpriteConfig =
+type ImageConfig =
     { PixelSize: int * int
       Rows: int
       Columns: int
+      TextureName: string }
+
+type SpriteConfig =
+    { Images: ImageConfig list
+
       InitPos: int * int
-      TextureName: string
       Tint: Color
       FrameLength: int64 }
 
-let bigCharSprite =
+let bigCharImage =
     { PixelSize = (800, 312)
       Rows = 3
       Columns = 8
-      InitPos = (0, 1)
-      TextureName = "bigChar"
-      Tint = Color.White
-      FrameLength = 300L }
+      TextureName = "bigChar" }
 
-let smallCharSprite =
+let smallCharImage =
     { PixelSize = (416, 192)
       Rows = 3
       Columns = 8
-      InitPos = (0, 0)
-      TextureName = "smallChar"
+      TextureName = "smallChar" }
+
+let CharAnimations = {|
+    BigWalk = 4
+    SmallWalk = 0
+|}
+
+let charSprite =
+    {
+      Images = [
+        smallCharImage
+        bigCharImage
+      ]
+
+      InitPos = (0, CharAnimations.SmallWalk)
       Tint = Color.White
       FrameLength = 300L }
+

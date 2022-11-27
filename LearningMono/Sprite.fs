@@ -7,29 +7,42 @@ open Xelmish.Viewables
 open Config
 
 type Model =
-    { PixelSize: int * int
-      Rows: int
-      Columns: int
-      Pos: int * int
+    { Images: ImageConfig list
+
+      CurrentImage: ImageConfig
+      RelativeYPos: int
+
+      FrameXPos: int
       AnimationRunning: bool
 
-      TextureName: string
       Tint: Color
-
       LastFrameTime: int64
       FrameLength: int64
-
       FlipH: bool
-
       ScreenPos: Vector2 }
 
+let currentImageConfigAndRelativePos images pos =
+    let (_, y) = pos
+
+    let rec getImage yPos imagesList =
+        match imagesList with
+        | [] -> failwith "At least one image per sprite pls programmer san"
+        | lastImage :: [] -> lastImage, yPos
+        | image :: rest ->
+            let rem = image.Rows - 1 - yPos
+            if rem >= 0 then image, yPos else getImage -rem rest
+
+    getImage y images
 
 let init pos (config: SpriteConfig) =
-    { PixelSize = config.PixelSize
-      Rows = config.Rows
-      Columns = config.Columns
-      Pos = config.InitPos
-      TextureName = config.TextureName
+    let (img, yPos) = currentImageConfigAndRelativePos config.Images config.InitPos
+
+    { Images = config.Images
+
+      CurrentImage = img
+      RelativeYPos = yPos
+
+      FrameXPos = fst(config.InitPos)
       Tint = config.Tint
       AnimationRunning = false
       FlipH = false
@@ -39,15 +52,16 @@ let init pos (config: SpriteConfig) =
       ScreenPos = pos }
 
 type Message =
-    | Stop of int
+    | Stop
     | Animate of int * int64
     | AnimTick of int64
     | SetPos of Vector2
     | SetDir of bool
 
-let spriteSourceRect (spriteInfo: Model) =
+
+let spriteSourceRect (spriteInfo: ImageConfig) pos =
     let totalWidth, totalHeight = spriteInfo.PixelSize
-    let xPos, yPos = spriteInfo.Pos
+    let xPos, yPos = pos
 
     let height = totalHeight / spriteInfo.Rows
     let width = totalWidth / spriteInfo.Columns
@@ -57,8 +71,9 @@ let spriteSourceRect (spriteInfo: Model) =
 
 let drawSprite (model: Model) =
     OnDraw(fun loadedAssets _ (spriteBatch: SpriteBatch) ->
-        let texture = loadedAssets.textures[model.TextureName]
-        let sourceRect = spriteSourceRect model
+
+        let texture = loadedAssets.textures[model.CurrentImage.TextureName]
+        let sourceRect = spriteSourceRect model.CurrentImage (model.FrameXPos, model.RelativeYPos)
 
         spriteBatch.Draw(
             texture,
@@ -66,8 +81,11 @@ let drawSprite (model: Model) =
             sourceRect,
             model.Tint,
             0f,
-            Vector2(float32(sourceRect.Width / 2), float32(sourceRect.Height / 2)),
-            (if model.FlipH then Graphics.SpriteEffects.FlipHorizontally else Graphics.SpriteEffects.None),
+            Vector2(float32 (sourceRect.Width / 2), float32 (sourceRect.Height / 2)),
+            (if model.FlipH then
+                 Graphics.SpriteEffects.FlipHorizontally
+             else
+                 Graphics.SpriteEffects.None),
             0f
         ))
 
@@ -79,28 +97,37 @@ let animTick model dt =
         | true -> (model.LastFrameTime - model.FrameLength, 1)
         | false -> model.LastFrameTime, 0
 
-    let oldX, oldY = model.Pos
+    let oldX = model.FrameXPos
+
     let newPos =
         if not model.AnimationRunning then
-            model.Pos
+            model.FrameXPos
         else
-            ((oldX + inc) % model.Columns, oldY)
+            (oldX + inc) % model.CurrentImage.Columns
 
     { model with
-        Pos = newPos
+        FrameXPos = newPos
         LastFrameTime = t }
 
 let update message model =
     match message with
-    | Stop y -> { model with Pos = (0, y); AnimationRunning = false }, Cmd.none
-    | Animate(which, increment) ->
+    | Stop ->
         { model with
-            Pos = (0, which)
+            FrameXPos = model.FrameXPos
+            AnimationRunning = false },
+        Cmd.none
+    | Animate(which, increment) ->
+        let (img, yPos) = currentImageConfigAndRelativePos model.Images (0, which)
+        { model with
+            CurrentImage = img
+            RelativeYPos = yPos
+            FrameXPos = 0
             FrameLength = increment
             AnimationRunning = true },
         Cmd.none
     | AnimTick dt -> animTick model dt, Cmd.none
-    | SetPos p -> { model with ScreenPos = p }, Cmd.none
+    | SetPos p ->
+        { model with ScreenPos = p }, Cmd.none
     | SetDir flipH -> { model with FlipH = flipH }, Cmd.none
 
 

@@ -9,48 +9,26 @@ open Input
 open Debug
 open Config
 
-type SelectedPlayer =
-    | BigChar
-    | SmallChar
-
-type PlayerSprites =
-    { BigChar: SpriteConfig
-      SmallChar: SpriteConfig }
-
-let getWalkAnimation sprite =
-    match sprite with
-    | BigChar _ -> 1
-    | SmallChar _ -> 0
-
-let getJumpAnimation sprite = 2
 
 type Model =
     { SpriteInfo: Sprite.Model
-      PlayerSprites: PlayerSprites
-      SelectedSprite: SelectedPlayer
       Pos: Vector2
       Input: Vector2
 
+      IsSmallCharacter: bool
       Acc: float32
       MaxVelocity: float32
       Friction: float32
 
       Vel: Vector2 }
 
-let getconfig s = 
-    match s with
-    | BigChar -> bigCharSprite
-    | SmallChar -> smallCharSprite
 
-let init x y maxVelocity acc slow selectedSprite =
+let init x y maxVelocity acc slow spriteConfig =
     let p = Vector2(float32 x, float32 y)
-    let spriteConfig = getconfig selectedSprite
 
     { SpriteInfo = Sprite.init p spriteConfig
-      SelectedSprite = selectedSprite
-      PlayerSprites =
-        { BigChar = bigCharSprite
-          SmallChar = smallCharSprite }
+
+      IsSmallCharacter = true
 
       Pos = p
       Vel = Vector2.Zero
@@ -63,7 +41,7 @@ let init x y maxVelocity acc slow selectedSprite =
 
 type Message =
     | Move of dir: Vector2
-    | SwitchSprite
+    | SwitchCharacter
     | PhysicsTick of time: int64
     | SpriteMessage of Sprite.Message
 
@@ -115,10 +93,14 @@ let physics model time =
     let aniCommands =
         match (oldVelLength, velLength) with
         | (0f, v) when v > 0f ->
-            let walkAnimation = getWalkAnimation model.SelectedSprite
+            let walkAnimation =
+                match model.IsSmallCharacter with
+                | true -> CharAnimations.SmallWalk
+                | false -> CharAnimations.BigWalk
+
             let animMessage = SpriteMessage(Sprite.Animate(walkAnimation, 80))
             [ Cmd.ofMsg animMessage ] //do this on X changing
-        | (ov, 0f) when ov > 0f -> [ Cmd.ofMsg (SpriteMessage(Sprite.Stop(1))) ]
+        | (ov, 0f) when ov > 0f -> [ Cmd.ofMsg (SpriteMessage(Sprite.Stop)) ]
         | (_, _) -> []
 
     //every 75 pixels is 1m
@@ -139,19 +121,7 @@ let update message model =
     | SpriteMessage sm ->
         let (newSprite, cmd) = Sprite.update sm model.SpriteInfo
         { model with SpriteInfo = newSprite }, cmd
-    | SwitchSprite ->
-        match model.SelectedSprite with
-        | BigChar ->
-            { model with
-                SelectedSprite = SmallChar
-                SpriteInfo = Sprite.init model.Pos model.PlayerSprites.SmallChar },
-            Cmd.none
-        | SmallChar ->
-            { model with
-                SelectedSprite = BigChar
-                SpriteInfo = Sprite.init model.Pos model.PlayerSprites.BigChar },
-            Cmd.none
-
+    | SwitchCharacter -> { model with IsSmallCharacter = not model.IsSmallCharacter }, Cmd.none
 
 let view model (dispatch: Message -> unit) =
     [ yield! Sprite.view model.SpriteInfo (SpriteMessage >> dispatch)
@@ -159,4 +129,4 @@ let view model (dispatch: Message -> unit) =
       yield onupdate (fun input -> dispatch (PhysicsTick input.totalGameTime))
 
       yield directions Keys.Up Keys.Down Keys.Left Keys.Right (fun f -> dispatch (Move f))
-      yield onkeydown Keys.Z (fun f -> dispatch (SwitchSprite)) ]
+      yield onkeydown Keys.Z (fun f -> dispatch (SwitchCharacter)) ]
