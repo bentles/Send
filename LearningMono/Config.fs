@@ -6,10 +6,12 @@ type ImageConfig =
     { PixelSize: int * int
       Rows: int
       Columns: int
+      Offset: Vector2
       TextureName: string }
 
 type SpriteConfig =
     { Images: ImageConfig list
+
 
       InitPos: int * int
       Tint: Color
@@ -19,13 +21,15 @@ let bigCharImage =
     { PixelSize = (800, 312)
       Rows = 3
       Columns = 8
-      TextureName = "bigChar" }
+      TextureName = "bigChar"
+      Offset = Vector2.Zero }
 
 let smallCharImage =
     { PixelSize = (416, 192)
       Rows = 3
       Columns = 8
-      TextureName = "smallChar" }
+      TextureName = "smallChar"
+      Offset = Vector2(0f, -18f) }
 
 let CharAnimations = {|
     BigWalk = 4

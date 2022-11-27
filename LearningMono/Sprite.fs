@@ -78,14 +78,14 @@ let drawSprite (model: Model) =
 
         let texture = loadedAssets.textures[model.CurrentImage.TextureName]
         let sourceRect = spriteSourceRect model.CurrentImage (model.FrameXPos, model.RelativeYPos)
-
+        let spriteCenter = Vector2(float32 (sourceRect.Width / 2), float32 (sourceRect.Height / 2))
         spriteBatch.Draw(
             texture,
             Rectangle(int (model.ScreenPos.X), int (model.ScreenPos.Y), sourceRect.Width, sourceRect.Height),
             sourceRect,
             model.Tint,
             0f,
-            Vector2(float32 (sourceRect.Width / 2), float32 (sourceRect.Height / 2)),
+            Vector2.Add(spriteCenter, model.CurrentImage.Offset),
             (if model.FlipH then
                  Graphics.SpriteEffects.FlipHorizontally
              else
