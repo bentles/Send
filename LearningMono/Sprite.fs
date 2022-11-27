@@ -24,6 +24,9 @@ type Model =
 let currentImageConfigAndRelativePos images pos =
     let (_, y) = pos
 
+    // check the index is reasonable
+    assert (y < (images |> List.sumBy (fun a -> a.Rows)))
+
     let rec getImage yPos imagesList =
         match imagesList with
         | [] -> failwith "At least one image per sprite pls programmer sama"
