@@ -101,7 +101,7 @@ let physics model time =
             let switchToWalkAnimation =
                 (Cmd.ofMsg << SpriteMessage << Sprite.SwitchAnimation) (walkAnimation, 80)
 
-            let startWalkAnimation = (Cmd.ofMsg << SpriteMessage) Sprite.StartLoopingAnimation
+            let startWalkAnimation = (Cmd.ofMsg << SpriteMessage) Sprite.StartAnimation
             [ switchToWalkAnimation; startWalkAnimation ] //do this on X changing
         | (ov, 0f) when ov > 0f -> [ Cmd.ofMsg (SpriteMessage(Sprite.Stop)) ]
         | (_, _) -> []
@@ -149,11 +149,11 @@ let update message model =
         { model with IsSmallCharacter = not model.IsSmallCharacter },
         Cmd.batch
             [ (Cmd.ofMsg << SpriteMessage << Sprite.SwitchAnimation) (switchAnimation, 80)
-              (Cmd.ofMsg << SpriteMessage) Sprite.StartOnceOffAnimation ]
+              (Cmd.ofMsg << SpriteMessage) Sprite.StartAnimation ]
 
 let view model (dispatch: Message -> unit) =
     [ yield! Sprite.view model.SpriteInfo (SpriteMessage >> dispatch)
-      yield debugText $"X:{model.Vel.X} \nY:{model.Vel.Y}" (10, 10)
+   //   yield debugText $"X:{model.Vel.X} \nY:{model.Vel.Y}" (10, 10)
       yield onupdate (fun input -> dispatch (PhysicsTick input.totalGameTime))
 
       yield directions Keys.Up Keys.Down Keys.Left Keys.Right (fun f -> dispatch (Move f))

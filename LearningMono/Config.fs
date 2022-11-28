@@ -9,11 +9,19 @@ type ImageConfig =
       Offset: Vector2
       TextureName: string }
 
+type AnimationConfig =
+    { Index: int
+      Looping: bool
+      Speed: int
+      Columns: int
+      }
+
 type SpriteConfig =
     { Images: ImageConfig list
-      InitPos: int * int
+      InitAnimation: AnimationConfig
       Tint: Color
       FrameLength: int64 }
+
 
 let bigCharImage =
     { PixelSize = (800, 312)
@@ -29,26 +37,17 @@ let smallCharImage =
       TextureName = "smallChar"
       Offset = Vector2(0f, -18f) }
 
-let CharAnimations = {|
-    SmallWalk = 0
-    SmallToBig = 3 
-    BigToSmall = 4
-    BigWalk = 5
-|}
+let CharAnimations =
+    {| SmallWalk = { Index = 0; Looping = true; Speed = 120; Columns = 8 }
+       SmallToBig = { Index = 3; Looping = false; Speed = 80; Columns = 8 }
+       BigToSmall = { Index = 4; Looping = false; Speed = 80; Columns = 8 }
+       BigWalk = { Index = 5; Looping = true; Speed = 80; Columns = 8 }
+       |}
 
-let CharConfig = {|
-    BigSpeed = 80
-    SmallSpeed = 120
-|}
+let CharConfig = {| BigSpeed = 80; SmallSpeed = 120 |}
 
 let charSprite =
-    {
-      Images = [
-        smallCharImage
-        bigCharImage
-      ]
-
-      InitPos = (0, CharAnimations.SmallWalk)
+    { Images = [ smallCharImage; bigCharImage ]
+      InitAnimation = CharAnimations.SmallWalk
       Tint = Color.White
       FrameLength = 300L }
-

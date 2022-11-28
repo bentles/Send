@@ -5,8 +5,11 @@ open Xelmish.Model
 open Elmish
 open Xelmish.Viewables
 open Config
+open Debug
 
-type AnimationState = Stopped | Looping | OnceOff
+type AnimationState =
+    | Stopped of AnimationConfig * int
+    | Started of AnimationConfig * int
 
 type Model =
     { Images: ImageConfig list
@@ -14,7 +17,6 @@ type Model =
       CurrentImage: ImageConfig
       RelativeYPos: int
 
-      FrameXPos: int
       AnimationState: AnimationState
 
       Tint: Color
@@ -23,8 +25,8 @@ type Model =
       FlipH: bool
       ScreenPos: Vector2 }
 
-let currentImageConfigAndRelativePos images pos =
-    let (_, y) = pos
+let currentImageConfigAndRelativePos images (animation: AnimationConfig) =
+    let y = animation.Index
 
     // check the index is reasonable
     assert (y < (images |> List.sumBy (fun a -> a.Rows)))
@@ -40,16 +42,16 @@ let currentImageConfigAndRelativePos images pos =
     getImage y images
 
 let init pos (config: SpriteConfig) =
-    let (img, yPos) = currentImageConfigAndRelativePos config.Images config.InitPos
+    let (img, yPos) =
+        currentImageConfigAndRelativePos config.Images config.InitAnimation
 
     { Images = config.Images
 
       CurrentImage = img
       RelativeYPos = yPos
 
-      FrameXPos = fst(config.InitPos)
       Tint = config.Tint
-      AnimationState = Stopped
+      AnimationState = Stopped(config.InitAnimation, 0)
       FlipH = false
 
       LastFrameTime = 0L
@@ -58,20 +60,23 @@ let init pos (config: SpriteConfig) =
 
 type Message =
     | Stop
-    | SwitchAnimation of int * int64 
-    | StartLoopingAnimation
-    | StartOnceOffAnimation
+    | SwitchAnimation of AnimationConfig * int64
+    | StartAnimation
     | AnimTick of int64
     | SetPos of Vector2
     | SetDirection of bool
 
-type Events = 
+type Events =
     | None
     | AnimationComplete of int
 
-let spriteSourceRect (spriteInfo: ImageConfig) pos =
+let spriteSourceRect (spriteInfo: ImageConfig) (aniState: AnimationState) pos =
     let totalWidth, totalHeight = spriteInfo.PixelSize
-    let xPos, yPos = pos
+
+    let xPos, yPos =
+        match aniState with
+        | Stopped(ani, x) -> x, pos
+        | Started(ani, x) -> x, pos
 
     let height = totalHeight / spriteInfo.Rows
     let width = totalWidth / spriteInfo.Columns
@@ -83,8 +88,12 @@ let drawSprite (model: Model) =
     OnDraw(fun loadedAssets _ (spriteBatch: SpriteBatch) ->
 
         let texture = loadedAssets.textures[model.CurrentImage.TextureName]
-        let sourceRect = spriteSourceRect model.CurrentImage (model.FrameXPos, model.RelativeYPos)
-        let spriteCenter = Vector2(float32 (sourceRect.Width / 2), float32 (sourceRect.Height / 2))
+
+        let sourceRect = spriteSourceRect model.CurrentImage model.AnimationState model.RelativeYPos
+
+        let spriteCenter =
+            Vector2(float32 (sourceRect.Width / 2), float32 (sourceRect.Height / 2))
+
         spriteBatch.Draw(
             texture,
             Rectangle(int (model.ScreenPos.X), int (model.ScreenPos.Y), sourceRect.Width, sourceRect.Height),
@@ -107,52 +116,57 @@ let animTick model dt =
         | true -> (model.LastFrameTime - model.FrameLength, 1)
         | false -> model.LastFrameTime, 0
 
-    let oldX = model.FrameXPos
-    let nextX = oldX + inc
+    let (newAnimationState, event) =
+        match model.AnimationState with
+        | Stopped(ani, oldX) -> Stopped(ani, oldX), Events.None
+        | Started(ani, oldX) ->
+            let nextX = oldX + inc
 
-    let (newPos, event) =
-        if model.AnimationState = Stopped then
-            model.FrameXPos, Events.None
-        else if model.AnimationState = Looping then
-            ((oldX + inc) % model.CurrentImage.Columns), Events.None
-        else            
-            let lastFrame = model.CurrentImage.Columns - 1
-            if nextX > oldX && nextX = lastFrame then
-                lastFrame, Events.AnimationComplete 1 //TODO: actual animation number
-            else if nextX > lastFrame then
-                lastFrame, Events.None
+            if ani.Looping then
+                Started(ani, ((oldX + inc) % ani.Columns)), Events.None
             else
-                nextX, Events.None            
+                let lastFrame = ani.Columns - 1
+
+                if nextX > oldX && nextX = lastFrame then
+                    Started(ani, lastFrame), Events.AnimationComplete ani.Index
+                else if nextX > lastFrame then
+                    Started(ani, lastFrame), Events.None
+                else
+                    Started(ani, nextX), Events.None
 
     { model with
-        FrameXPos = newPos
-        LastFrameTime = t }, event
+        AnimationState = newAnimationState
+        LastFrameTime = t },
+    event
 
 
 let update message model =
     match message with
     | Stop ->
+        match model.AnimationState with
+        | Stopped _ -> model
+        | Started(a, b) -> { model with AnimationState = Stopped(a, b) }
+        , Events.None
+    | SwitchAnimation(newAni, increment) ->
+        let (img, yPos) = currentImageConfigAndRelativePos model.Images newAni
         { model with
-            FrameXPos = model.FrameXPos
-            AnimationState = Stopped },
-        Events.None
-    | SwitchAnimation(which, increment) ->
-        let (img, yPos) = currentImageConfigAndRelativePos model.Images (0, which)
-        { model with
-            AnimationState = Stopped
+            AnimationState = Stopped(newAni, 0)
             CurrentImage = img
             RelativeYPos = yPos
-            FrameXPos = 0
             FrameLength = increment },
         Events.None
-    | StartLoopingAnimation -> { model with AnimationState = Looping }, Events.None
-    | StartOnceOffAnimation -> { model with AnimationState = OnceOff }, Events.None
+    | StartAnimation ->
+        match model.AnimationState with
+        | Started _ -> model
+        | Stopped(a, b) -> { model with AnimationState = Started(a, b) }
+        , Events.None
     | AnimTick dt -> animTick model dt
-    | SetPos p ->
-        { model with ScreenPos = p }, Events.None
+    | SetPos p -> { model with ScreenPos = p }, Events.None
     | SetDirection flipH -> { model with FlipH = flipH }, Events.None
 
 
 let view model (dispatch: Message -> unit) =
     [ yield drawSprite model
+
+      yield debugText $"X:{model.AnimationState}" (10, 30)
       yield onupdate (fun input -> dispatch (AnimTick input.totalGameTime)) ]
