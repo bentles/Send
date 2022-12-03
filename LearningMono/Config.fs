@@ -2,6 +2,11 @@
 
 open Microsoft.Xna.Framework
 
+//world config
+
+
+
+// player config
 type ImageConfig =
     { PixelSize: int * int
       Rows: int

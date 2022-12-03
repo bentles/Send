@@ -153,7 +153,7 @@ let update message model =
 
 let view model (dispatch: Message -> unit) =
     [ yield! Sprite.view model.SpriteInfo (SpriteMessage >> dispatch)
-   //   yield debugText $"X:{model.Vel.X} \nY:{model.Vel.Y}" (10, 10)
+      yield debugText $"X:{model.Pos.X} \nY:{model.Pos.Y}" (10, 200)
       yield onupdate (fun input -> dispatch (PhysicsTick input.totalGameTime))
 
       yield directions Keys.Up Keys.Down Keys.Left Keys.Right (fun f -> dispatch (Move f))

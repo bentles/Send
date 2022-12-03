@@ -21,6 +21,7 @@
     <Compile Include="Input.fs" />
     <Compile Include="Sprite.fs" />
     <Compile Include="Player.fs" />
+    <Compile Include="World.fs" />
     <Compile Include="Program.fs" />
     <EmbeddedResource Include="Icon.ico" />
     <EmbeddedResource Include="Icon.bmp" />
