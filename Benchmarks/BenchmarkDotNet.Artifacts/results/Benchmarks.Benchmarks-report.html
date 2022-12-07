@@ -1,0 +1,45 @@
+<!DOCTYPE html>
+<html lang='en'>
+<head>
+<meta charset='utf-8' />
+<title>Benchmarks.Benchmarks-20221203-203435</title>
+
+<style type="text/css">
+	table { border-collapse: collapse; display: block; width: 100%; overflow: auto; }
+	td, th { padding: 6px 13px; border: 1px solid #ddd; text-align: right; }
+	tr { background-color: #fff; border-top: 1px solid #ccc; }
+	tr:nth-child(even) { background: #f8f8f8; }
+</style>
+</head>
+<body>
+<pre><code>
+BenchmarkDotNet=v0.13.2, OS=Windows 11 (10.0.22000.1098/21H2)
+AMD Ryzen 7 6800H with Radeon Graphics, 1 CPU, 16 logical and 8 physical cores
+.NET SDK=6.0.402
+  [Host]   : .NET 6.0.10 (6.0.1022.47605), X64 RyuJIT AVX2 DEBUG
+  .NET 6.0 : .NET 6.0.10 (6.0.1022.47605), X64 RyuJIT AVX2
+</code></pre>
+<pre><code>Job=.NET 6.0  Runtime=.NET 6.0  
+</code></pre>
+
+<table>
+<thead><tr><th>Method</th><th>size</th><th>      Mean</th><th>    Error</th><th>   StdDev</th><th>Ratio</th><th>RatioSD</th>
+</tr>
+</thead><tbody><tr><td>Array</td><td>100</td><td>567.9 ns</td><td>11.27 ns</td><td>18.51 ns</td><td>1.00</td><td>0.00</td>
+</tr><tr><td>List</td><td>100</td><td>1,242.9 ns</td><td>9.62 ns</td><td>8.53 ns</td><td>2.15</td><td>0.07</td>
+</tr><tr><td>Seq</td><td>100</td><td>879.7 ns</td><td>10.26 ns</td><td>9.60 ns</td><td>1.52</td><td>0.06</td>
+</tr><tr><td>Array</td><td>1000</td><td>4,678.3 ns</td><td>91.34 ns</td><td>125.03 ns</td><td>1.00</td><td>0.00</td>
+</tr><tr><td>List</td><td>1000</td><td>12,213.1 ns</td><td>73.97 ns</td><td>61.77 ns</td><td>2.64</td><td>0.09</td>
+</tr><tr><td>Seq</td><td>1000</td><td>8,108.3 ns</td><td>154.65 ns</td><td>189.93 ns</td><td>1.74</td><td>0.06</td>
+</tr><tr><td>Array</td><td>10000</td><td>49,968.1 ns</td><td>990.50 ns</td><td>1,708.56 ns</td><td>1.00</td><td>0.00</td>
+</tr><tr><td>List</td><td>10000</td><td>152,971.3 ns</td><td>2,988.68 ns</td><td>2,649.39 ns</td><td>3.01</td><td>0.11</td>
+</tr><tr><td>Seq</td><td>10000</td><td>76,167.6 ns</td><td>1,520.60 ns</td><td>2,856.05 ns</td><td>1.53</td><td>0.07</td>
+</tr><tr><td>Array</td><td>100000</td><td>483,406.7 ns</td><td>9,508.65 ns</td><td>17,146.06 ns</td><td>1.00</td><td>0.00</td>
+</tr><tr><td>List</td><td>100000</td><td>3,885,476.9 ns</td><td>74,648.44 ns</td><td>79,873.00 ns</td><td>7.89</td><td>0.30</td>
+</tr><tr><td>Seq</td><td>100000</td><td>731,894.8 ns</td><td>10,791.71 ns</td><td>9,566.57 ns</td><td>1.48</td><td>0.05</td>
+</tr><tr><td>Array</td><td>1000000</td><td>15,631,105.0 ns</td><td>304,829.69 ns</td><td>437,177.63 ns</td><td>1.00</td><td>0.00</td>
+</tr><tr><td>List</td><td>1000000</td><td>108,814,507.1 ns</td><td>2,059,888.89 ns</td><td>2,115,354.23 ns</td><td>6.99</td><td>0.27</td>
+</tr><tr><td>Seq</td><td>1000000</td><td>7,530,054.4 ns</td><td>103,262.45 ns</td><td>96,591.76 ns</td><td>0.49</td><td>0.02</td>
+</tr></tbody></table>
+</body>
+</html>

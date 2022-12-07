@@ -18,8 +18,7 @@ type AnimationConfig =
     { Index: int
       Looping: bool
       Speed: int
-      Columns: int
-      }
+      Columns: int }
 
 type SpriteConfig =
     { Images: ImageConfig list
@@ -43,11 +42,26 @@ let smallCharImage =
       Offset = Vector2(0f, -18f) }
 
 let CharAnimations =
-    {| SmallWalk = { Index = 0; Looping = true; Speed = 120; Columns = 8 }
-       SmallToBig = { Index = 3; Looping = false; Speed = 80; Columns = 8 }
-       BigToSmall = { Index = 4; Looping = false; Speed = 80; Columns = 8 }
-       BigWalk = { Index = 5; Looping = true; Speed = 80; Columns = 8 }
-       |}
+    {| SmallWalk =
+        { Index = 0
+          Looping = true
+          Speed = 120
+          Columns = 8 }
+       SmallToBig =
+        { Index = 3
+          Looping = false
+          Speed = 80
+          Columns = 8 }
+       BigToSmall =
+        { Index = 4
+          Looping = false
+          Speed = 80
+          Columns = 8 }
+       BigWalk =
+        { Index = 5
+          Looping = true
+          Speed = 80
+          Columns = 8 } |}
 
 let CharConfig = {| BigSpeed = 80; SmallSpeed = 120 |}
 
