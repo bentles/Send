@@ -53,21 +53,18 @@ let calcVelocity model (acc: Vector2) (dt: float32) =
     let vel = Vector2.Add(model.Vel, Vector2.Multiply(acc, dt))
 
     //no osciallating weirdness if you stop you stop
-    let vel =
-        if Vector2.Dot(vel, model.Vel) < 0f then
-            Vector2.Zero
+    let stopped = Vector2.Dot(vel, model.Vel) < 0f
+    let vel = if stopped then Vector2.Zero else vel
+    let velLength = vel.Length()
+
+    let velTooBig = velLength > model.MaxVelocity
+    let vel = 
+        if velTooBig then
+            Vector2.Multiply(Vector2.Normalize(vel), model.MaxVelocity)
         else
             vel
 
-    let velSize = vel.Length()
-
-    // remove massive and tiny velocities
-    let vel =
-        match velSize with
-        | v when v > model.MaxVelocity -> Vector2.Multiply(Vector2.Normalize(vel), model.MaxVelocity)
-        | _ -> vel
-
-    vel, velSize
+    vel, velLength
 
 let physics model time =
     let dt = (float32 (time - lastTick)) / 1000f
@@ -102,52 +99,34 @@ let animations newModel oldModel =
         else
             []
 
-    // todo only send a command if the velocity goes above/below a treshold
-    let oldVelLength = oldModel.Vel.Length()
-    let velLength = newModel.Vel.Length()
-
     let animationCommands =
-        match (oldVelLength, velLength, oldModel.CharacterState) with
-        | (0f, v, Small isSmall) when v > 0f ->
+        match (oldModel.IsMoving, newModel.IsMoving, oldModel.CharacterState) with
+        | (false, true, Small isSmall) ->
             let walkAnimation =
                 match isSmall with
                 | true -> CharAnimations.SmallWalk
                 | false -> CharAnimations.BigWalk
 
             [ (Cmd.ofMsg << SpriteMessage << Sprite.SwitchAnimation) (walkAnimation, 80, true) ]
-        | (ov, 0f, Small _) when ov > 0f -> [ Cmd.ofMsg (SpriteMessage(Sprite.Stop)) ]
-        | (_, _, _) -> []
-
+        | (true, false, Small _) -> [ (Cmd.ofMsg << SpriteMessage) Sprite.Stop ]
+        | _ -> []
 
     let setPosMsg = Cmd.ofMsg (SpriteMessage(Sprite.SetPos newModel.Pos))
     Cmd.batch [ setPosMsg; yield! animationCommands; yield! directionCommands ]
 
-let getTransformAnimation (characterState: CharacterState) =
+let transformStart (characterState: CharacterState) =
     match characterState with
-    | Shrinking
-    | Small false -> CharAnimations.SmallToBig
-    | Growing
-    | Small true -> CharAnimations.BigToSmall
+    | Shrinking -> Growing, CharAnimations.SmallToBig
+    | Small true -> Growing, CharAnimations.BigToSmall
+    | Growing -> Shrinking, CharAnimations.BigToSmall
+    | Small false -> Shrinking, CharAnimations.SmallToBig
 
-let getTransform (characterState: CharacterState) =
+let transformComplete (characterState: CharacterState) =
     match characterState with
-    | Shrinking
-    | Small true -> Growing
-    | Growing
-    | Small false -> Shrinking
-
-let getCompletionState (characterState: CharacterState) =
-    match characterState with
-    | Shrinking
-    | Small true -> Small true
-    | Growing
-    | Small false -> Small false
-
-let getWalkAnimation (characterState: CharacterState) : AnimationConfig option =
-    match characterState with
-    | Small true -> Some CharAnimations.SmallWalk
-    | Small false -> Some CharAnimations.BigWalk
-    | _ -> None
+    | Shrinking -> Small true, CharAnimations.SmallWalk
+    | Growing -> Small false, CharAnimations.BigWalk
+    | Small true -> Small true, CharAnimations.SmallWalk
+    | Small false -> Small false, CharAnimations.BigWalk
 
 let update message model =
     match message with
@@ -162,23 +141,20 @@ let update message model =
         let model, cmd =
             match event with
             | Sprite.AnimationComplete _ ->
-                let modl = { model with CharacterState = getCompletionState model.CharacterState }
-                let maybeWalkAni = getWalkAnimation modl.CharacterState
+                let (newState, maybeWalk) = transformComplete model.CharacterState
+                let modl = { model with CharacterState = newState }
 
-                match (maybeWalkAni, modl.IsMoving) with
-                | (Some ani, false) -> modl, (Cmd.ofMsg << SpriteMessage << Sprite.SwitchAnimation) (ani, 80, false)
-                | (Some ani, true) ->
-                    modl, Cmd.batch [ (Cmd.ofMsg << SpriteMessage << Sprite.SwitchAnimation) (ani, 80, true) ]
-                | _ -> modl, Cmd.none
-
+                match (maybeWalk, modl.IsMoving) with
+                | (ani, false) -> modl, (Cmd.ofMsg << SpriteMessage << Sprite.SwitchAnimation) (ani, 80, false)
+                | (ani, true) -> modl, (Cmd.ofMsg << SpriteMessage << Sprite.SwitchAnimation) (ani, 80, true)
             | Sprite.None -> model, Cmd.none
 
         { model with SpriteInfo = newSprite }, cmd
     | TransformCharacter ->
-        let transformAnimation = getTransformAnimation model.CharacterState
+        let (newState, transformAnimation) = transformStart model.CharacterState
 
-        { model with CharacterState = getTransform model.CharacterState },
-        Cmd.batch [ (Cmd.ofMsg << SpriteMessage << Sprite.SwitchAnimation) (transformAnimation, 80, true) ]
+        { model with CharacterState = newState },
+        (Cmd.ofMsg << SpriteMessage << Sprite.SwitchAnimation) (transformAnimation, 80, true)
 
 let view model (cameraPos: Vector2) (dispatch: Message -> unit) =
     [ yield! Sprite.view model.SpriteInfo (cameraPos: Vector2) (SpriteMessage >> dispatch)
