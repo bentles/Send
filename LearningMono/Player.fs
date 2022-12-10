@@ -24,7 +24,8 @@ type Model =
       Acc: float32
       MaxVelocity: float32
       Friction: float32
-      Vel: Vector2 }
+      Vel: Vector2
+      IsMoving: bool }
 
 let init x y (playerConfig: PlayerConfig) spriteConfig =
     let p = Vector2(float32 x, float32 y)
@@ -37,7 +38,8 @@ let init x y (playerConfig: PlayerConfig) spriteConfig =
       MaxVelocity = playerConfig.MaxVelocity
       Acc = playerConfig.Acc
       Friction = playerConfig.Slow
-      Vel = Vector2.Zero }
+      Vel = Vector2.Zero
+      IsMoving = false }
 
 type Message =
     | Move of dir: Vector2
@@ -67,7 +69,7 @@ let calcVelocity model (acc: Vector2) (dt: float32) =
 
     vel, velSize
 
-let physics model time = //past pos and return new pos
+let physics model time =
     let dt = (float32 (time - lastTick)) / 1000f
     lastTick <- time
 
@@ -76,7 +78,7 @@ let physics model time = //past pos and return new pos
         | (i, v) when i = Vector2.Zero && v = Vector2.Zero -> Vector2.Zero
         | (i, v) when i = Vector2.Zero -> //slow down against current velocity
             Vector2.Multiply(Vector2.Normalize(v), -(model.Friction))
-        | (i, v) -> Vector2.Multiply(i, float32 (model.Acc))
+        | (i, _) -> Vector2.Multiply(i, float32 (model.Acc))
 
     //velocity must be modified by acc
     let (vel, velLength) = calcVelocity model acc dt
@@ -85,13 +87,15 @@ let physics model time = //past pos and return new pos
     let pixelsPerMeter = 75f
 
     //pos affected by velocity
-    let pos = Vector2.Add(model.Pos, Vector2.Multiply(Vector2.Multiply(vel, dt), pixelsPerMeter))
+    let pos =
+        Vector2.Add(model.Pos, Vector2.Multiply(Vector2.Multiply(vel, dt), pixelsPerMeter))
 
     { model with
         Vel = vel
-        Pos = pos }
+        Pos = pos
+        IsMoving = velLength > 0f }
 
-let animations newModel oldModel = 
+let animations newModel oldModel =
     let directionCommands =
         if sign (newModel.Vel.X) <> sign (oldModel.Vel.X) && newModel.Vel.X <> 0f then
             [ Cmd.ofMsg (SpriteMessage(Sprite.SetDirection(newModel.Vel.X < 0f))) ]
@@ -110,11 +114,7 @@ let animations newModel oldModel =
                 | true -> CharAnimations.SmallWalk
                 | false -> CharAnimations.BigWalk
 
-            let switchToWalkAnimation =
-                (Cmd.ofMsg << SpriteMessage << Sprite.SwitchAnimation) (walkAnimation, 80)
-
-            let startWalkAnimation = (Cmd.ofMsg << SpriteMessage) Sprite.StartAnimation
-            [ switchToWalkAnimation; startWalkAnimation ] //do this on X changing
+            [ (Cmd.ofMsg << SpriteMessage << Sprite.SwitchAnimation) (walkAnimation, 80, true) ]
         | (ov, 0f, Small _) when ov > 0f -> [ Cmd.ofMsg (SpriteMessage(Sprite.Stop)) ]
         | (_, _, _) -> []
 
@@ -152,7 +152,7 @@ let getWalkAnimation (characterState: CharacterState) : AnimationConfig option =
 let update message model =
     match message with
     | Move dir -> { model with Input = dir }, Cmd.none
-    | PhysicsTick time -> 
+    | PhysicsTick time ->
         let newModel = physics model time
         let aniCommands = animations newModel model
         newModel, aniCommands
@@ -165,9 +165,12 @@ let update message model =
                 let modl = { model with CharacterState = getCompletionState model.CharacterState }
                 let maybeWalkAni = getWalkAnimation modl.CharacterState
 
-                match maybeWalkAni with
-                | None -> modl, Cmd.none
-                | Some ani -> modl, (Cmd.ofMsg << SpriteMessage << Sprite.SwitchAnimation) (ani, 80)
+                match (maybeWalkAni, modl.IsMoving) with
+                | (Some ani, false) -> modl, (Cmd.ofMsg << SpriteMessage << Sprite.SwitchAnimation) (ani, 80, false)
+                | (Some ani, true) ->
+                    modl, Cmd.batch [ (Cmd.ofMsg << SpriteMessage << Sprite.SwitchAnimation) (ani, 80, true) ]
+                | _ -> modl, Cmd.none
+
             | Sprite.None -> model, Cmd.none
 
         { model with SpriteInfo = newSprite }, cmd
@@ -175,9 +178,7 @@ let update message model =
         let transformAnimation = getTransformAnimation model.CharacterState
 
         { model with CharacterState = getTransform model.CharacterState },
-        Cmd.batch
-            [ (Cmd.ofMsg << SpriteMessage << Sprite.SwitchAnimation) (transformAnimation, 80)
-              (Cmd.ofMsg << SpriteMessage) Sprite.StartAnimation ]
+        Cmd.batch [ (Cmd.ofMsg << SpriteMessage << Sprite.SwitchAnimation) (transformAnimation, 80, true) ]
 
 let view model (cameraPos: Vector2) (dispatch: Message -> unit) =
     [ yield! Sprite.view model.SpriteInfo (cameraPos: Vector2) (SpriteMessage >> dispatch)

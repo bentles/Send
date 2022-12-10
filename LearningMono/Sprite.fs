@@ -60,9 +60,8 @@ let init pos (config: SpriteConfig) =
 
 type Message =
     | Stop
-    | SwitchAnimation of AnimationConfig * int64
+    | SwitchAnimation of AnimationConfig * int64 * bool
     | StartAnimation
- //   | RestartAnimation
     | AnimTick of int64
     | SetPos of Vector2
     | SetDirection of bool
@@ -153,10 +152,10 @@ let update message model =
         | Stopped _ -> model
         | Started(a, b) -> { model with AnimationState = Stopped(a, b) }
         , Events.None
-    | SwitchAnimation(newAni, increment) ->
+    | SwitchAnimation(newAni, increment, start) ->
         let (img, yPos) = currentImageConfigAndRelativePos model.Images newAni
         { model with
-            AnimationState = Stopped(newAni, 0)
+            AnimationState = if start then Started(newAni, 0) else Stopped(newAni, 0)
             CurrentImage = img
             RelativeYPos = yPos
             FrameLength = increment },
