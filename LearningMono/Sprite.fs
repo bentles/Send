@@ -84,7 +84,7 @@ let spriteSourceRect (spriteInfo: ImageConfig) (aniState: AnimationState) pos =
     rect x y width height
 
 
-let drawSprite (model: Model) =
+let drawSprite (model: Model) (cameraPos:Vector2): Viewable =
     OnDraw(fun loadedAssets _ (spriteBatch: SpriteBatch) ->
 
         let texture = loadedAssets.textures[model.CurrentImage.TextureName]
@@ -94,9 +94,14 @@ let drawSprite (model: Model) =
         let spriteCenter =
             Vector2(float32 (sourceRect.Width / 2), float32 (sourceRect.Height / 2))
 
+        let cameraOffset = -cameraPos
+
+        let actualX = int (model.ScreenPos.X + cameraOffset.X)
+        let actualY =  int (model.ScreenPos.Y + cameraOffset.Y)
+
         spriteBatch.Draw(
             texture,
-            Rectangle(int (model.ScreenPos.X), int (model.ScreenPos.Y), sourceRect.Width, sourceRect.Height),
+            Rectangle(actualX, actualY, sourceRect.Width, sourceRect.Height),
             sourceRect,
             model.Tint,
             0f,
@@ -165,8 +170,8 @@ let update message model =
     | SetDirection flipH -> { model with FlipH = flipH }, Events.None
 
 
-let view model (dispatch: Message -> unit) =
-    [ yield drawSprite model
+let view model (cameraPos:Vector2) (dispatch: Message -> unit) =
+    [ yield drawSprite model cameraPos
 
       yield debugText $"X:{model.AnimationState}" (10, 30)
       yield onupdate (fun input -> dispatch (AnimTick input.totalGameTime)) ]

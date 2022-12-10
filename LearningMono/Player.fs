@@ -23,7 +23,7 @@ type Model =
       Vel: Vector2 }
 
 
-let init x y maxVelocity acc slow spriteConfig =
+let init x y (playerConfig:PlayerConfig) spriteConfig =
     let p = Vector2(float32 x, float32 y)
 
     { SpriteInfo = Sprite.init p spriteConfig
@@ -33,9 +33,9 @@ let init x y maxVelocity acc slow spriteConfig =
       Pos = p
       Vel = Vector2.Zero
 
-      MaxVelocity = maxVelocity
-      Friction = slow
-      Acc = acc
+      MaxVelocity = playerConfig.MaxVelocity
+      Friction = playerConfig.Slow
+      Acc = playerConfig.Acc
 
       Input = Vector2.Zero }
 
@@ -67,7 +67,7 @@ let calcVelocity model (acc: Vector2) (dt: float32) =
 
     vel, velSize
 
-let physics model time =
+let physics model time = //past pos and return new pos
     let dt = (float32 (time - lastTick)) / 1000f
     lastTick <- time
 
@@ -151,8 +151,8 @@ let update message model =
             [ (Cmd.ofMsg << SpriteMessage << Sprite.SwitchAnimation) (switchAnimation, 80)
               (Cmd.ofMsg << SpriteMessage) Sprite.StartAnimation ]
 
-let view model (dispatch: Message -> unit) =
-    [ yield! Sprite.view model.SpriteInfo (SpriteMessage >> dispatch)
+let view model (cameraPos:Vector2) (dispatch: Message -> unit) =
+    [ yield! Sprite.view model.SpriteInfo (cameraPos:Vector2) (SpriteMessage >> dispatch)
       yield debugText $"X:{model.Pos.X} \nY:{model.Pos.Y}" (10, 200)
       yield onupdate (fun input -> dispatch (PhysicsTick input.totalGameTime))
 

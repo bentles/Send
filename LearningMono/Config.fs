@@ -1,12 +1,19 @@
 ﻿module Config
 
 open Microsoft.Xna.Framework
+open Xelmish.Model
 
-//world config
-
-
+//game config
+let window = Windowed(1600, 900)
 
 // player config
+
+type PlayerConfig = {
+    MaxVelocity: float32
+    Acc: float32
+    Slow: float32
+}
+
 type ImageConfig =
     { PixelSize: int * int
       Rows: int
@@ -26,6 +33,11 @@ type SpriteConfig =
       Tint: Color
       FrameLength: int64 }
 
+let playerConfig = {
+    MaxVelocity = 6f
+    Acc = 60f
+    Slow = 40f
+}
 
 let bigCharImage =
     { PixelSize = (800, 312)

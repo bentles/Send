@@ -4,31 +4,25 @@ open Xelmish.Viewables // required to get access to helpers like 'colour'
 open Microsoft.Xna.Framework
 open Config
 
-type Model =
-    { Player: Player.Model
-      World: World.Model }
+type Model = { World: World.Model }
 
 
-let init () =
-    { Player = Player.init 100 100 6f 60f 40f charSprite
-      World = World.init 20 75 },
-    Cmd.none
+let init () = { World = World.init 20 75 }, Cmd.none
 
 type Message =
-    | PlayerMessage of Player.Message
+    | WorldMessage of World.Message
     | Tick
 
 let update message (model: Model) =
     match message with
-    | PlayerMessage p ->
-        let (newPlayer, cmd) = Player.update p model.Player
-        { model with Player = newPlayer }, Cmd.map PlayerMessage cmd
+    | WorldMessage p ->
+        let (newWorld, cmd) = World.update p model.World
+        { model with World = newWorld }, Cmd.map WorldMessage cmd
     | Tick -> model, Cmd.none
 
 
 let view (model: Model) (dispatch: Message -> unit) =
-    [ yield! World.view model.World
-      yield! Player.view model.Player (PlayerMessage >> dispatch)
+    [ yield! World.view model.World (WorldMessage >> dispatch)
       yield onkeydown Keys.Escape exit ]
 
 [<EntryPoint>]
@@ -43,7 +37,6 @@ let main _ =
               PipelineFont("defaultFont", "./content/SourceCodePro") ]
           mouseVisible = false }
 
-    Program.mkProgram init update view
-    |> Xelmish.Program.runGameLoop config
+    Program.mkProgram init update view |> Xelmish.Program.runGameLoop config
 
     0
