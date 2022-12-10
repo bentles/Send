@@ -62,6 +62,7 @@ type Message =
     | Stop
     | SwitchAnimation of AnimationConfig * int64
     | StartAnimation
+ //   | RestartAnimation
     | AnimTick of int64
     | SetPos of Vector2
     | SetDirection of bool

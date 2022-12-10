@@ -16,33 +16,28 @@ type CharacterState =
 
 type Model =
     { SpriteInfo: Sprite.Model
-      Pos: Vector2
+      CharacterState: CharacterState
       Input: Vector2
 
-      CharacterState: CharacterState
+      //physics
+      Pos: Vector2
       Acc: float32
       MaxVelocity: float32
       Friction: float32
-
       Vel: Vector2 }
-
 
 let init x y (playerConfig: PlayerConfig) spriteConfig =
     let p = Vector2(float32 x, float32 y)
 
     { SpriteInfo = Sprite.init p spriteConfig
-
       CharacterState = Small true
-
+      Input = Vector2.Zero
 
       Pos = p
-      Vel = Vector2.Zero
-
       MaxVelocity = playerConfig.MaxVelocity
-      Friction = playerConfig.Slow
       Acc = playerConfig.Acc
-
-      Input = Vector2.Zero }
+      Friction = playerConfig.Slow
+      Vel = Vector2.Zero }
 
 type Message =
     | Move of dir: Vector2
@@ -86,17 +81,29 @@ let physics model time = //past pos and return new pos
     //velocity must be modified by acc
     let (vel, velLength) = calcVelocity model acc dt
 
+    //every 75 pixels is 1m
+    let pixelsPerMeter = 75f
+
+    //pos affected by velocity
+    let pos = Vector2.Add(model.Pos, Vector2.Multiply(Vector2.Multiply(vel, dt), pixelsPerMeter))
+
+    { model with
+        Vel = vel
+        Pos = pos }
+
+let animations newModel oldModel = 
     let directionCommands =
-        if sign (vel.X) <> sign (model.Vel.X) && vel.X <> 0f then
-            [ Cmd.ofMsg (SpriteMessage(Sprite.SetDirection(vel.X < 0f))) ]
+        if sign (newModel.Vel.X) <> sign (oldModel.Vel.X) && newModel.Vel.X <> 0f then
+            [ Cmd.ofMsg (SpriteMessage(Sprite.SetDirection(newModel.Vel.X < 0f))) ]
         else
             []
 
     // todo only send a command if the velocity goes above/below a treshold
-    let oldVelLength = model.Vel.Length()
+    let oldVelLength = oldModel.Vel.Length()
+    let velLength = newModel.Vel.Length()
 
     let animationCommands =
-        match (oldVelLength, velLength, model.CharacterState) with
+        match (oldVelLength, velLength, oldModel.CharacterState) with
         | (0f, v, Small isSmall) when v > 0f ->
             let walkAnimation =
                 match isSmall with
@@ -111,16 +118,9 @@ let physics model time = //past pos and return new pos
         | (ov, 0f, Small _) when ov > 0f -> [ Cmd.ofMsg (SpriteMessage(Sprite.Stop)) ]
         | (_, _, _) -> []
 
-    //every 75 pixels is 1m
-    let pixelsPerMeter = 75f
 
-    //pos affected by velocity
-    let pos =
-        Vector2.Add(model.Pos, Vector2.Multiply(Vector2.Multiply(vel, dt), pixelsPerMeter))
-
-    let setPosMsg = Cmd.ofMsg (SpriteMessage(Sprite.SetPos pos))
-
-    { model with Vel = vel; Pos = pos }, Cmd.batch [ setPosMsg; yield! animationCommands; yield! directionCommands ]
+    let setPosMsg = Cmd.ofMsg (SpriteMessage(Sprite.SetPos newModel.Pos))
+    Cmd.batch [ setPosMsg; yield! animationCommands; yield! directionCommands ]
 
 let getTransformAnimation (characterState: CharacterState) =
     match characterState with
@@ -152,18 +152,22 @@ let getWalkAnimation (characterState: CharacterState) : AnimationConfig option =
 let update message model =
     match message with
     | Move dir -> { model with Input = dir }, Cmd.none
-    | PhysicsTick time -> physics model time
+    | PhysicsTick time -> 
+        let newModel = physics model time
+        let aniCommands = animations newModel model
+        newModel, aniCommands
     | SpriteMessage sm ->
         let (newSprite, event) = Sprite.update sm model.SpriteInfo
 
         let model, cmd =
             match event with
-            | Sprite.AnimationComplete _ -> 
-                let modl = {model with CharacterState = getCompletionState model.CharacterState}
+            | Sprite.AnimationComplete _ ->
+                let modl = { model with CharacterState = getCompletionState model.CharacterState }
                 let maybeWalkAni = getWalkAnimation modl.CharacterState
+
                 match maybeWalkAni with
-                  | None -> modl, Cmd.none
-                  | Some ani -> modl, (Cmd.ofMsg << SpriteMessage << Sprite.SwitchAnimation) (ani, 80)                
+                | None -> modl, Cmd.none
+                | Some ani -> modl, (Cmd.ofMsg << SpriteMessage << Sprite.SwitchAnimation) (ani, 80)
             | Sprite.None -> model, Cmd.none
 
         { model with SpriteInfo = newSprite }, cmd
