@@ -33,7 +33,8 @@ let main _ =
           assetsToLoad =
             [ PipelineTexture("bigChar", "./content/sprites/BigChar")
               PipelineTexture("smallChar", "./content/sprites/SmallChar")
-              PipelineTexture("tile", "./content/sprites/Tile")
+              PipelineTexture("tile", "./content/sprites/Tile")              
+              PipelineTexture("grass", "./content/sprites/Grass")
               PipelineFont("defaultFont", "./content/SourceCodePro") ]
           mouseVisible = false }
 

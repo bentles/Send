@@ -34,7 +34,7 @@ type SpriteConfig =
       FrameLength: int64 }
 
 let playerConfig = {
-    MaxVelocity = 6f
+    MaxVelocity = 3.5f
     Acc = 60f
     Slow = 40f
 }

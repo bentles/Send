@@ -7,6 +7,7 @@ open Config
 open Elmish
 
 let Empty = 0
+let Grass = 1
 
 [<Struct>]
 type Block = { Type: int }
@@ -53,7 +54,7 @@ let init chunkDim blockDim =
     { Chunks = chunks
       ChunkDim = chunkDim
       BlockDim = blockDim
-      Player = Player.init 10 10 playerConfig charSprite
+      Player = Player.init 0 0 playerConfig charSprite
       CameraPos = Vector2(0f, -0f) }
 
 
@@ -70,7 +71,8 @@ let drawWorld (model: Model) =
     OnDraw(fun loadedAssets _ (spriteBatch: SpriteBatch) ->
 
         let blockSize = 75
-        let texture = loadedAssets.textures["tile"]
+        let empty = loadedAssets.textures["tile"]
+        let grass = loadedAssets.textures["grass"]
         let chunkSize = blockSize * model.ChunkDim
 
         let sourceRect = rect 0 0 blockSize blockSize
@@ -81,6 +83,11 @@ let drawWorld (model: Model) =
         |> Map.iter (fun (x, y) chunk ->
             chunk.Blocks
             |> Array.iteri (fun i block ->
+
+                let texture = match block.Type with
+                                | 1 -> grass
+                                | _ -> empty
+
                 let startX = x * chunkSize
                 let startY = y * chunkSize
 
