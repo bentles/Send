@@ -54,7 +54,7 @@ type Message =
 
 let mutable lastTick = 0L // we use a mutable tick counter here in order to ensure precision
 
-let collider (pos: Vector2) : AABB = { Pos = pos; Half = Vector2(50f, 52f) }
+let collider (pos: Vector2) : AABB = { Pos = pos; Half = Vector2(25f, 35f) }
 
 let calcVelocity modelVel modelMaxVel (acc: Vector2) (dt: float32) =
     let vel = Vector2.Add(modelVel, Vector2.Multiply(acc, dt))
