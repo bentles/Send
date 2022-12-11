@@ -50,7 +50,7 @@ let init (worldConfig: WorldConfig) =
     let chunks =
         Map.ofSeq (
             seq {
-                for X in -1 .. 0 do
+                for x in -1 .. 0 do
                     for y in -1 .. 0 ->
                         let pos = (x, y)
 
