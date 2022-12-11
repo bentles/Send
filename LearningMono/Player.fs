@@ -8,6 +8,7 @@ open Microsoft.Xna.Framework
 open Input
 open Debug
 open Config
+open Collision
 
 type CharacterState =
     | Small of bool
@@ -49,18 +50,24 @@ type Message =
 
 let mutable lastTick = 0L // we use a mutable tick counter here in order to ensure precision
 
-let calcVelocity model (acc: Vector2) (dt: float32) =
-    let vel = Vector2.Add(model.Vel, Vector2.Multiply(acc, dt))
+let collider (pos: Vector2): AABB = 
+    {
+        Pos = pos
+        Half = Vector2(50f, 52f)
+    }
+
+let calcVelocity modelVel modelMaxVel (acc: Vector2) (dt: float32) =
+    let vel = Vector2.Add(modelVel, Vector2.Multiply(acc, dt))
 
     //no osciallating weirdness if you stop you stop
-    let stopped = Vector2.Dot(vel, model.Vel) < 0f
+    let stopped = Vector2.Dot(vel, modelVel) < 0f
     let vel = if stopped then Vector2.Zero else vel
     let velLength = vel.Length()
 
-    let velTooBig = velLength > model.MaxVelocity
+    let velTooBig = velLength > modelMaxVel
     let vel = 
         if velTooBig then
-            Vector2.Multiply(Vector2.Normalize(vel), model.MaxVelocity)
+            Vector2.Multiply(Vector2.Normalize(vel), modelMaxVel)
         else
             vel
 
@@ -77,7 +84,7 @@ let physics model time =
             Vector2.Multiply(Vector2.Normalize(v), -(model.Friction))
         | (i, _) -> Vector2.Multiply(i, float32 (model.Acc))
 
-    let (vel, velLength) = calcVelocity model acc dt
+    let (vel, velLength) = calcVelocity model.Vel model.MaxVelocity acc dt
 
     //every 75 pixels is 1m
     let pixelsPerMeter = 75f
