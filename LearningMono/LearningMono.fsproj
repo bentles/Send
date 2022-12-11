@@ -17,6 +17,7 @@
   <ItemGroup>
     <None Include="TODO.md" />
     <Compile Include="Config.fs" />
+    <Compile Include="Collision.fs" />
     <Compile Include="Debug.fs" />
     <Compile Include="Input.fs" />
     <Compile Include="Sprite.fs" />
