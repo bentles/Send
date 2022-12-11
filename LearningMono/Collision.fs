@@ -91,11 +91,7 @@ let intersectAABB (aabb: AABB) (box: AABB) : Hit option =
 
         if (py <= 0f) then
             None
-        else
-
-        if
-            (px < py)
-        then
+        else if (px < py) then
             let sx = float32 (sign dx)
 
             Some
@@ -165,8 +161,8 @@ let sweepInto (aabb: AABB) (staticColliders: AABB seq) (delta: Vector2) : Sweep 
           Hit = None }
 
     let nearestCollisionFn =
-        (fun sweep collider ->
-            let newSweep = sweepAABB aabb collider delta
-            if newSweep.Time < sweep.Time then newSweep else sweep)
+        (fun nearest collider ->
+            let sweep = sweepAABB collider aabb delta
+            if sweep.Time < nearest.Time then sweep else nearest)
 
     Seq.fold nearestCollisionFn nearest staticColliders

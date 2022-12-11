@@ -73,6 +73,7 @@ let init (worldConfig: WorldConfig) =
 
     let chunks =
         Map.ofSeq (
+            //truly world-class world generation code
             seq {
                 for x in -1 .. 0 do
                     for y in -1 .. 0 ->
@@ -81,8 +82,8 @@ let init (worldConfig: WorldConfig) =
                         (pos,
                          { Pos = pos
                            Blocks =
-                             [| for xx in 0 .. (worldConfig.ChunkBlockLength - 1) do
-                                    for yy in 0 .. (worldConfig.ChunkBlockLength - 1) do
+                             [| for yy in 0 .. (worldConfig.ChunkBlockLength - 1) do
+                                    for xx in 0 .. (worldConfig.ChunkBlockLength - 1) do
                                         let rockMaker = createCollidable x y Rock
 
                                         match xx, yy with
@@ -90,7 +91,7 @@ let init (worldConfig: WorldConfig) =
                                         | 5, 6 -> rockMaker 5 6
                                         | 7, 9 -> rockMaker 7 9
                                         | 8, 9 -> rockMaker 8 9
-                                        | 9, 9 -> rockMaker 9 9
+                                        | 6, 9 -> rockMaker 6 9
                                         | 7, 8 -> rockMaker 7 8
                                         | x, y -> createNonCollidable Empty |] })
             }
@@ -155,7 +156,23 @@ let renderWorld (model: Model) =
                 let actualX = startX + xBlockOffSet + int (cameraOffset.X)
                 let actualY = startY + yBlockOffSet + int (cameraOffset.Y)
 
-                spriteBatch.Draw(texture, Rectangle(actualX, actualY, sourceRect.Width, sourceRect.Height), Color.White))))
+                spriteBatch.Draw(texture, Rectangle(actualX, actualY, sourceRect.Width, sourceRect.Height), Color.White)
+                Option.iter
+                    (fun (b: AABB) ->
+                        spriteBatch.Draw(
+                            empty,
+                            Rectangle(
+                                int (b.Pos.X - b.Half.X + cameraOffset.X),
+                                int (b.Pos.Y - b.Half.Y + cameraOffset.Y),
+                                int (b.Half.X * 2f),
+                                int (b.Half.Y * 2f)
+                            ),
+                            Color.Red
+                        ))
+                    block.Collider //|> ignore
+
+                
+                )))
 
 let view model (dispatch: Message -> unit) =
     [ yield onupdate (fun input -> dispatch (PhysicsTick input.totalGameTime))
