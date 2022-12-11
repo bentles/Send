@@ -42,19 +42,19 @@ let init x y (playerConfig: PlayerConfig) spriteConfig =
       Vel = Vector2.Zero
       IsMoving = false }
 
+type PhysicsInfo =
+    { Time: int64
+      PossibleObstacles: AABB seq }
+
 type Message =
-    | Move of dir: Vector2
+    | Input of dir: Vector2
     | TransformCharacter
-    | PhysicsTick of time: int64
+    | PhysicsTick of info: PhysicsInfo
     | SpriteMessage of Sprite.Message
 
 let mutable lastTick = 0L // we use a mutable tick counter here in order to ensure precision
 
-let collider (pos: Vector2): AABB = 
-    {
-        Pos = pos
-        Half = Vector2(50f, 52f)
-    }
+let collider (pos: Vector2) : AABB = { Pos = pos; Half = Vector2(50f, 52f) }
 
 let calcVelocity modelVel modelMaxVel (acc: Vector2) (dt: float32) =
     let vel = Vector2.Add(modelVel, Vector2.Multiply(acc, dt))
@@ -65,7 +65,8 @@ let calcVelocity modelVel modelMaxVel (acc: Vector2) (dt: float32) =
     let velLength = vel.Length()
 
     let velTooBig = velLength > modelMaxVel
-    let vel = 
+
+    let vel =
         if velTooBig then
             Vector2.Multiply(Vector2.Normalize(vel), modelMaxVel)
         else
@@ -73,9 +74,9 @@ let calcVelocity modelVel modelMaxVel (acc: Vector2) (dt: float32) =
 
     vel, velLength
 
-let physics model time =
-    let dt = (float32 (time - lastTick)) / 1000f
-    lastTick <- time
+let physics model (info: PhysicsInfo) =
+    let dt = (float32 (info.Time - lastTick)) / 1000f
+    lastTick <- info.Time
 
     let acc =
         match (model.Input, model.Vel) with
@@ -135,20 +136,22 @@ let transformComplete (characterState: CharacterState) =
 
 let update message model =
     match message with
-    | Move dir -> { model with Input = dir }, Cmd.none
-    | PhysicsTick time ->
-        let newModel = physics model time
+    | Input direction -> { model with Input = direction }, Cmd.none
+    | PhysicsTick info ->
+        let newModel = physics model info
         let aniCommands = animations newModel model
         newModel, aniCommands
     | SpriteMessage sm ->
         let (newSprite, event) = Sprite.update sm model.SpriteInfo
+
         let model, cmd =
             match event with
             | Sprite.AnimationComplete _ ->
                 let (newState, walkAni) = transformComplete model.CharacterState
                 let modl = { model with CharacterState = newState }
-                modl, (Cmd.ofMsg << SpriteMessage << Sprite.SwitchAnimation) (walkAni, 80, modl.IsMoving)       
+                modl, (Cmd.ofMsg << SpriteMessage << Sprite.SwitchAnimation) (walkAni, 80, modl.IsMoving)
             | Sprite.None -> model, Cmd.none
+
         { model with SpriteInfo = newSprite }, cmd
     | TransformCharacter ->
         let (newState, transformAnimation) = transformStart model.CharacterState
@@ -157,14 +160,11 @@ let update message model =
         (Cmd.ofMsg << SpriteMessage << Sprite.SwitchAnimation) (transformAnimation, 80, true)
 
 let view model (cameraPos: Vector2) (dispatch: Message -> unit) =
-    [ 
-      //render  
+    [
+      //render
       yield! Sprite.view model.SpriteInfo (cameraPos: Vector2) (SpriteMessage >> dispatch)
       yield debugText $"X:{model.Pos.X} \nY:{model.Pos.Y}" (10, 200)
-      
-      //physics
-      yield onupdate (fun input -> dispatch (PhysicsTick input.totalGameTime))
 
       //IO
-      yield directions Keys.Up Keys.Down Keys.Left Keys.Right (fun f -> dispatch (Move f))
+      yield directions Keys.Up Keys.Down Keys.Left Keys.Right (fun f -> dispatch (Input f))
       yield onkeydown Keys.Z (fun f -> dispatch (TransformCharacter)) ]

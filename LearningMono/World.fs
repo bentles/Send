@@ -106,8 +106,15 @@ let update (message: Message) (model: Model) : Model * Cmd<Message> =
         let (newPlayerModel, playerCommand) = Player.update playerMsg model.Player
         { model with Player = newPlayerModel }, Cmd.map PlayerMessage playerCommand
     | PhysicsTick time ->
-        let newCameraPos = updateCameraPos model.Player.Pos model.CameraPos
-        { model with CameraPos = newCameraPos }, Cmd.none
+        //TODO: get a list of things the player could interact with
+        let (info:Player.PhysicsInfo) = {
+            Time = time
+            PossibleObstacles = Seq.empty
+        }
+        
+        let player, playerMsg = Player.update (Player.PhysicsTick info) model.Player
+        let newCameraPos = updateCameraPos player.Pos model.CameraPos
+        { model with CameraPos = newCameraPos; Player = player }, Cmd.map PlayerMessage playerMsg
 
 let renderWorld (model: Model) =
     OnDraw(fun loadedAssets _ (spriteBatch: SpriteBatch) ->

@@ -16,7 +16,7 @@ type WorldConfig = {
 
 let worldConfig = {
     BlockWidth = 50
-    ChunkBlockLength = 20
+    ChunkBlockLength = 10
 }
 
 // player config
