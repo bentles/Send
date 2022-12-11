@@ -77,13 +77,11 @@ let physics model time =
             Vector2.Multiply(Vector2.Normalize(v), -(model.Friction))
         | (i, _) -> Vector2.Multiply(i, float32 (model.Acc))
 
-    //velocity must be modified by acc
     let (vel, velLength) = calcVelocity model acc dt
 
     //every 75 pixels is 1m
     let pixelsPerMeter = 75f
 
-    //pos affected by velocity
     let pos =
         Vector2.Add(model.Pos, Vector2.Multiply(Vector2.Multiply(vel, dt), pixelsPerMeter))
 
@@ -137,18 +135,13 @@ let update message model =
         newModel, aniCommands
     | SpriteMessage sm ->
         let (newSprite, event) = Sprite.update sm model.SpriteInfo
-
         let model, cmd =
             match event with
             | Sprite.AnimationComplete _ ->
-                let (newState, maybeWalk) = transformComplete model.CharacterState
+                let (newState, walkAni) = transformComplete model.CharacterState
                 let modl = { model with CharacterState = newState }
-
-                match (maybeWalk, modl.IsMoving) with
-                | (ani, false) -> modl, (Cmd.ofMsg << SpriteMessage << Sprite.SwitchAnimation) (ani, 80, false)
-                | (ani, true) -> modl, (Cmd.ofMsg << SpriteMessage << Sprite.SwitchAnimation) (ani, 80, true)
+                modl, (Cmd.ofMsg << SpriteMessage << Sprite.SwitchAnimation) (walkAni, 80, modl.IsMoving)       
             | Sprite.None -> model, Cmd.none
-
         { model with SpriteInfo = newSprite }, cmd
     | TransformCharacter ->
         let (newState, transformAnimation) = transformStart model.CharacterState
@@ -157,9 +150,14 @@ let update message model =
         (Cmd.ofMsg << SpriteMessage << Sprite.SwitchAnimation) (transformAnimation, 80, true)
 
 let view model (cameraPos: Vector2) (dispatch: Message -> unit) =
-    [ yield! Sprite.view model.SpriteInfo (cameraPos: Vector2) (SpriteMessage >> dispatch)
+    [ 
+      //render  
+      yield! Sprite.view model.SpriteInfo (cameraPos: Vector2) (SpriteMessage >> dispatch)
       yield debugText $"X:{model.Pos.X} \nY:{model.Pos.Y}" (10, 200)
+      
+      //physics
       yield onupdate (fun input -> dispatch (PhysicsTick input.totalGameTime))
 
+      //IO
       yield directions Keys.Up Keys.Down Keys.Left Keys.Right (fun f -> dispatch (Move f))
       yield onkeydown Keys.Z (fun f -> dispatch (TransformCharacter)) ]

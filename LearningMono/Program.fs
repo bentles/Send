@@ -7,7 +7,7 @@ open Config
 type Model = { World: World.Model }
 
 
-let init () = { World = World.init 20 75 }, Cmd.none
+let init () = { World = World.init worldConfig }, Cmd.none
 
 type Message =
     | WorldMessage of World.Message

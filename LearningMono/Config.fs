@@ -6,8 +6,20 @@ open Xelmish.Model
 //game config
 let window = Windowed(1600, 900)
 
-// player config
+[<Measure>] type pixels
+[<Measure>] type blocks
 
+type WorldConfig = {
+    BlockWidth: int
+    ChunkBlockLength: int
+}
+
+let worldConfig = {
+    BlockWidth = 50
+    ChunkBlockLength = 20
+}
+
+// player config
 type PlayerConfig = {
     MaxVelocity: float32
     Acc: float32
