@@ -46,7 +46,7 @@ let chunksToRender (cameraPos: Vector2) (chunks: Map<int * int, Chunk>) : Chunk 
         yield! (Map.values chunks) //TODO: logic about which chunks to render based on the camera position
     }
 
-let getCollidables (chunk:Chunk): AABB seq =
+let getCollidables (chunk: Chunk) : AABB seq =
     chunk.Blocks |> Seq.choose (fun bl -> bl.Collider)
 
 let init (worldConfig: WorldConfig) =
@@ -81,8 +81,8 @@ let init (worldConfig: WorldConfig) =
                         (pos,
                          { Pos = pos
                            Blocks =
-                             [| for xx in 0 .. worldConfig.ChunkBlockLength do
-                                    for yy in 0 .. worldConfig.ChunkBlockLength do
+                             [| for xx in 0 .. (worldConfig.ChunkBlockLength - 1) do
+                                    for yy in 0 .. (worldConfig.ChunkBlockLength - 1) do
                                         let rockMaker = createCollidable x y Rock
 
                                         match xx, yy with
@@ -110,14 +110,17 @@ let update (message: Message) (model: Model) : Model * Cmd<Message> =
         { model with Player = newPlayerModel }, Cmd.map PlayerMessage playerCommand
     | PhysicsTick time ->
         //TODO: get a list of things the player could interact with
-        let (info:Player.PhysicsInfo) = {
-            Time = time
-            PossibleObstacles = getCollidables (Map.find (0,0) model.Chunks)
-        }
-        
+        let (info: Player.PhysicsInfo) =
+            { Time = time
+              PossibleObstacles = getCollidables (Map.find (0, 0) model.Chunks) }
+
         let player, playerMsg = Player.update (Player.PhysicsTick info) model.Player
         let newCameraPos = updateCameraPos player.Pos model.CameraPos
-        { model with CameraPos = newCameraPos; Player = player }, Cmd.map PlayerMessage playerMsg
+
+        { model with
+            CameraPos = newCameraPos
+            Player = player },
+        Cmd.map PlayerMessage playerMsg
 
 let renderWorld (model: Model) =
     OnDraw(fun loadedAssets _ (spriteBatch: SpriteBatch) ->
