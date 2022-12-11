@@ -167,6 +167,6 @@ let sweepInto (aabb: AABB) (staticColliders: AABB seq) (delta: Vector2) : Sweep 
     let nearestCollisionFn =
         (fun sweep collider ->
             let newSweep = sweepAABB aabb collider delta
-            if sweep.Time < newSweep.Time then sweep else newSweep)
+            if newSweep.Time < sweep.Time then newSweep else sweep)
 
     Seq.fold nearestCollisionFn nearest staticColliders

@@ -74,6 +74,17 @@ let calcVelocity modelVel modelMaxVel (acc: Vector2) (dt: float32) =
 
     vel, velLength
 
+let collide pos oldPos obstacles = 
+    if Seq.isEmpty obstacles then
+            pos
+        else
+            let deltaPos = Vector2.Subtract(pos, oldPos)
+            let sweep = sweepInto (collider oldPos) obstacles deltaPos
+
+            match sweep.Hit with
+            | Some _ -> sweep.Pos
+            | None -> pos
+
 let physics model (info: PhysicsInfo) =
     let dt = (float32 (info.Time - lastTick)) / 1000f
     lastTick <- info.Time
@@ -91,7 +102,10 @@ let physics model (info: PhysicsInfo) =
     let pixelsPerMeter = 75f
 
     let pos =
-        Vector2.Add(model.Pos, Vector2.Multiply(Vector2.Multiply(vel, dt), pixelsPerMeter))
+        Vector2.Add(model.Pos, Vector2.Multiply(Vector2.Multiply(vel, dt), pixelsPerMeter))    
+
+    //collide with walls
+    let pos = collide pos model.Pos info.PossibleObstacles        
 
     { model with
         Vel = vel

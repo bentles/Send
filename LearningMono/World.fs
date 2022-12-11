@@ -46,6 +46,9 @@ let chunksToRender (cameraPos: Vector2) (chunks: Map<int * int, Chunk>) : Chunk 
         yield! (Map.values chunks) //TODO: logic about which chunks to render based on the camera position
     }
 
+let getCollidables (chunk:Chunk): AABB seq =
+    chunk.Blocks |> Seq.choose (fun bl -> bl.Collider)
+
 let init (worldConfig: WorldConfig) =
     let createCollidable x y t xx yy =
         let chunkSize = worldConfig.BlockWidth * worldConfig.ChunkBlockLength
@@ -109,7 +112,7 @@ let update (message: Message) (model: Model) : Model * Cmd<Message> =
         //TODO: get a list of things the player could interact with
         let (info:Player.PhysicsInfo) = {
             Time = time
-            PossibleObstacles = Seq.empty
+            PossibleObstacles = getCollidables (Map.find (0,0) model.Chunks)
         }
         
         let player, playerMsg = Player.update (Player.PhysicsTick info) model.Player
