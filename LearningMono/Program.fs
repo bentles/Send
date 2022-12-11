@@ -35,6 +35,7 @@ let main _ =
               PipelineTexture("smallChar", "./content/sprites/SmallChar")
               PipelineTexture("tile", "./content/sprites/Tile")              
               PipelineTexture("grass", "./content/sprites/Grass")
+              PipelineTexture("rock", "./content/sprites/Rock")
               PipelineFont("defaultFont", "./content/SourceCodePro") ]
           mouseVisible = false }
 

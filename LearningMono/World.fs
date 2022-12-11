@@ -5,12 +5,14 @@ open Xelmish.Viewables
 open Microsoft.Xna.Framework
 open Config
 open Elmish
+open Collision
 
 let Empty = 0
 let Grass = 1
+let Rock = 2
 
 [<Struct>]
-type Block = { Type: int }
+type Block = { Type: int; Collider: AABB option }
 
 type Chunk = { Pos: int * int; Blocks: Block[] }
 
@@ -45,7 +47,26 @@ let chunksToRender (cameraPos: Vector2) (chunks: Map<int * int, Chunk>) : Chunk 
     }
 
 let init (worldConfig: WorldConfig) =
-    let blocks = worldConfig.ChunkBlockLength * worldConfig.ChunkBlockLength
+    let createCollidable x y t xx yy =
+        let chunkSize = worldConfig.BlockWidth * worldConfig.ChunkBlockLength
+        let startX = x * chunkSize
+        let startY = y * chunkSize
+
+        let xBlockOffSet = xx * worldConfig.BlockWidth
+        let yBlockOffSet = yy * worldConfig.BlockWidth
+
+        let halfWidth = (worldConfig.BlockWidth / 2)
+
+        let actualX = startX + xBlockOffSet + halfWidth
+        let actualY = startY + yBlockOffSet + halfWidth
+
+        { Type = t
+          Collider =
+            Some
+                { Pos = Vector2(float32 actualX, float32 actualY)
+                  Half = Vector2(float32 halfWidth) } }
+
+    let createNonCollidable t = { Type = t; Collider = None }
 
     let chunks =
         Map.ofSeq (
@@ -56,7 +77,19 @@ let init (worldConfig: WorldConfig) =
 
                         (pos,
                          { Pos = pos
-                           Blocks = Array.create (int blocks) { Type = 0 } })
+                           Blocks =
+                             [| for xx in 0 .. worldConfig.ChunkBlockLength do
+                                    for yy in 0 .. worldConfig.ChunkBlockLength do
+                                        let rockMaker = createCollidable x y Rock
+
+                                        match xx, yy with
+                                        | 5, 5 -> rockMaker 5 5
+                                        | 5, 6 -> rockMaker 5 6
+                                        | 7, 9 -> rockMaker 7 9
+                                        | 8, 9 -> rockMaker 8 9
+                                        | 9, 9 -> rockMaker 9 9
+                                        | 7, 8 -> rockMaker 7 8
+                                        | x, y -> createNonCollidable Empty |] })
             }
         )
 
@@ -76,12 +109,13 @@ let update (message: Message) (model: Model) : Model * Cmd<Message> =
         let newCameraPos = updateCameraPos model.Player.Pos model.CameraPos
         { model with CameraPos = newCameraPos }, Cmd.none
 
-let drawWorld (model: Model) =
+let renderWorld (model: Model) =
     OnDraw(fun loadedAssets _ (spriteBatch: SpriteBatch) ->
 
         let blockWidth = model.BlockWidth
         let empty = loadedAssets.textures["tile"]
         let grass = loadedAssets.textures["grass"]
+        let rock = loadedAssets.textures["rock"]
         let chunkSize = blockWidth * model.ChunkBlockLength
 
         let sourceRect = rect 0 0 blockWidth blockWidth
@@ -96,6 +130,7 @@ let drawWorld (model: Model) =
                 let texture =
                     match block.Type with
                     | 1 -> grass
+                    | 2 -> rock
                     | _ -> empty
 
                 let startX = x * chunkSize
@@ -112,5 +147,5 @@ let drawWorld (model: Model) =
 let view model (dispatch: Message -> unit) =
     [ yield onupdate (fun input -> dispatch (PhysicsTick input.totalGameTime))
 
-      yield drawWorld model
+      yield renderWorld model
       yield! Player.view model.Player (halfScreenOffset model.CameraPos) (PlayerMessage >> dispatch) ]
