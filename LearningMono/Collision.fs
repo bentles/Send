@@ -40,6 +40,7 @@ type Sweep =
       Pos: Vector2
       Time: float32 } //default to 1
 
+
 let intersectSegment (aabb: AABB) (pos: Vector2) (delta: Vector2) paddingX paddingY : Hit option =
     let scaleX = 1.0f / delta.X
     let scaleY = 1.0f / delta.Y

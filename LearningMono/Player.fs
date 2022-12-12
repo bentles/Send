@@ -178,12 +178,21 @@ let update message model =
         { model with CharacterState = newState },
         (Cmd.ofMsg << SpriteMessage << Sprite.SwitchAnimation) (transformAnimation, 80, true)
 
+let renderAABB (aabb: AABB) (cameraPos:Vector2) =
+    image
+        "tile"
+        Color.Red
+        (int (aabb.Half.X * 2f), int (aabb.Half.Y * 2f))
+        (int (aabb.Pos.X - aabb.Half.X - cameraPos.X), int (aabb.Pos.Y - aabb.Half.Y - cameraPos.Y))
+
 let view model (cameraPos: Vector2) (dispatch: Message -> unit) =
     [
       //render
       yield! Sprite.view model.SpriteInfo (cameraPos: Vector2) (SpriteMessage >> dispatch)
       yield debugText $"X:{model.Pos.X} \nY:{model.Pos.Y}" (10, 200)
 
+      //debug
+      yield renderAABB (collider model.Pos) cameraPos
       //IO
       yield directions Keys.Up Keys.Down Keys.Left Keys.Right (fun f -> dispatch (Input f))
       yield onkeydown Keys.Z (fun f -> dispatch (TransformCharacter)) ]
