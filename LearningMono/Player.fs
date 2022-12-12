@@ -187,6 +187,7 @@ let renderAABB (aabb: AABB) (cameraPos:Vector2) =
 
 let view model (cameraPos: Vector2) (dispatch: Message -> unit) =
     [
+
       //render
       yield! Sprite.view model.SpriteInfo (cameraPos: Vector2) (SpriteMessage >> dispatch)
       yield debugText $"X:{model.Pos.X} \nY:{model.Pos.Y}" (10, 200)
