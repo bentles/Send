@@ -79,10 +79,24 @@ let collide pos oldPos obstacles =
         pos
     else
         let deltaPos = Vector2.Subtract(pos, oldPos)
-        let sweep = sweepInto (collider oldPos) obstacles deltaPos
+        let sweep1 = sweepInto (collider oldPos) obstacles deltaPos
 
-        match sweep.Hit with
-        | Some _ -> sweep.Pos
+        match sweep1.Hit with
+        | Some hit -> 
+            let movementIntoAABB = pos - sweep1.Pos
+            let vectorOut = (hit.Normal * hit.Normal) * movementIntoAABB //grab the component that points out
+            let deltaParallel = movementIntoAABB - vectorOut //calc component along the surface
+
+            if deltaParallel = Vector2.Zero then
+                sweep1.Pos
+            else
+                // collide again
+                let sweep2 = sweepInto (collider sweep1.Pos) obstacles deltaParallel
+
+                match sweep2.Hit with
+                    | Some hit2 -> sweep2.Pos
+                    | None -> sweep1.Pos + deltaParallel
+
         | None -> pos
 
 let physics model (info: PhysicsInfo) =
@@ -106,11 +120,6 @@ let physics model (info: PhysicsInfo) =
 
     //collide with walls
     let pos = collide preCollisionPos model.Pos info.PossibleObstacles
-
-    if preCollisionPos.X = pos.X && preCollisionPos.Y = pos.Y then
-        ()
-    else
-        ()
 
     { model with
         Vel = vel

@@ -1,6 +1,7 @@
 ﻿module Collision
 
 open Microsoft.Xna.Framework
+open System
 
 let EPSILON = 1e-8f
 
@@ -50,8 +51,14 @@ let intersectSegment (aabb: AABB) (pos: Vector2) (delta: Vector2) paddingX paddi
 
     let nearTimeX = (aabb.Pos.X - signX * (aabb.Half.X + paddingX) - pos.X) * scaleX
     let nearTimeY = (aabb.Pos.Y - signY * (aabb.Half.Y + paddingY) - pos.Y) * scaleY
+
     let farTimeX = (aabb.Pos.X + signX * (aabb.Half.X + paddingX) - pos.X) * scaleX
     let farTimeY = (aabb.Pos.Y + signY * (aabb.Half.Y + paddingY) - pos.Y) * scaleY
+
+    //yeah so i went case by case and found a workaround for this sticking problem.... :(
+    //at least it works
+    let farTimeX = if Single.IsNaN(farTimeX) then -infinityf else farTimeX
+    let farTimeY = if Single.IsNaN(farTimeY) then -infinityf else farTimeY
 
     if nearTimeX > farTimeY || nearTimeY > farTimeX then
         None
