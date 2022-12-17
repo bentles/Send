@@ -10,23 +10,6 @@ let clamp value min max =
     elif value > max then max
     else value
 
-let inline (<*>) (a: Vector2) (b: Vector2) = Vector2.Multiply(a, b)
-
-//let inline (<*>) (a:Vector2) (b:float32) =
-//    Vector2.Multiply(a, b)
-
-//let inline (<*>) (a:Vector2) (b:int) =
-//    Vector2.Multiply(a, float32 b)
-
-//let inline (<*>) (a:int) (b:Vector2) =
-//    Vector2.Multiply(b, float32 a)
-
-//let inline (<*>) (a:float32) (b:Vector2) =
-//    Vector2.Multiply(b, a)
-
-let inline (<+>) (a: Vector2) (b: Vector2) = Vector2.Add(a, b)
-
-
 type AABB = { Pos: Vector2; Half: Vector2 }
 
 type Hit =
@@ -138,7 +121,7 @@ let sweepAABB (aabb: AABB) (box: AABB) (delta: Vector2) : Sweep =
             let sweepPosX = box.Pos.X + delta.X * sweepTime
             let sweepPosY = box.Pos.Y + delta.Y * sweepTime
             let sweepPos = Vector2(sweepPosX, sweepPosY)
-            let direction = Vector2.Multiply(delta, 1f) //don't know how to copy lol
+            let direction = delta * 1f //don't know how to copy lol
             let direction = Vector2.Normalize(direction)
 
             let hitPosX =

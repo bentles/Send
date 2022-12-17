@@ -105,7 +105,7 @@ let drawSprite (model: Model) (cameraPos:Vector2): Viewable =
             sourceRect,
             model.Tint,
             0f,
-            Vector2.Add(spriteCenter, model.CurrentImage.Offset),
+            spriteCenter + model.CurrentImage.Offset,
             (if model.FlipH then
                  Graphics.SpriteEffects.FlipHorizontally
              else
