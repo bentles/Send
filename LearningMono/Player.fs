@@ -56,7 +56,6 @@ let init x y (playerConfig: PlayerConfig) spriteConfig =
       }
     }
 
-
 type PhysicsInfo =
     { Time: int64
       PossibleObstacles: AABB seq }
@@ -93,7 +92,11 @@ let collide pos oldPos colInfo obstacles =
     let sweepIntoWithOffset pos oldPos obstacles = 
         let deltaPos = pos - oldPos
         let sweepResult = sweepInto (collider oldPos colInfo) obstacles deltaPos
-        { sweepResult with Pos = sweepResult.Pos - colInfo.Offset }
+        let result = { sweepResult with Pos = sweepResult.Pos - colInfo.Offset }
+        
+        //collision distance should be <= unadjusted distance
+        assert ((result.Pos - oldPos).Length() <= deltaPos.Length() + acceptableError)
+        result
 
 
     if Seq.isEmpty obstacles then
