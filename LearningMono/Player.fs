@@ -56,6 +56,7 @@ let init x y (playerConfig: PlayerConfig) spriteConfig =
       }
     }
 
+
 type PhysicsInfo =
     { Time: int64
       PossibleObstacles: AABB seq }
