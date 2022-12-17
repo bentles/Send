@@ -95,7 +95,7 @@ let collide pos oldPos colInfo obstacles =
         let result = { sweepResult with Pos = sweepResult.Pos - colInfo.Offset }
         
         //collision distance should be <= unadjusted distance
-        assert ((result.Pos - oldPos).Length() <= deltaPos.Length() + acceptableError)
+        assert ((result.Pos - oldPos).Length() <= deltaPos.Length() + AcceptableError)
         result
 
 

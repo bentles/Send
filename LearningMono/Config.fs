@@ -5,7 +5,7 @@ open Xelmish.Model
 
 //game config
 let window = Windowed(1600, 900)
-let acceptableError = 0.001f;
+let AcceptableError = 0.001f;
 
 [<Measure>] type pixels
 [<Measure>] type blocks
