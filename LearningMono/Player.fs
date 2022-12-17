@@ -71,7 +71,7 @@ let mutable lastTick = 0L // we use a mutable tick counter here in order to ensu
 let collider (pos: Vector2) (collisionInfo:CollisionInfo) : AABB = { Pos = pos + collisionInfo.Offset; Half = collisionInfo.Half }
 
 let calcVelocity modelVel modelMaxVel (acc: Vector2) (dt: float32) =
-    let vel = Vector2.Add(modelVel, Vector2.Multiply(acc, dt))
+    let vel = modelVel + acc * dt
 
     //no osciallating weirdness if you stop you stop
     let stopped = Vector2.Dot(vel, modelVel) < 0f
@@ -82,7 +82,7 @@ let calcVelocity modelVel modelMaxVel (acc: Vector2) (dt: float32) =
 
     let vel =
         if velTooBig then
-            Vector2.Multiply(Vector2.Normalize(vel), modelMaxVel)
+            Vector2.Normalize(vel) * modelMaxVel
         else
             vel
 
@@ -90,7 +90,7 @@ let calcVelocity modelVel modelMaxVel (acc: Vector2) (dt: float32) =
 
 let collide pos oldPos colInfo obstacles =
     let sweepIntoWithOffset pos oldPos obstacles = 
-        let deltaPos = Vector2.Subtract(pos, oldPos)
+        let deltaPos = pos - oldPos
         let sweepResult = sweepInto (collider oldPos colInfo) obstacles deltaPos
         { sweepResult with Pos = sweepResult.Pos - colInfo.Offset }
 
@@ -126,8 +126,8 @@ let physics model (info: PhysicsInfo) =
         match (model.Input, model.Vel) with
         | (i, v) when i = Vector2.Zero && v = Vector2.Zero -> Vector2.Zero
         | (i, v) when i = Vector2.Zero -> //slow down against current velocity
-            Vector2.Multiply(Vector2.Normalize(v), -(model.Friction))
-        | (i, _) -> Vector2.Multiply(i, float32 (model.Acc))
+            Vector2.Normalize(v) * -(model.Friction)
+        | (i, _) -> i * float32 (model.Acc)
 
     let (vel, velLength) = calcVelocity model.Vel model.MaxVelocity acc dt
 
@@ -135,7 +135,7 @@ let physics model (info: PhysicsInfo) =
     let pixelsPerMeter = 75f
 
     let preCollisionPos =
-        Vector2.Add(model.Pos, Vector2.Multiply(Vector2.Multiply(vel, dt), pixelsPerMeter))
+        model.Pos + (vel * dt) * pixelsPerMeter
 
     //collide with walls
     let pos = collide preCollisionPos model.Pos model.CollisionInfo info.PossibleObstacles
