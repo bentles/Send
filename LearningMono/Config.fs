@@ -20,10 +20,16 @@ let worldConfig = {
 }
 
 // player config
+type AABBConfig = {
+    Half: Vector2
+    Offset: Vector2
+}
+
 type PlayerConfig = {
     MaxVelocity: float32
     Acc: float32
     Slow: float32
+    AABBConfig: AABBConfig
 }
 
 type ImageConfig =
@@ -49,6 +55,10 @@ let playerConfig = {
     MaxVelocity = 3.5f
     Acc = 60f
     Slow = 40f
+    AABBConfig = {
+        Half = Vector2(25f, 25f)
+        Offset = Vector2(0f, 20f)     
+    }
 }
 
 let bigCharImage =

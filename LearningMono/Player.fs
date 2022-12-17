@@ -15,6 +15,12 @@ type CharacterState =
     | Growing
     | Shrinking
 
+type CollisionInfo = {
+    //collision
+    Half: Vector2
+    Offset: Vector2
+}
+
 type Model =
     { SpriteInfo: Sprite.Model
       CharacterState: CharacterState
@@ -26,7 +32,10 @@ type Model =
       MaxVelocity: float32
       Friction: float32
       Vel: Vector2
-      IsMoving: bool }
+      IsMoving: bool 
+      
+      CollisionInfo: CollisionInfo
+      }
 
 let init x y (playerConfig: PlayerConfig) spriteConfig =
     let p = Vector2(float32 x, float32 y)
@@ -40,7 +49,12 @@ let init x y (playerConfig: PlayerConfig) spriteConfig =
       Acc = playerConfig.Acc
       Friction = playerConfig.Slow
       Vel = Vector2.Zero
-      IsMoving = false }
+      IsMoving = false 
+      CollisionInfo = {
+          Half = playerConfig.AABBConfig.Half
+          Offset = playerConfig.AABBConfig.Offset
+      }
+    }
 
 type PhysicsInfo =
     { Time: int64
@@ -54,7 +68,7 @@ type Message =
 
 let mutable lastTick = 0L // we use a mutable tick counter here in order to ensure precision
 
-let collider (pos: Vector2) : AABB = { Pos = pos; Half = Vector2(25f, 35f) }
+let collider (pos: Vector2) (collisionInfo:CollisionInfo) : AABB = { Pos = pos + collisionInfo.Offset; Half = collisionInfo.Half }
 
 let calcVelocity modelVel modelMaxVel (acc: Vector2) (dt: float32) =
     let vel = Vector2.Add(modelVel, Vector2.Multiply(acc, dt))
@@ -74,12 +88,17 @@ let calcVelocity modelVel modelMaxVel (acc: Vector2) (dt: float32) =
 
     vel, velLength
 
-let collide pos oldPos obstacles =
+let collide pos oldPos colInfo obstacles =
+    let sweepIntoWithOffset pos oldPos obstacles = 
+        let deltaPos = Vector2.Subtract(pos, oldPos)
+        let sweepResult = sweepInto (collider oldPos colInfo) obstacles deltaPos
+        { sweepResult with Pos = sweepResult.Pos - colInfo.Offset }
+
+
     if Seq.isEmpty obstacles then
         pos
-    else
-        let deltaPos = Vector2.Subtract(pos, oldPos)
-        let sweep1 = sweepInto (collider oldPos) obstacles deltaPos
+    else        
+        let sweep1 = sweepIntoWithOffset pos oldPos obstacles
 
         match sweep1.Hit with
         | Some hit -> 
@@ -91,7 +110,7 @@ let collide pos oldPos obstacles =
                 sweep1.Pos
             else
                 // collide again
-                let sweep2 = sweepInto (collider sweep1.Pos) obstacles deltaParallel
+                let sweep2 = sweepIntoWithOffset (sweep1.Pos + deltaParallel) sweep1.Pos obstacles 
 
                 match sweep2.Hit with
                     | Some hit2 -> sweep2.Pos
@@ -119,7 +138,7 @@ let physics model (info: PhysicsInfo) =
         Vector2.Add(model.Pos, Vector2.Multiply(Vector2.Multiply(vel, dt), pixelsPerMeter))
 
     //collide with walls
-    let pos = collide preCollisionPos model.Pos info.PossibleObstacles
+    let pos = collide preCollisionPos model.Pos model.CollisionInfo info.PossibleObstacles
 
     { model with
         Vel = vel
@@ -202,7 +221,7 @@ let view model (cameraPos: Vector2) (dispatch: Message -> unit) =
       yield debugText $"X:{model.Pos.X} \nY:{model.Pos.Y}" (10, 200)
 
       //debug
-      yield renderAABB (collider model.Pos) cameraPos
+      yield renderAABB (collider model.Pos model.CollisionInfo) cameraPos
       //IO
       yield directions Keys.Up Keys.Down Keys.Left Keys.Right (fun f -> dispatch (Input f))
       yield onkeydown Keys.Z (fun f -> dispatch (TransformCharacter)) ]
