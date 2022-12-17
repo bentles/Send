@@ -122,6 +122,13 @@ let collide pos oldPos colInfo obstacles =
 
         | None -> pos
 
+let velocityAssertions (input:Vector2) (oldVel:Vector2) (newVel:Vector2) : bool = 
+    if input = Vector2.Zero then
+        newVel.Length() <= oldVel.Length() + AcceptableError
+    else  //moving
+        newVel.Length() >= oldVel.Length() - AcceptableError
+        
+
 let physics model (info: PhysicsInfo) =
     let dt = (float32 (info.Time - lastTick)) / 1000f
     lastTick <- info.Time
@@ -134,6 +141,8 @@ let physics model (info: PhysicsInfo) =
         | (i, _) -> i * float32 (model.Acc)
 
     let (vel, velLength) = calcVelocity model.Vel model.MaxVelocity acc dt
+
+    assert (velocityAssertions model.Input model.Vel vel)
 
     //every 75 pixels is 1m
     let pixelsPerMeter = 75f
