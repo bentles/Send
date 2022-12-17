@@ -45,7 +45,7 @@ let init x y (playerConfig: PlayerConfig) spriteConfig =
       Input = Vector2.Zero
 
       Pos = p
-      MaxVelocity = playerConfig.MaxVelocity
+      MaxVelocity = playerConfig.SmallMaxVelocity
       Acc = playerConfig.Acc
       Friction = playerConfig.Slow
       Vel = Vector2.Zero
@@ -122,7 +122,7 @@ let collide pos oldPos colInfo obstacles =
 
         | None -> pos
 
-let inputChangesVelocityAssertions (input:Vector2) (oldVel:Vector2) (newVel:Vector2) : bool = 
+let inputAffectsVelocityAssertions (input:Vector2) (oldVel:Vector2) (newVel:Vector2) : bool = 
     if input = Vector2.Zero then
         newVel.Length() <= oldVel.Length() + AcceptableError
     else
@@ -142,7 +142,7 @@ let physics model (info: PhysicsInfo) =
 
     let (vel, velLength) = calcVelocity model.Vel model.MaxVelocity acc dt
 
-    assert (inputChangesVelocityAssertions model.Input model.Vel vel)
+    assert (inputAffectsVelocityAssertions model.Input model.Vel vel)
 
     //BlockWidth pixels is 1m
     let pixelsPerMeter = float32 worldConfig.BlockWidth
@@ -208,7 +208,12 @@ let update message model =
             match event with
             | Sprite.AnimationComplete _ ->
                 let (newState, walkAni) = transformComplete model.CharacterState
-                let modl = { model with CharacterState = newState }
+                let maxVelocity = 
+                    match newState with
+                    | Small s when s -> playerConfig.SmallMaxVelocity
+                    | Small s when not s -> playerConfig.BigMaxVelocity
+                    | _ -> model.MaxVelocity
+                let modl = { model with CharacterState = newState; MaxVelocity = maxVelocity }
                 modl, (Cmd.ofMsg << SpriteMessage << Sprite.SwitchAnimation) (walkAni, 80, modl.IsMoving)
             | Sprite.None -> model, Cmd.none
 
@@ -234,7 +239,8 @@ let view model (cameraPos: Vector2) (dispatch: Message -> unit) =
       yield debugText $"X:{model.Pos.X} \nY:{model.Pos.Y}" (10, 200)
 
       //debug
-      yield renderAABB (collider model.Pos model.CollisionInfo) cameraPos
+      //yield renderAABB (collider model.Pos model.CollisionInfo) cameraPos
+
       //IO
       yield directions Keys.Up Keys.Down Keys.Left Keys.Right (fun f -> dispatch (Input f))
       yield onkeydown Keys.Z (fun f -> dispatch (TransformCharacter)) ]

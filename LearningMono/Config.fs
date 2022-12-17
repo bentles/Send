@@ -27,7 +27,8 @@ type AABBConfig = {
 }
 
 type PlayerConfig = {
-    MaxVelocity: float32
+    BigMaxVelocity: float32
+    SmallMaxVelocity: float32
     Acc: float32
     Slow: float32
     AABBConfig: AABBConfig
@@ -53,7 +54,8 @@ type SpriteConfig =
       FrameLength: int64 }
 
 let playerConfig = {
-    MaxVelocity = 3.5f
+    BigMaxVelocity = 2f
+    SmallMaxVelocity = 3.5f
     Acc = 60f
     Slow = 40f
     AABBConfig = {

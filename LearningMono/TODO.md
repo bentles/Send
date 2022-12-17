@@ -6,6 +6,7 @@ DOING:
 	- make the world
 	- design by contract
 		- put asserts wherever i have made assumptions
+	- nicer toggling of debug sprites
 
 DONE:
 - make transformation animation work correctly

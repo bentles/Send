@@ -157,21 +157,19 @@ let renderWorld (model: Model) =
                 let actualY = startY + yBlockOffSet + int (cameraOffset.Y)
 
                 spriteBatch.Draw(texture, Rectangle(actualX, actualY, sourceRect.Width, sourceRect.Height), Color.White)
-                Option.iter
-                    (fun (b: AABB) ->
-                        spriteBatch.Draw(
-                            empty,
-                            Rectangle(
-                                int (b.Pos.X - b.Half.X + cameraOffset.X),
-                                int (b.Pos.Y - b.Half.Y + cameraOffset.Y),
-                                int (b.Half.X * 2f),
-                                int (b.Half.Y * 2f)
-                            ),
-                            Color.Red
-                        ))
-                    block.Collider //|> ignore
-
-                
+                //Option.iter
+                //    (fun (b: AABB) ->
+                //        spriteBatch.Draw(
+                //            empty,
+                //            Rectangle(
+                //                int (b.Pos.X - b.Half.X + cameraOffset.X),
+                //                int (b.Pos.Y - b.Half.Y + cameraOffset.Y),
+                //                int (b.Half.X * 2f),
+                //                int (b.Half.Y * 2f)
+                //            ),
+                //            Color.Red
+                //        ))
+                //    block.Collider  
                 )))
 
 let view model (dispatch: Message -> unit) =
