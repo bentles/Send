@@ -14,12 +14,12 @@ let Rock = 2
 [<Struct>]
 type Block = { Type: int; Collider: AABB option }
 
-type Chunk = { Pos: int * int; Blocks: Block[] }
-
 type Model =
-    { Chunks: Map<int * int, Chunk>
-      ChunkBlockLength: int
+    {
+      Blocks: Block[]
       BlockWidth: int
+
+      ChunkBlockLength: int
 
       //player and camera
       Player: Player.Model
@@ -41,19 +41,14 @@ let updateCameraPos (playerPos: Vector2) (oldCamPos: Vector2) : Vector2 =
 let halfScreenOffset (camPos: Vector2) : Vector2 =
     Vector2.Subtract(camPos, Vector2(800f, 450f))
 
-let chunksToRender (cameraPos: Vector2) (chunks: Map<int * int, Chunk>) : Chunk seq =
-    seq {
-        yield! (Map.values chunks) //TODO: logic about which chunks to render based on the camera position
-    }
-
-let getCollidables (chunk: Chunk) : AABB seq =
-    chunk.Blocks |> Seq.choose (fun bl -> bl.Collider)
+let getCollidables (blocks: Block[]) : AABB seq =
+    blocks |> Seq.choose (fun bl -> bl.Collider)
 
 let init (worldConfig: WorldConfig) =
-    let createCollidable x y t xx yy =
+    let createCollidable t xx yy =
         let chunkSize = worldConfig.BlockWidth * worldConfig.ChunkBlockLength
-        let startX = x * chunkSize
-        let startY = y * chunkSize
+        let startX = 0
+        let startY = 0
 
         let xBlockOffSet = xx * worldConfig.BlockWidth
         let yBlockOffSet = yy * worldConfig.BlockWidth
@@ -71,33 +66,23 @@ let init (worldConfig: WorldConfig) =
 
     let createNonCollidable t = { Type = t; Collider = None }
 
-    let chunks =
-        Map.ofSeq (
-            //truly world-class world generation code
-            seq {
-                for x in -1 .. 0 do
-                    for y in -1 .. 0 ->
-                        let pos = (x, y)
+    let blocks =
+        [| for yy in 0 .. (worldConfig.ChunkBlockLength - 1) do
+            for xx in 0 .. (worldConfig.ChunkBlockLength - 1) do
+                let rockMaker = createCollidable Rock
 
-                        (pos,
-                         { Pos = pos
-                           Blocks =
-                             [| for yy in 0 .. (worldConfig.ChunkBlockLength - 1) do
-                                    for xx in 0 .. (worldConfig.ChunkBlockLength - 1) do
-                                        let rockMaker = createCollidable x y Rock
+                match xx, yy with
+                | 5, 5 -> rockMaker 5 5
+                | 5, 6 -> rockMaker 5 6
+                | 7, 9 -> rockMaker 7 9
+                | 8, 9 -> rockMaker 8 9
+                | 6, 9 -> rockMaker 6 9
+                | 7, 8 -> rockMaker 7 8
+                | x, y -> createNonCollidable Grass |] 
+            
+        
 
-                                        match xx, yy with
-                                        | 5, 5 -> rockMaker 5 5
-                                        | 5, 6 -> rockMaker 5 6
-                                        | 7, 9 -> rockMaker 7 9
-                                        | 8, 9 -> rockMaker 8 9
-                                        | 6, 9 -> rockMaker 6 9
-                                        | 7, 8 -> rockMaker 7 8
-                                        | x, y -> createNonCollidable Grass |] })
-            }
-        )
-
-    { Chunks = chunks
+    { Blocks = blocks
       ChunkBlockLength = worldConfig.ChunkBlockLength
       BlockWidth = worldConfig.BlockWidth
       Player = Player.init 0 0 playerConfig charSprite
@@ -113,7 +98,7 @@ let update (message: Message) (model: Model) : Model * Cmd<Message> =
         //TODO: get a list of things the player could interact with
         let (info: Player.PhysicsInfo) =
             { Time = time
-              PossibleObstacles = getCollidables (Map.find (0, 0) model.Chunks) }
+              PossibleObstacles = getCollidables model.Blocks }
 
         let player, playerMsg = Player.update (Player.PhysicsTick info) model.Player
         let newCameraPos = updateCameraPos player.Pos model.CameraPos
@@ -130,15 +115,12 @@ let renderWorld (model: Model) =
         let empty = loadedAssets.textures["tile"]
         let grass = loadedAssets.textures["grass"]
         let rock = loadedAssets.textures["rock"]
-        let chunkSize = blockWidth * model.ChunkBlockLength
 
         let sourceRect = rect 0 0 blockWidth blockWidth
 
         let cameraOffset = -(halfScreenOffset model.CameraPos)
 
-        model.Chunks
-        |> Map.iter (fun (x, y) chunk ->
-            chunk.Blocks
+        model.Blocks
             |> Array.iteri (fun i block ->
 
                 let texture =
@@ -147,8 +129,8 @@ let renderWorld (model: Model) =
                     | 2 -> rock
                     | _ -> empty
 
-                let startX = x * chunkSize
-                let startY = y * chunkSize
+                let startX = 0
+                let startY = 0
 
                 let xBlockOffSet = (i % model.ChunkBlockLength) * blockWidth
                 let yBlockOffSet = (i / model.ChunkBlockLength) * blockWidth
@@ -170,7 +152,7 @@ let renderWorld (model: Model) =
                 //            Color.Red
                 //        ))
                 //    block.Collider  
-                )))
+                ))
 
 let view model (dispatch: Message -> unit) =
     [ yield onupdate (fun input -> dispatch (PhysicsTick input.totalGameTime))

@@ -1,14 +1,16 @@
-﻿
+﻿IDEAS:
+- design by contract
+	- put asserts wherever i have made assumptions
+
 TODO:
 - nicer toggling of debug sprites
 - quick check for collision exclusion of far away objects
 
 DOING:
 	- make the world
+		- remove chunks until chunks are needed
 		- entities vs blocks?
 			- pick up entities
-	- design by contract
-		- put asserts wherever i have made assumptions
 	
 
 DONE:
