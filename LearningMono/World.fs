@@ -93,7 +93,7 @@ let init (worldConfig: WorldConfig) =
                                         | 8, 9 -> rockMaker 8 9
                                         | 6, 9 -> rockMaker 6 9
                                         | 7, 8 -> rockMaker 7 8
-                                        | x, y -> createNonCollidable Empty |] })
+                                        | x, y -> createNonCollidable Grass |] })
             }
         )
 

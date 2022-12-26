@@ -1,12 +1,15 @@
 ﻿
 TODO:
-- entities vs blocks?
+- nicer toggling of debug sprites
+- quick check for collision exclusion of far away objects
 
 DOING:
 	- make the world
+		- entities vs blocks?
+			- pick up entities
 	- design by contract
 		- put asserts wherever i have made assumptions
-	- nicer toggling of debug sprites
+	
 
 DONE:
 - make transformation animation work correctly
