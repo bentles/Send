@@ -7,13 +7,14 @@ TODO:
 - quick check for collision exclusion of far away objects
 
 DOING:
-	- make the world
-		- remove chunks until chunks are needed
-		- entities vs blocks?
-			- pick up entities
+- make the world
+	- entities vs blocks?
+		- pick up entities mechanic
 	
 
 DONE:
+
+		- remove chunks until chunks are needed
 - make transformation animation work correctly
 	- need the concept of priority or some way to say this animation has precendence
 - wrap vector2 with nicer operator overloads??

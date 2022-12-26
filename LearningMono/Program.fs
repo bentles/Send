@@ -31,12 +31,21 @@ let main _ =
         { clearColour = Some Colour.CornflowerBlue
           resolution = Windowed(1600, 900)
           assetsToLoad =
-            [ PipelineTexture("bigChar", "./content/sprites/BigChar")
-              PipelineTexture("smallChar", "./content/sprites/SmallChar")
-              PipelineTexture("tile", "./content/sprites/Tile")              
-              PipelineTexture("grass", "./content/sprites/Grass")
-              PipelineTexture("rock", "./content/sprites/Rock")
-              PipelineFont("defaultFont", "./content/SourceCodePro") ]
+            [
+              //tiles
+              PipelineTexture("tile", "./content/sprites/tile/Tile")              
+              PipelineTexture("grass", "./content/sprites/tile/Grass")
+
+              //entities
+              PipelineTexture("bigChar", "./content/sprites/entity/BigChar")
+              PipelineTexture("smallChar", "./content/sprites/entity/SmallChar")
+              PipelineTexture("rock", "./content/sprites/entity/Rock")
+              PipelineTexture("observer", "./content/sprites/entity/Observer")
+              PipelineTexture("timer", "./content/sprites/entity/Timer")
+
+              //fonts
+              PipelineFont("defaultFont", "./content/SourceCodePro")
+              ]
           mouseVisible = false }
 
     Program.mkProgram init update view |> Xelmish.Program.runGameLoop config

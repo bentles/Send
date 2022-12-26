@@ -42,21 +42,37 @@ let currentImageConfigAndRelativePos images (animation: AnimationConfig) =
     getImage y images
 
 let init pos (config: SpriteConfig) =
-    let (img, yPos) =
-        currentImageConfigAndRelativePos config.Images config.InitAnimation
+    match config with
+     | SingleSpriteConfig singleConfig ->
+        { Images = [ singleConfig.Image ]
 
-    { Images = config.Images
+          CurrentImage = singleConfig.Image
+          RelativeYPos = 0
 
-      CurrentImage = img
-      RelativeYPos = yPos
+          Tint = singleConfig.Tint
+          AnimationState = Stopped (imageSpriteConfig, 0)
+          FlipH = false
 
-      Tint = config.Tint
-      AnimationState = Stopped(config.InitAnimation, 0)
-      FlipH = false
+          LastFrameTime = 0L
+          FrameLength = 300L
+          ScreenPos = pos }
+        
+     | AnimatedSpriteConfig aniConfig ->
+        let (img, yPos) =
+            currentImageConfigAndRelativePos aniConfig.Images aniConfig.InitAnimation
 
-      LastFrameTime = 0L
-      FrameLength = 300L
-      ScreenPos = pos }
+        { Images = aniConfig.Images
+
+          CurrentImage = img
+          RelativeYPos = yPos
+
+          Tint = aniConfig.Tint
+          AnimationState = Stopped(aniConfig.InitAnimation, 0)
+          FlipH = false
+
+          LastFrameTime = 0L
+          FrameLength = 300L
+          ScreenPos = pos }
 
 type Message =
     | Stop

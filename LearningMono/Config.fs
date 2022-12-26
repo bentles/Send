@@ -5,34 +5,28 @@ open Xelmish.Model
 
 //game config
 let window = Windowed(1600, 900)
-let AcceptableError = 0.001f;
+let AcceptableError = 0.001f
 
-[<Measure>] type pixels
-[<Measure>] type blocks
+[<Measure>]
+type pixels
 
-type WorldConfig = {
-    BlockWidth: int
-    ChunkBlockLength: int
-}
+[<Measure>]
+type blocks
 
-let worldConfig = {
-    BlockWidth = 50
-    ChunkBlockLength = 10
-}
+type WorldConfig =
+    { TileWidth: int; WorldTileLength: int }
+
+let worldConfig = { TileWidth = 50; WorldTileLength = 10 }
 
 // player config
-type AABBConfig = {
-    Half: Vector2
-    Offset: Vector2
-}
+type AABBConfig = { Half: Vector2; Offset: Vector2 }
 
-type PlayerConfig = {
-    BigMaxVelocity: float32
-    SmallMaxVelocity: float32
-    Acc: float32
-    Slow: float32
-    AABBConfig: AABBConfig
-}
+type PlayerConfig =
+    { BigMaxVelocity: float32
+      SmallMaxVelocity: float32
+      Acc: float32
+      Slow: float32
+      AABBConfig: AABBConfig }
 
 type ImageConfig =
     { PixelSize: int * int
@@ -47,22 +41,29 @@ type AnimationConfig =
       Speed: int
       Columns: int }
 
-type SpriteConfig =
+type AnimatedSpriteConfig =
     { Images: ImageConfig list
       InitAnimation: AnimationConfig
       Tint: Color
       FrameLength: int64 }
 
-let playerConfig = {
-    BigMaxVelocity = 2f
-    SmallMaxVelocity = 3.5f
-    Acc = 60f
-    Slow = 40f
-    AABBConfig = {
-        Half = Vector2(25f, 25f)
-        Offset = Vector2(0f, 20f)     
-    }
-}
+type SingleSpriteConfig =
+    { Image: ImageConfig
+      Tint: Color
+      FrameLength: int64 }
+
+type SpriteConfig =
+    | SingleSpriteConfig of SingleSpriteConfig
+    | AnimatedSpriteConfig of AnimatedSpriteConfig
+
+let playerConfig =
+    { BigMaxVelocity = 2f
+      SmallMaxVelocity = 3.5f
+      Acc = 60f
+      Slow = 40f
+      AABBConfig =
+        { Half = Vector2(25f, 25f)
+          Offset = Vector2(0f, 20f) } }
 
 let bigCharImage =
     { PixelSize = (800, 312)
@@ -77,6 +78,26 @@ let smallCharImage =
       Columns = 8
       TextureName = "smallChar"
       Offset = Vector2(0f, -18f) }
+
+let timerImage =
+    { PixelSize = (200, 50)
+      Rows = 1
+      Columns = 4
+      TextureName = "timer"
+      Offset = Vector2(0f, 0f) }
+
+let observerImage =
+    { PixelSize = (50, 50)
+      Rows = 1
+      Columns = 1
+      TextureName = "observer"
+      Offset = Vector2(0f, 0f) }
+
+let imageSpriteConfig =
+    { Looping = false
+      Speed = 0
+      Index = 0
+      Columns = 1 }
 
 let CharAnimations =
     {| SmallWalk =
@@ -102,8 +123,27 @@ let CharAnimations =
 
 let CharConfig = {| BigSpeed = 80; SmallSpeed = 120 |}
 
-let charSprite =
-    { Images = [ smallCharImage; bigCharImage ]
-      InitAnimation = CharAnimations.SmallWalk
-      Tint = Color.White
-      FrameLength = 300L }
+let charSprite: SpriteConfig =
+    AnimatedSpriteConfig
+        { Images = [ smallCharImage; bigCharImage ]
+          InitAnimation = CharAnimations.SmallWalk
+          Tint = Color.White
+          FrameLength = 300L }
+
+//entities
+let timerSpriteConfig =
+    AnimatedSpriteConfig
+        { Images = [ timerImage ]
+          InitAnimation =
+            { Index = 0
+              Looping = true
+              Speed = 80
+              Columns = 4 }
+          Tint = Color.White
+          FrameLength = 300L }
+
+let observerSpriteConfig =
+    SingleSpriteConfig
+        { Image = observerImage
+          Tint = Color.White
+          FrameLength = 300L }

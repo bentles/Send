@@ -37,7 +37,7 @@ type Model =
       CollisionInfo: CollisionInfo
       }
 
-let init x y (playerConfig: PlayerConfig) spriteConfig =
+let init x y (playerConfig: PlayerConfig) (spriteConfig:SpriteConfig) =
     let p = Vector2(float32 x, float32 y)
 
     { SpriteInfo = Sprite.init p spriteConfig
@@ -145,7 +145,7 @@ let physics model (info: PhysicsInfo) =
     assert (inputAffectsVelocityAssertions model.Input model.Vel vel)
 
     //BlockWidth pixels is 1m
-    let pixelsPerMeter = float32 worldConfig.BlockWidth
+    let pixelsPerMeter = float32 worldConfig.TileWidth
 
     let preCollisionPos =
         model.Pos + (vel * dt) * pixelsPerMeter
