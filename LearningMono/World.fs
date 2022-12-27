@@ -17,8 +17,7 @@ type EntityType =
     | Timer
     | Observer
 
-let createCollider (xx: float32) (yy: float32) (half: Vector2) =
-    //let chunkSize = worldConfig.TileWidth * worldConfig.WorldTileLength
+let coordsToPos (xx: float32) (yy: float32) (half: Vector2) =
     let startX = 0f
     let startY = 0f
 
@@ -28,7 +27,10 @@ let createCollider (xx: float32) (yy: float32) (half: Vector2) =
     let actualX = startX + xBlockOffSet + half.X
     let actualY = startY + yBlockOffSet + half.Y
 
-    { Pos = Vector2(actualX, actualY)
+    Vector2(actualX, actualY)
+
+let createCollider (xx: float32) (yy: float32) (half: Vector2) =
+    { Pos = coordsToPos xx yy half
       Half = half }
 
 let initEntity (spriteConfig: SpriteConfig) (pos: Vector2) (half: Vector2) (offset: Vector2) =
@@ -78,9 +80,9 @@ let getCollidables (blocks: Tile[]) : AABB seq =
     blocks |> Seq.choose (fun bl -> bl.Collider)
 
 let init (worldConfig: WorldConfig) =
+    let tileHalf = float32 (worldConfig.TileWidth / 2)
+    let half = Vector2(tileHalf)
     let createCollidableTile t xx yy =
-        let tileHalf = float32 (worldConfig.TileWidth / 2)
-        let half = Vector2(tileHalf)
 
         { FloorType = t
           Entity = None
@@ -91,7 +93,9 @@ let init (worldConfig: WorldConfig) =
           Collider = None
           Entity = None }
 
-    let createTimerOnGrass pos =
+    let createTimerOnGrass (coords:Vector2) =
+        let pos = coordsToPos coords.X coords.Y half
+
         { FloorType = FloorType.Grass
           Collider = None
           Entity = Some(initEntity timerSpriteConfig pos (Vector2(10f, 10f)) Vector2.Zero) }
@@ -146,50 +150,44 @@ let renderWorld (model: Model) =
 
     let cameraOffset = -(halfScreenOffset model.CameraPos)
 
-    let allTiles = model.Tiles |> 
-                    Array.mapi (fun i block ->
-                        let texture =
-                            match block.FloorType with
-                            | FloorType.Grass -> grass
-                            | FloorType.Empty -> empty
+    let allTiles =
+        model.Tiles
+        |> Array.mapi (fun i block ->
+            let texture =
+                match block.FloorType with
+                | FloorType.Grass -> grass
+                | FloorType.Empty -> empty
 
-                        let startX = 0
-                        let startY = 0
+            let startX = 0
+            let startY = 0
 
-                        let xBlockOffSet = (i % model.ChunkBlockLength) * blockWidth
-                        let yBlockOffSet = (i / model.ChunkBlockLength) * blockWidth
+            let xBlockOffSet = (i % model.ChunkBlockLength) * blockWidth
+            let yBlockOffSet = (i / model.ChunkBlockLength) * blockWidth
 
-                        let actualX = startX + xBlockOffSet + int (cameraOffset.X)
-                        let actualY = startY + yBlockOffSet + int (cameraOffset.Y)
+            let actualX = startX + xBlockOffSet + int (cameraOffset.X)
+            let actualY = startY + yBlockOffSet + int (cameraOffset.Y)
 
-                        let floor =
-                            image texture Color.White (sourceRect.Width, sourceRect.Height) (actualX, actualY)
+            let floor =
+                image texture Color.White (sourceRect.Width, sourceRect.Height) (actualX, actualY)
 
-                        let entity =
-                            block.Entity
-                            |> Option.map (fun (entity: Entity) -> Sprite.view entity.Sprite model.CameraPos (fun f -> ()))
+            let entity =
+                block.Entity
+                |> Option.map (fun (entity: Entity) -> Sprite.view entity.Sprite -cameraOffset (fun f -> ()))
 
-                        match entity with
-                        | Some s -> [ floor; yield! s ]
-                        | None -> [ floor ])   
+            let debug =
+                block.Collider
+                |> Option.map (fun (b: AABB) ->
+                    image
+                        empty
+                        Color.Red
+                        (int (b.Half.X * 2f), int (b.Half.Y * 2f))
+                        (int (b.Pos.X - b.Half.X + cameraOffset.X), int (b.Pos.Y - b.Half.Y + cameraOffset.Y)))
 
-    allTiles |> List.concat
+            match entity with
+            | Some s -> [ floor; yield! s ]
+            | None -> [ floor ])
 
-
-    //Option.iter
-    //    (fun (b: AABB) ->
-    //        spriteBatch.Draw(
-    //            empty,
-    //            Rectangle(
-    //                int (b.Pos.X - b.Half.X + cameraOffset.X),
-    //                int (b.Pos.Y - b.Half.Y + cameraOffset.Y),
-    //                int (b.Half.X * 2f),
-    //                int (b.Half.Y * 2f)
-    //            ),
-    //            Color.Red
-    //        ))
-    //    block.Collider
-    //)
+    allTiles |> List.concat //TODO: egh slow
 
 let view model (dispatch: Message -> unit) =
     [ yield onupdate (fun input -> dispatch (PhysicsTick input.totalGameTime))
