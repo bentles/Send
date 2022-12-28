@@ -97,11 +97,16 @@ let init (worldConfig: WorldConfig) =
         let pos = coordsToPos coords.X coords.Y half
 
         { FloorType = FloorType.Grass
-          Collider = Some {
-            Pos = pos
-            Half = Vector2(20f, 15f)
-          }
-          Entity = Some(initEntity timerSpriteConfig pos (Vector2(10f, 10f)) Vector2.Zero) }
+          Collider = None
+          Entity = Some(initEntity timerSpriteConfig pos (Vector2(10f, 10f)) Vector2.Zero) 
+        }
+
+    let createObserverOnGrass (coords:Vector2) =
+        let pos = coordsToPos coords.X coords.Y half
+
+        { FloorType = FloorType.Grass
+          Collider = None
+          Entity = Some(initEntity observerSpriteConfig pos (Vector2(10f, 10f)) Vector2.Zero) }
 
     let blocks =
         [| for yy in 0 .. (worldConfig.WorldTileLength - 1) do
@@ -110,14 +115,14 @@ let init (worldConfig: WorldConfig) =
 
                    match xx, yy with
                    | 2, 2 -> createTimerOnGrass (Vector2(2f))
-                   | 3, 3 -> createTimerOnGrass (Vector2(3f))
+                   | 3, 3 -> createObserverOnGrass (Vector2(3f))
                    | 5, 5 -> emptyMaker 5f 5f
                    | 5, 6 -> emptyMaker 5f 6f
                    | 7, 9 -> emptyMaker 7f 9f
                    | 8, 9 -> emptyMaker 8f 9f
                    | 6, 9 -> emptyMaker 6f 9f
                    | 7, 8 -> emptyMaker 7f 8f
-                   | x, y -> createNonCollidableTile FloorType.Grass |]
+                   | x, y -> createObserverOnGrass (Vector2(float32 x, float32 y)) |]
 
     { Tiles = blocks
       ChunkBlockLength = worldConfig.WorldTileLength
@@ -154,9 +159,10 @@ let renderWorld (model: Model) =
 
     let cameraOffset = -(halfScreenOffset model.CameraPos)
 
-    let allTiles =
-        model.Tiles
-        |> Array.mapi (fun i block ->
+    seq {
+        for i in 0 .. (model.Tiles.Length - 1) do
+            let block = model.Tiles[i]
+
             let texture =
                 match block.FloorType with
                 | FloorType.Grass -> grass
@@ -188,10 +194,9 @@ let renderWorld (model: Model) =
                         (int (b.Pos.X - b.Half.X + cameraOffset.X), int (b.Pos.Y - b.Half.Y + cameraOffset.Y)))
 
             match entity with
-            | Some s -> [ floor; yield! s ]
-            | None -> [ floor ])
-
-    allTiles |> List.concat //TODO: egh slow
+            | Some s -> yield floor; yield! s 
+            | None -> yield floor 
+    }
 
 let view model (dispatch: Message -> unit) =
     [ yield onupdate (fun input -> dispatch (PhysicsTick input.totalGameTime))

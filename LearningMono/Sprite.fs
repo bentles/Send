@@ -189,5 +189,4 @@ let update message model =
 let view model (cameraPos:Vector2) (dispatch: Message -> unit) =
     [ yield drawSprite model cameraPos
 
-      yield debugText $"X:{model.AnimationState}" (10, 30)
       yield onupdate (fun input -> dispatch (AnimTick input.totalGameTime)) ]
