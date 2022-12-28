@@ -77,11 +77,22 @@ let halfScreenOffset (camPos: Vector2) : Vector2 =
     Vector2.Subtract(camPos, Vector2(800f, 450f))
 
 let getCollidables (blocks: Tile[]) : AABB seq =
-    blocks |> Seq.choose (fun bl -> bl.Collider)
+    blocks
+    |> Seq.choose (fun block ->
+        match block.Collider with
+        | Some collider -> Some collider
+        | _ ->
+            match block.Entity with
+            | None -> None
+            | Some entity ->
+                match entity.Collider with
+                | Some collider -> Some collider
+                | None -> None)
 
 let init (worldConfig: WorldConfig) =
     let tileHalf = float32 (worldConfig.TileWidth / 2)
     let half = Vector2(tileHalf)
+
     let createCollidableTile t xx yy =
 
         { FloorType = t
@@ -93,15 +104,14 @@ let init (worldConfig: WorldConfig) =
           Collider = None
           Entity = None }
 
-    let createTimerOnGrass (coords:Vector2) =
+    let createTimerOnGrass (coords: Vector2) =
         let pos = coordsToPos coords.X coords.Y half
 
         { FloorType = FloorType.Grass
           Collider = None
-          Entity = Some(initEntity timerSpriteConfig pos (Vector2(10f, 10f)) Vector2.Zero) 
-        }
+          Entity = Some(initEntity timerSpriteConfig pos (Vector2(10f, 10f)) Vector2.Zero) }
 
-    let createObserverOnGrass (coords:Vector2) =
+    let createObserverOnGrass (coords: Vector2) =
         let pos = coordsToPos coords.X coords.Y half
 
         { FloorType = FloorType.Grass
@@ -114,6 +124,7 @@ let init (worldConfig: WorldConfig) =
                    let emptyMaker = createCollidableTile FloorType.Empty
 
                    match xx, yy with
+                   | 0, 0 -> createNonCollidableTile FloorType.Grass
                    | 2, 2 -> createTimerOnGrass (Vector2(2f))
                    | 3, 3 -> createObserverOnGrass (Vector2(3f))
                    | 5, 5 -> emptyMaker 5f 5f
@@ -194,8 +205,10 @@ let renderWorld (model: Model) =
                         (int (b.Pos.X - b.Half.X + cameraOffset.X), int (b.Pos.Y - b.Half.Y + cameraOffset.Y)))
 
             match entity with
-            | Some s -> yield floor; yield! s 
-            | None -> yield floor 
+            | Some s ->
+                yield floor
+                yield! s
+            | None -> yield floor
     }
 
 let view model (dispatch: Message -> unit) =
