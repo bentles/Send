@@ -29,13 +29,13 @@ let coordsToPos (xx: float32) (yy: float32) (half: Vector2) =
 
     Vector2(actualX, actualY)
 
-let createCollider (xx: float32) (yy: float32) (half: Vector2) =
+let createColliderFromCoords (xx: float32) (yy: float32) (half: Vector2) =
     { Pos = coordsToPos xx yy half
       Half = half }
 
 let initEntity (spriteConfig: SpriteConfig) (pos: Vector2) (half: Vector2) (offset: Vector2) =
     let sprite = Sprite.init pos spriteConfig
-    let collider = createCollider pos.X pos.Y half
+    let collider = { Pos = pos; Half = half }
 
     { Sprite = sprite
       Collider = Some collider }
@@ -94,10 +94,9 @@ let init (worldConfig: WorldConfig) =
     let half = Vector2(tileHalf)
 
     let createCollidableTile t xx yy =
-
         { FloorType = t
           Entity = None
-          Collider = Some(createCollider xx yy half) }
+          Collider = Some(createColliderFromCoords xx yy half) }
 
     let createNonCollidableTile t =
         { FloorType = t
@@ -121,18 +120,18 @@ let init (worldConfig: WorldConfig) =
     let blocks =
         [| for yy in 0 .. (worldConfig.WorldTileLength - 1) do
                for xx in 0 .. (worldConfig.WorldTileLength - 1) do
-                   let emptyMaker = createCollidableTile FloorType.Empty
+                   let emptyMaker = createNonCollidableTile FloorType.Grass
 
                    match xx, yy with
                    | 0, 0 -> createNonCollidableTile FloorType.Grass
                    | 2, 2 -> createTimerOnGrass (Vector2(2f))
                    | 3, 3 -> createObserverOnGrass (Vector2(3f))
-                   | 5, 5 -> emptyMaker 5f 5f
-                   | 5, 6 -> emptyMaker 5f 6f
-                   | 7, 9 -> emptyMaker 7f 9f
-                   | 8, 9 -> emptyMaker 8f 9f
-                   | 6, 9 -> emptyMaker 6f 9f
-                   | 7, 8 -> emptyMaker 7f 8f
+                   | 5, 5 -> emptyMaker// 5f 5f
+                   | 5, 6 -> emptyMaker// 5f 6f
+                   | 7, 9 -> emptyMaker// 7f 9f
+                   | 8, 9 -> emptyMaker// 8f 9f
+                   | 6, 9 -> emptyMaker// 6f 9f
+                   | 7, 8 -> emptyMaker// 7f 8f
                    | x, y -> createObserverOnGrass (Vector2(float32 x, float32 y)) |]
 
     { Tiles = blocks
