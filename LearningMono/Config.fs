@@ -58,7 +58,7 @@ type SpriteConfig =
 
 let playerConfig =
     { BigMaxVelocity = 2f
-      SmallMaxVelocity = 3.5f
+      SmallMaxVelocity = 4.5f
       Acc = 60f
       Slow = 40f
       AABBConfig =

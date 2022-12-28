@@ -7,16 +7,6 @@ open Config
 open Elmish
 open Collision
 
-
-type Entity =
-    { Sprite: Sprite.Model
-      Collider: AABB option }
-
-type EntityType =
-    | Rock
-    | Timer
-    | Observer
-
 let coordsToPos (xx: float32) (yy: float32) (half: Vector2) =
     let startX = 0f
     let startY = 0f
@@ -33,13 +23,6 @@ let createColliderFromCoords (xx: float32) (yy: float32) (half: Vector2) =
     { Pos = coordsToPos xx yy half
       Half = half }
 
-let initEntity (spriteConfig: SpriteConfig) (pos: Vector2) (half: Vector2) (offset: Vector2) =
-    let sprite = Sprite.init pos spriteConfig
-    let collider = { Pos = pos; Half = half }
-
-    { Sprite = sprite
-      Collider = Some collider }
-
 type FloorType =
     | Empty
     | Grass
@@ -48,7 +31,7 @@ type FloorType =
 type Tile =
     { FloorType: FloorType
       Collider: AABB option
-      Entity: Entity option }
+      Entity: Entity.Model option }
 
 type Model =
     { Tiles: Tile[]
@@ -108,31 +91,31 @@ let init (worldConfig: WorldConfig) =
 
         { FloorType = FloorType.Grass
           Collider = None
-          Entity = Some(initEntity timerSpriteConfig pos (Vector2(10f, 10f)) Vector2.Zero) }
+          Entity = Some(Entity.init timerSpriteConfig pos (Vector2(10f, 10f)) Vector2.Zero) }
 
     let createObserverOnGrass (coords: Vector2) =
         let pos = coordsToPos coords.X coords.Y half
 
         { FloorType = FloorType.Grass
           Collider = None
-          Entity = Some(initEntity observerSpriteConfig pos (Vector2(10f, 10f)) Vector2.Zero) }
+          Entity = Some(Entity.init observerSpriteConfig pos (Vector2(10f, 10f)) Vector2.Zero) }
 
     let blocks =
         [| for yy in 0 .. (worldConfig.WorldTileLength - 1) do
                for xx in 0 .. (worldConfig.WorldTileLength - 1) do
-                   let emptyMaker = createNonCollidableTile FloorType.Grass
+                   let grassTile = createNonCollidableTile FloorType.Grass
 
                    match xx, yy with
                    | 0, 0 -> createNonCollidableTile FloorType.Grass
                    | 2, 2 -> createTimerOnGrass (Vector2(2f))
                    | 3, 3 -> createObserverOnGrass (Vector2(3f))
-                   | 5, 5 -> emptyMaker// 5f 5f
-                   | 5, 6 -> emptyMaker// 5f 6f
-                   | 7, 9 -> emptyMaker// 7f 9f
-                   | 8, 9 -> emptyMaker// 8f 9f
-                   | 6, 9 -> emptyMaker// 6f 9f
-                   | 7, 8 -> emptyMaker// 7f 8f
-                   | x, y -> createObserverOnGrass (Vector2(float32 x, float32 y)) |]
+                   | 5, 5 -> grassTile// 5f 5f
+                   | 5, 6 -> grassTile// 5f 6f
+                   | 7, 9 -> grassTile// 7f 9f
+                   | 8, 9 -> grassTile// 8f 9f
+                   | 6, 9 -> grassTile// 6f 9f
+                   | 7, 8 -> grassTile// 7f 8f
+                   | x, y -> grassTile |]
 
     { Tiles = blocks
       ChunkBlockLength = worldConfig.WorldTileLength
@@ -192,7 +175,7 @@ let renderWorld (model: Model) =
 
             let entity =
                 block.Entity
-                |> Option.map (fun (entity: Entity) -> Sprite.view entity.Sprite -cameraOffset (fun f -> ()))
+                |> Option.map (fun (entity: Entity.Model) -> Sprite.view entity.Sprite -cameraOffset (fun f -> ()))
 
             let debug =
                 block.Collider

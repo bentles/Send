@@ -26,6 +26,8 @@ type Model =
       CharacterState: CharacterState
       Input: Vector2
 
+      Carrying: Entity.Model list
+
       //physics
       Pos: Vector2
       Acc: float32
@@ -243,4 +245,4 @@ let view model (cameraPos: Vector2) (dispatch: Message -> unit) =
 
       //IO
       yield directions Keys.Up Keys.Down Keys.Left Keys.Right (fun f -> dispatch (Input f))
-      yield onkeydown Keys.Z (fun f -> dispatch (TransformCharacter)) ]
+      yield onkeydown Keys.Space (fun f -> dispatch (TransformCharacter)) ]
