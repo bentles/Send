@@ -196,9 +196,9 @@ let animations newModel oldModel =
 
     let setPosMsg = Cmd.ofMsg (SpriteMessage(Sprite.SetPos newModel.Pos)) 
 
-    let carryCommands = updateCarryingPositions newModel.Carrying newModel.Pos newModel.CharacterState
+    let carryCommand = updateCarryingPositions newModel.Carrying newModel.Pos newModel.CharacterState
 
-    Cmd.batch [ setPosMsg; carryCommands; yield! animationCommands; yield! directionCommands ]
+    Cmd.batch [ setPosMsg; carryCommand; yield! animationCommands; yield! directionCommands ]
 
 let transformStart (characterState: CharacterState) =
     match characterState with
