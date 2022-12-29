@@ -45,6 +45,17 @@ let init x y (playerConfig: PlayerConfig) (spriteConfig:SpriteConfig) =
     { SpriteInfo = Sprite.init p spriteConfig
       CharacterState = Small true
       Input = Vector2.Zero
+      Carrying = [
+        Entity.initNoCollider observerSpriteConfig p 
+        Entity.initNoCollider observerSpriteConfig p 
+        Entity.initNoCollider observerSpriteConfig p 
+        Entity.initNoCollider observerSpriteConfig p 
+        Entity.initNoCollider observerSpriteConfig p 
+        Entity.initNoCollider observerSpriteConfig p 
+        Entity.initNoCollider observerSpriteConfig p 
+        Entity.initNoCollider observerSpriteConfig p 
+        Entity.initNoCollider observerSpriteConfig p 
+      ]
 
       Pos = p
       MaxVelocity = playerConfig.SmallMaxVelocity
@@ -67,6 +78,7 @@ type Message =
     | TransformCharacter
     | PhysicsTick of info: PhysicsInfo
     | SpriteMessage of Sprite.Message
+    | CarryingMessage of Sprite.Message
 
 let mutable lastTick = 0L // we use a mutable tick counter here in order to ensure precision
 
@@ -129,7 +141,11 @@ let inputAffectsVelocityAssertions (input:Vector2) (oldVel:Vector2) (newVel:Vect
         newVel.Length() <= oldVel.Length() + AcceptableError
     else
         Vector2.Dot(input, newVel) >= Vector2.Dot(input, newVel) - AcceptableError
-        
+
+let updateCarryingPositions (carrying: Entity.Model list) (pos:Vector2) (charState: CharacterState) =
+    carrying |> List.mapi (fun i c -> 
+        Cmd.ofMsg (CarryingMessage (Sprite.Message.SetPos pos))
+    )
 
 let physics model (info: PhysicsInfo) =
     let dt = (float32 (info.Time - lastTick)) / 1000f
@@ -179,8 +195,11 @@ let animations newModel oldModel =
         | (true, false, Small _) -> [ (Cmd.ofMsg << SpriteMessage) Sprite.Stop ]
         | _ -> []
 
-    let setPosMsg = Cmd.ofMsg (SpriteMessage(Sprite.SetPos newModel.Pos))
-    Cmd.batch [ setPosMsg; yield! animationCommands; yield! directionCommands ]
+    let setPosMsg = Cmd.ofMsg (SpriteMessage(Sprite.SetPos newModel.Pos)) 
+
+    let carryCommands = updateCarryingPositions newModel.Carrying newModel.Pos newModel.CharacterState
+
+    Cmd.batch [ setPosMsg; yield! carryCommands; yield! animationCommands; yield! directionCommands ]
 
 let transformStart (characterState: CharacterState) =
     match characterState with
@@ -220,6 +239,13 @@ let update message model =
             | Sprite.None -> model, Cmd.none
 
         { model with SpriteInfo = newSprite }, cmd
+    | CarryingMessage sm ->
+        let newCarrying = 
+            model.Carrying |> List.mapi (fun i  carry -> 
+                let (newSprite, _) = Sprite.update sm carry.Sprite
+                { carry with Sprite = newSprite }
+            )
+        { model with Carrying = newCarrying }, Cmd.none
     | TransformCharacter ->
         let (newState, transformAnimation) = transformStart model.CharacterState
 
@@ -233,14 +259,28 @@ let renderAABB (aabb: AABB) (cameraPos:Vector2) =
         (int (aabb.Half.X * 2f), int (aabb.Half.Y * 2f))
         (int (aabb.Pos.X - aabb.Half.X - cameraPos.X), int (aabb.Pos.Y - aabb.Half.Y - cameraPos.Y))
 
+let renderCarrying (carrying:Entity.Model list) (cameraPos:Vector2) (charState: CharacterState) = 
+    let offsetStart =
+        match charState with 
+        | Small true -> Vector2(0f, 40f) 
+        | Small false -> Vector2(0f, 70f) 
+        | _ -> Vector2(0f, 55f)
+
+    carrying |> 
+        List.indexed |>
+        List.collect (fun (i, c) -> 
+            let offSetPos = cameraPos + offsetStart + (Vector2(0f, 25f) * (float32 i))
+            Sprite.view c.Sprite offSetPos (fun f -> ()) )
+
 let view model (cameraPos: Vector2) (dispatch: Message -> unit) =
     [
 
       //render
-      yield! Sprite.view model.SpriteInfo (cameraPos: Vector2) (SpriteMessage >> dispatch)
-      yield debugText $"X:{model.Pos.X} \nY:{model.Pos.Y}" (10, 200)
+      yield! Sprite.view model.SpriteInfo cameraPos (SpriteMessage >> dispatch)
+      yield! renderCarrying model.Carrying cameraPos model.CharacterState
 
       //debug
+      yield debugText $"X:{model.Pos.X} \nY:{model.Pos.Y}" (10, 200)
       //yield renderAABB (collider model.Pos model.CollisionInfo) cameraPos
 
       //IO

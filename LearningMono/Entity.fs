@@ -19,3 +19,8 @@ let init (spriteConfig: SpriteConfig) (pos: Vector2) (half: Vector2) (offset: Ve
 
     { Sprite = sprite
       Collider = Some collider }
+
+let initNoCollider (spriteConfig: SpriteConfig) (pos: Vector2) =
+    { Sprite = Sprite.init pos spriteConfig 
+      Collider = None  
+    }
