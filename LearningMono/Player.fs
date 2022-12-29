@@ -143,9 +143,8 @@ let inputAffectsVelocityAssertions (input:Vector2) (oldVel:Vector2) (newVel:Vect
         Vector2.Dot(input, newVel) >= Vector2.Dot(input, newVel) - AcceptableError
 
 let updateCarryingPositions (carrying: Entity.Model list) (pos:Vector2) (charState: CharacterState) =
-    carrying |> List.mapi (fun i c -> 
-        Cmd.ofMsg (CarryingMessage (Sprite.Message.SetPos pos))
-    )
+    Cmd.ofMsg (CarryingMessage (Sprite.Message.SetPos pos))
+    
 
 let physics model (info: PhysicsInfo) =
     let dt = (float32 (info.Time - lastTick)) / 1000f
@@ -199,7 +198,7 @@ let animations newModel oldModel =
 
     let carryCommands = updateCarryingPositions newModel.Carrying newModel.Pos newModel.CharacterState
 
-    Cmd.batch [ setPosMsg; yield! carryCommands; yield! animationCommands; yield! directionCommands ]
+    Cmd.batch [ setPosMsg; carryCommands; yield! animationCommands; yield! directionCommands ]
 
 let transformStart (characterState: CharacterState) =
     match characterState with
