@@ -19,6 +19,13 @@ let coordsToPos (xx: float32) (yy: float32) (half: Vector2) =
 
     Vector2(actualX, actualY)
 
+let posToCoords (pos:Vector2) : (int * int) =
+    let x = int (pos.X / float32 worldConfig.TileWidth)
+    let y = int (pos.Y / float32 worldConfig.TileWidth)
+    (x, y)
+
+
+
 let createColliderFromCoords (xx: float32) (yy: float32) (half: Vector2) =
     { Pos = coordsToPos xx yy half
       Half = half }
@@ -71,6 +78,14 @@ let getCollidables (blocks: Tile[]) : AABB seq =
                 match entity.Collider with
                 | Some collider -> Some collider
                 | None -> None)
+
+let getEntityAtPos (pos:Vector2) (tiles:Tile[]) : Entity.Model option =
+    let (x,y) = posToCoords pos    
+    if x > worldConfig.WorldTileLength || y > worldConfig.WorldTileLength then
+        None
+    else
+        let index = y * worldConfig.WorldTileLength + x
+        tiles[index].Entity
 
 let init (worldConfig: WorldConfig) =
     let tileHalf = float32 (worldConfig.TileWidth / 2)
