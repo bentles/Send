@@ -8,6 +8,7 @@ open Elmish
 open Collision
 open Debug
 open Input
+open FsToolkit.ErrorHandling
 
 let coordsToPos (xx: float32) (yy: float32) (half: Vector2) =
     let startX = 0f
@@ -62,6 +63,7 @@ type PlayerModel =
       Carrying: Entity.Model list
 
       //physics
+      Facing: Vector2
       Pos: Vector2
       Acc: float32
       MaxVelocity: float32
@@ -82,6 +84,7 @@ let initPlayer x y (playerConfig: PlayerConfig) (spriteConfig: SpriteConfig) =
           Entity.initNoCollider Entity.Observer p
           Entity.initNoCollider Entity.Timer p
           Entity.initNoCollider Entity.Timer p ]
+      Facing = Vector2(1f, 0f)
       Pos = p
       MaxVelocity = playerConfig.SmallMaxVelocity
       Acc = playerConfig.Acc
@@ -195,15 +198,25 @@ let physics model (info: PhysicsInfo) =
     let pos =
         collide preCollisionPos model.Pos model.CollisionInfo info.PossibleObstacles
 
+    let facing = Vector2((float32 << sign) vel.X, (float32 << sign) vel.Y)
+
+    //halting will not change the direction faced :)
+    let facing =
+        if facing = Vector2.Zero then
+            model.Facing
+        else
+            Vector2.Normalize(facing)
+
     { model with
+        Facing = facing
         Vel = vel
         Pos = pos
         IsMoving = velLength > 0f }
 
 let animations newModel oldModel =
     let directionCommands =
-        if sign (newModel.Vel.X) <> sign (oldModel.Vel.X) && newModel.Vel.X <> 0f then
-            [ Cmd.ofMsg (SpriteMessage(Sprite.SetDirection(newModel.Vel.X < 0f))) ]
+        if newModel.Facing.X <> oldModel.Facing.X then
+            [ Cmd.ofMsg (SpriteMessage(Sprite.SetDirection(newModel.Facing.X < 0f))) ]
         else
             []
 
@@ -302,7 +315,12 @@ let getCollidables (blocks: Tile[]) : AABB seq =
 let getTileAtPos (pos: Vector2) (tiles: Tile[]) : (Tile * int) option =
     let (x, y) = posToCoords pos
 
-    if x >= worldConfig.WorldTileLength || x < 0 ||  y >= worldConfig.WorldTileLength || y < 0 then
+    if
+        x >= worldConfig.WorldTileLength
+        || x < 0
+        || y >= worldConfig.WorldTileLength
+        || y < 0
+    then
         None
     else
         let index = y * worldConfig.WorldTileLength + x
@@ -417,7 +435,7 @@ let updatePlayer (message: PlayerMessage) (worldModel: Model) =
 
 let update (message: Message) (model: Model) : Model * Cmd<Message> =
     let player = model.Player
-    let targetOffset = Vector2(55f, 0f)
+    let targetOffset = 60f
 
     match message with
     | PlayerMessage playerMsg ->
@@ -426,7 +444,7 @@ let update (message: Message) (model: Model) : Model * Cmd<Message> =
     | PickUpEntity ->
         match player.CharacterState with
         | Small _ ->
-            let tileAndIndex = getTileAtPos (player.Pos + targetOffset) model.Tiles // need the concept of 'facing' to add an offset here :'(
+            let tileAndIndex = getTileAtPos (player.Pos + (targetOffset * player.Facing)) model.Tiles // need the concept of 'facing' to add an offset here :'(
 
             match tileAndIndex with
             | Some({ Entity = Some entity } as tile, i) ->
@@ -437,7 +455,7 @@ let update (message: Message) (model: Model) : Model * Cmd<Message> =
     | PlaceEntity ->
         match player.CharacterState with
         | Small _ ->
-            let target = player.Pos + targetOffset // might have to build this into player??
+            let target = player.Pos + (targetOffset * player.Facing) // might have to build this into player??
             let tileAndIndex = getTileAtPos target model.Tiles // need the concept of 'facing' to add an offset here :'(
 
             match tileAndIndex with
@@ -446,7 +464,7 @@ let update (message: Message) (model: Model) : Model * Cmd<Message> =
                 | entity :: rest ->
                     let rounded = posRounded target worldConfig
 
-                    model.Tiles[i] <- { tile with Entity = Some (Entity.init entity.Type rounded) } //TODO: no mutation
+                    model.Tiles[i] <- { tile with Entity = Some(Entity.init entity.Type rounded) } //TODO: no mutation
                     { model with Player = { player with Carrying = rest } }, Cmd.none
                 | _ -> model, Cmd.none
             | _ -> model, Cmd.none
