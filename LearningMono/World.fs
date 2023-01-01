@@ -78,10 +78,10 @@ let initPlayer x y (playerConfig: PlayerConfig) (spriteConfig: SpriteConfig) =
       CharacterState = Small true
       Input = Vector2.Zero
       Carrying =
-        [ Entity.initNoCollider observerSpriteConfig p
-          Entity.initNoCollider observerSpriteConfig p
-          Entity.initNoCollider timerSpriteConfig p
-          Entity.initNoCollider timerSpriteConfig p ]
+        [ Entity.initNoCollider Entity.Observer p
+          Entity.initNoCollider Entity.Observer p
+          Entity.initNoCollider Entity.Timer p
+          Entity.initNoCollider Entity.Timer p ]
       Pos = p
       MaxVelocity = playerConfig.SmallMaxVelocity
       Acc = playerConfig.Acc
@@ -277,7 +277,6 @@ type Model =
       CameraPos: Vector2 }
 
 
-
 let updateCameraPos (playerPos: Vector2) (oldCamPos: Vector2) : Vector2 =
     let diff = Vector2.Subtract(playerPos, oldCamPos)
     let halfDiff = Vector2.Multiply(diff, 0.25f)
@@ -303,7 +302,7 @@ let getCollidables (blocks: Tile[]) : AABB seq =
 let getTileAtPos (pos: Vector2) (tiles: Tile[]) : (Tile * int) option =
     let (x, y) = posToCoords pos
 
-    if x > worldConfig.WorldTileLength || y > worldConfig.WorldTileLength then
+    if x >= worldConfig.WorldTileLength || x < 0 ||  y >= worldConfig.WorldTileLength || y < 0 then
         None
     else
         let index = y * worldConfig.WorldTileLength + x
@@ -328,14 +327,14 @@ let init (worldConfig: WorldConfig) =
 
         { FloorType = FloorType.Grass
           Collider = None
-          Entity = Some(Entity.init timerSpriteConfig pos (Vector2(10f, 10f)) Vector2.Zero) }
+          Entity = Some(Entity.init Entity.Timer pos) }
 
     let createObserverOnGrass (coords: Vector2) =
         let pos = coordsToPos coords.X coords.Y half
 
         { FloorType = FloorType.Grass
           Collider = None
-          Entity = Some(Entity.init observerSpriteConfig pos (Vector2(10f, 10f)) Vector2.Zero) }
+          Entity = Some(Entity.init Entity.Observer pos) }
 
     let blocks =
         [| for yy in 0 .. (worldConfig.WorldTileLength - 1) do
@@ -417,35 +416,37 @@ let updatePlayer (message: PlayerMessage) (worldModel: Model) =
 
 
 let update (message: Message) (model: Model) : Model * Cmd<Message> =
+    let player = model.Player
+    let targetOffset = Vector2(55f, 0f)
+
     match message with
     | PlayerMessage playerMsg ->
         let (newPlayerModel, playerCommand) = updatePlayer playerMsg model
         { model with Player = newPlayerModel }, Cmd.map PlayerMessage playerCommand
     | PickUpEntity ->
-        let player = model.Player
-
         match player.CharacterState with
         | Small _ ->
-            let tileAndIndex = getTileAtPos (player.Pos + Vector2(25f, 0f)) model.Tiles // need the concept of 'facing' to add an offset here :'(
+            let tileAndIndex = getTileAtPos (player.Pos + targetOffset) model.Tiles // need the concept of 'facing' to add an offset here :'(
 
             match tileAndIndex with
             | Some({ Entity = Some entity } as tile, i) ->
-                model.Tiles[i] <- { tile with Entity = None } // TODO: non-mutation solution pls brain
+                model.Tiles[i] <- { tile with Entity = None } // TODO: no mutation
                 { model with Player = { player with Carrying = entity :: player.Carrying } }, Cmd.none
             | _ -> model, Cmd.none
         | _ -> model, Cmd.none
     | PlaceEntity ->
-        let player = model.Player
-
         match player.CharacterState with
         | Small _ ->
-            let tileAndIndex = getTileAtPos (player.Pos + Vector2(25f, 0f)) model.Tiles // need the concept of 'facing' to add an offset here :'(
+            let target = player.Pos + targetOffset // might have to build this into player??
+            let tileAndIndex = getTileAtPos target model.Tiles // need the concept of 'facing' to add an offset here :'(
 
             match tileAndIndex with
             | Some({ Entity = None } as tile, i) ->
                 match player.Carrying with
                 | entity :: rest ->
-                    model.Tiles[i] <- { tile with Entity = Some entity } //TODO: no mutation
+                    let rounded = posRounded target worldConfig
+
+                    model.Tiles[i] <- { tile with Entity = Some (Entity.init entity.Type rounded) } //TODO: no mutation
                     { model with Player = { player with Carrying = rest } }, Cmd.none
                 | _ -> model, Cmd.none
             | _ -> model, Cmd.none
@@ -525,8 +526,8 @@ let renderWorld (model: Model) =
             | Some s ->
                 yield floor
                 yield! s
-                //yield! debug
-                //yield! entityDebug
+            //yield! debug
+            //yield! entityDebug
             | None -> yield floor
     }
 

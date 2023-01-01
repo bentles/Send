@@ -4,23 +4,37 @@ open Collision
 open Config
 open Microsoft.Xna.Framework
 
-type Model =
-    { Sprite: Sprite.Model
-      Collider: AABB option }
-
 type EntityType =
     | Rock
     | Timer
     | Observer
 
-let init (spriteConfig: SpriteConfig) (pos: Vector2) (half: Vector2) (offset: Vector2) =
-    let sprite = Sprite.init pos spriteConfig
-    let collider = { Pos = pos; Half = half }
+type Model =
+    { Sprite: Sprite.Model
+      Collider: AABB option
+      Type: EntityType }
 
-    { Sprite = sprite
+let getSpriteConfig (eType: EntityType) : SpriteConfig =
+    match eType with
+    | Rock -> rockSpriteConfig
+    | Timer -> timerSpriteConfig
+    | Observer -> observerSpriteConfig
+
+let getCollider (eType: EntityType) (pos: Vector2) : AABB =
+    match eType with
+    | Rock -> { Pos = pos; Half = Vector2(10f, 10f) }
+    | Timer -> { Pos = pos; Half = Vector2(10f, 10f) }
+    | Observer -> { Pos = pos; Half = Vector2(10f, 10f) }
+
+let init (entityType: EntityType) (pos: Vector2) =
+    let sprite = Sprite.init pos (getSpriteConfig entityType)
+    let collider = getCollider entityType pos
+    { 
+      Type = entityType
+      Sprite = sprite
       Collider = Some collider }
 
-let initNoCollider (spriteConfig: SpriteConfig) (pos: Vector2) =
-    { Sprite = Sprite.init pos spriteConfig 
-      Collider = None  
-    }
+let initNoCollider (entityType: EntityType) (pos: Vector2) =
+    { Type = entityType
+      Sprite = Sprite.init pos (getSpriteConfig entityType)
+      Collider = None }

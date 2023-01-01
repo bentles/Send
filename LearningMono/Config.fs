@@ -93,6 +93,13 @@ let observerImage =
       TextureName = "observer"
       Offset = Vector2(0f, 0f) }
 
+let rockImage =
+    { PixelSize = (50, 50)
+      Rows = 1
+      Columns = 1
+      TextureName = "rock"
+      Offset = Vector2(0f, 0f) }
+
 let imageSpriteConfig =
     { Looping = false
       Speed = 0
@@ -145,5 +152,11 @@ let timerSpriteConfig =
 let observerSpriteConfig =
     SingleSpriteConfig
         { Image = observerImage
+          Tint = Color.White
+          FrameLength = 300L }
+
+let rockSpriteConfig =
+    SingleSpriteConfig
+        { Image = rockImage
           Tint = Color.White
           FrameLength = 300L }
