@@ -346,7 +346,7 @@ let init (worldConfig: WorldConfig) =
                    | 0, 0 -> createNonCollidableTile FloorType.Grass
                    | 2, 2 -> createTimerOnGrass (Vector2(2f))
                    | 3, 3 -> createObserverOnGrass (Vector2(3f))
-                   | 5, 5 -> grassTile // 5f 5f
+                   | 5, 5 -> createCollidableTile FloorType.Empty 5f 5f
                    | 5, 6 -> grassTile // 5f 6f
                    | 7, 9 -> grassTile // 7f 9f
                    | 8, 9 -> grassTile // 8f 9f
@@ -508,11 +508,25 @@ let renderWorld (model: Model) =
                         Color.Red
                         (int (b.Half.X * 2f), int (b.Half.Y * 2f))
                         (int (b.Pos.X - b.Half.X + cameraOffset.X), int (b.Pos.Y - b.Half.Y + cameraOffset.Y)))
+                |> Option.toList
+
+            let entityDebug =
+                block.Entity
+                |> Option.bind (fun e -> e.Collider)
+                |> Option.map (fun (b: AABB) ->
+                    image
+                        empty
+                        Color.Red
+                        (int (b.Half.X * 2f), int (b.Half.Y * 2f))
+                        (int (b.Pos.X - b.Half.X + cameraOffset.X), int (b.Pos.Y - b.Half.Y + cameraOffset.Y)))
+                |> Option.toList
 
             match entity with
             | Some s ->
                 yield floor
                 yield! s
+                //yield! debug
+                //yield! entityDebug
             | None -> yield floor
     }
 
