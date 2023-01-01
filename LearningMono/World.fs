@@ -26,6 +26,11 @@ let posToCoords (pos: Vector2) : (int * int) =
     let y = int (pos.Y / float32 worldConfig.TileWidth)
     (x, y)
 
+let posRounded (pos:Vector2) (worldConfig:WorldConfig) =
+    let x = (floor (pos.X / float32 worldConfig.TileWidth)) *  float32 worldConfig.TileWidth
+    let y = (floor (pos.Y / float32 worldConfig.TileWidth)) * float32 worldConfig.TileWidth
+    Vector2(x,y) + Vector2(float32  (worldConfig.TileWidth / 2))    
+
 let createColliderFromCoords (xx: float32) (yy: float32) (half: Vector2) =
     { Pos = coordsToPos xx yy half
       Half = half }
@@ -301,7 +306,7 @@ let getTileAtPos (pos: Vector2) (tiles: Tile[]) : (Tile * int) option =
         None
     else
         let index = y * worldConfig.WorldTileLength + x
-        Some (tiles[index], index)
+        Some(tiles[index], index)
 
 let init (worldConfig: WorldConfig) =
     let tileHalf = float32 (worldConfig.TileWidth / 2)
@@ -359,6 +364,7 @@ let init (worldConfig: WorldConfig) =
 type Message =
     | PlayerMessage of PlayerMessage
     | PickUpEntity
+    | PlaceEntity
     | PhysicsTick of time: int64
 
 
@@ -423,13 +429,32 @@ let update (message: Message) (model: Model) : Model * Cmd<Message> =
 
             match tileAndIndex with
             | None -> model, Cmd.none
-            | Some (tile, i) ->
+            | Some(tile, i) ->
                 match tile.Entity with
                 | None -> model, Cmd.none
                 | Some entity ->
                     // TODO: non-mutation solution pls brain
                     model.Tiles[i] <- { tile with Entity = None }
                     { model with Player = { player with Carrying = entity :: player.Carrying } }, Cmd.none
+        | _ -> model, Cmd.none //can't do stuff while transforming
+    | PlaceEntity ->
+        let player = model.Player
+
+        match player.CharacterState with
+        | Small s ->
+            let tileAndIndex = getTileAtPos (player.Pos + Vector2(25f, 0f)) model.Tiles // need the concept of 'facing' to add an offset here :'(
+
+            match tileAndIndex with
+            | None -> model, Cmd.none
+            | Some(tile, i) ->
+                match tile.Entity with
+                | Some _ -> model, Cmd.none // can't place on another entity
+                | None ->
+                    match player.Carrying with
+                    | entity :: rest ->                        
+                        model.Tiles[i] <- { tile with Entity = Some entity } //TODO: no mutation
+                        { model with Player = { player with Carrying = rest } }, Cmd.none
+                    | _ -> model, Cmd.none
         | _ -> model, Cmd.none //can't do stuff while transforming
     | PhysicsTick time ->
         //TODO: get a list of things the player could interact with
@@ -516,4 +541,5 @@ let view model (dispatch: Message -> unit) =
 
       yield! renderWorld model
       yield onkeydown Keys.Z (fun _ -> dispatch (PickUpEntity))
+      yield onkeydown Keys.X (fun _ -> dispatch (PlaceEntity))
       yield! viewPlayer model.Player (halfScreenOffset model.CameraPos) (PlayerMessage >> dispatch) ]
