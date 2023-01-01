@@ -24,8 +24,6 @@ let posToCoords (pos:Vector2) : (int * int) =
     let y = int (pos.Y / float32 worldConfig.TileWidth)
     (x, y)
 
-
-
 let createColliderFromCoords (xx: float32) (yy: float32) (half: Vector2) =
     { Pos = coordsToPos xx yy half
       Half = half }

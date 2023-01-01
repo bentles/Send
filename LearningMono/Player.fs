@@ -1,5 +1,4 @@
-﻿[<RequireQualifiedAccess>]
-module Player
+﻿module Player
 
 open Elmish
 open Xelmish.Viewables
@@ -48,7 +47,6 @@ let init x y (playerConfig: PlayerConfig) (spriteConfig: SpriteConfig) =
           Entity.initNoCollider observerSpriteConfig p
           Entity.initNoCollider timerSpriteConfig p
           Entity.initNoCollider timerSpriteConfig p ]
-
       Pos = p
       MaxVelocity = playerConfig.SmallMaxVelocity
       Acc = playerConfig.Acc
@@ -281,7 +279,6 @@ let renderCarrying (carrying: Entity.Model list) (cameraPos: Vector2) (charState
 
 let view model (cameraPos: Vector2) (dispatch: Message -> unit) =
     [
-
       //render
       yield! Sprite.view model.SpriteInfo cameraPos (SpriteMessage >> dispatch)
       yield! renderCarrying model.Carrying cameraPos model.CharacterState
