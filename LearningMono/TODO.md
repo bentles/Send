@@ -7,12 +7,13 @@ TODO:
 - quick check for collision exclusion of far away objects
 
 DOING:
+- concept of facing for the player
+- simplify away the pre-sending potential collider objects since world+player are now one
+
+DONE:
 - make the world
 	- entities vs blocks?
 		- pick up entities mechanic
-	
-
-DONE:
 
 		- remove chunks until chunks are needed
 - make transformation animation work correctly
