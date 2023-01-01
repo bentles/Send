@@ -26,10 +26,14 @@ let posToCoords (pos: Vector2) : (int * int) =
     let y = int (pos.Y / float32 worldConfig.TileWidth)
     (x, y)
 
-let posRounded (pos:Vector2) (worldConfig:WorldConfig) =
-    let x = (floor (pos.X / float32 worldConfig.TileWidth)) *  float32 worldConfig.TileWidth
-    let y = (floor (pos.Y / float32 worldConfig.TileWidth)) * float32 worldConfig.TileWidth
-    Vector2(x,y) + Vector2(float32  (worldConfig.TileWidth / 2))    
+let posRounded (pos: Vector2) (worldConfig: WorldConfig) =
+    let x =
+        (floor (pos.X / float32 worldConfig.TileWidth)) * float32 worldConfig.TileWidth
+
+    let y =
+        (floor (pos.Y / float32 worldConfig.TileWidth)) * float32 worldConfig.TileWidth
+
+    Vector2(x, y) + Vector2(float32 (worldConfig.TileWidth / 2))
 
 let createColliderFromCoords (xx: float32) (yy: float32) (half: Vector2) =
     { Pos = coordsToPos xx yy half
@@ -293,11 +297,8 @@ let getCollidables (blocks: Tile[]) : AABB seq =
         | Some collider -> Some collider
         | _ ->
             match block.Entity with
-            | None -> None
-            | Some entity ->
-                match entity.Collider with
-                | Some collider -> Some collider
-                | None -> None)
+            | Some { Collider = collider } -> collider
+            | _ -> None)
 
 let getTileAtPos (pos: Vector2) (tiles: Tile[]) : (Tile * int) option =
     let (x, y) = posToCoords pos
@@ -424,38 +425,31 @@ let update (message: Message) (model: Model) : Model * Cmd<Message> =
         let player = model.Player
 
         match player.CharacterState with
-        | Small s ->
+        | Small _ ->
             let tileAndIndex = getTileAtPos (player.Pos + Vector2(25f, 0f)) model.Tiles // need the concept of 'facing' to add an offset here :'(
 
             match tileAndIndex with
-            | None -> model, Cmd.none
-            | Some(tile, i) ->
-                match tile.Entity with
-                | None -> model, Cmd.none
-                | Some entity ->
-                    // TODO: non-mutation solution pls brain
-                    model.Tiles[i] <- { tile with Entity = None }
-                    { model with Player = { player with Carrying = entity :: player.Carrying } }, Cmd.none
-        | _ -> model, Cmd.none //can't do stuff while transforming
+            | Some({ Entity = Some entity } as tile, i) ->
+                model.Tiles[i] <- { tile with Entity = None } // TODO: non-mutation solution pls brain
+                { model with Player = { player with Carrying = entity :: player.Carrying } }, Cmd.none
+            | _ -> model, Cmd.none
+        | _ -> model, Cmd.none
     | PlaceEntity ->
         let player = model.Player
 
         match player.CharacterState with
-        | Small s ->
+        | Small _ ->
             let tileAndIndex = getTileAtPos (player.Pos + Vector2(25f, 0f)) model.Tiles // need the concept of 'facing' to add an offset here :'(
 
             match tileAndIndex with
-            | None -> model, Cmd.none
-            | Some(tile, i) ->
-                match tile.Entity with
-                | Some _ -> model, Cmd.none // can't place on another entity
-                | None ->
-                    match player.Carrying with
-                    | entity :: rest ->                        
-                        model.Tiles[i] <- { tile with Entity = Some entity } //TODO: no mutation
-                        { model with Player = { player with Carrying = rest } }, Cmd.none
-                    | _ -> model, Cmd.none
-        | _ -> model, Cmd.none //can't do stuff while transforming
+            | Some({ Entity = None } as tile, i) ->
+                match player.Carrying with
+                | entity :: rest ->
+                    model.Tiles[i] <- { tile with Entity = Some entity } //TODO: no mutation
+                    { model with Player = { player with Carrying = rest } }, Cmd.none
+                | _ -> model, Cmd.none
+            | _ -> model, Cmd.none
+        | _ -> model, Cmd.none
     | PhysicsTick time ->
         //TODO: get a list of things the player could interact with
         let (info: PhysicsInfo) =
