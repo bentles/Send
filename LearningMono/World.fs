@@ -58,7 +58,9 @@ type CollisionInfo =
 type PlayerModel =
     { SpriteInfo: Sprite.Model
       CharacterState: CharacterState
+
       Input: Vector2
+      Holding: bool
 
       Carrying: Entity.Model list
       Target: Vector2
@@ -80,11 +82,13 @@ let initPlayer x y (playerConfig: PlayerConfig) (spriteConfig: SpriteConfig) =
     { SpriteInfo = Sprite.init p spriteConfig
       CharacterState = Small true
       Input = Vector2.Zero
+      Holding = false
+
       Carrying =
-        [ Entity.initNoCollider Entity.Observer p
-          Entity.initNoCollider Entity.Observer p
-          Entity.initNoCollider Entity.Timer p
-          Entity.initNoCollider Entity.Timer p ]
+          [ Entity.initNoCollider Entity.Observer p
+            Entity.initNoCollider Entity.Observer p
+            Entity.initNoCollider Entity.Timer p
+            Entity.initNoCollider Entity.Timer p ]
       Facing = Vector2(1f, 0f)
       Target = p + 60f * Vector2(1f, 0f)
       Pos = p
@@ -104,6 +108,7 @@ type PhysicsInfo =
 type PlayerMessage =
     | Input of dir: Vector2
     | TransformCharacter
+    | Hold of bool
     | PlayerPhysicsTick of info: PhysicsInfo
     | SpriteMessage of Sprite.Message
     | CarryingMessage of Sprite.Message
@@ -200,7 +205,8 @@ let playerPhysics model (info: PhysicsInfo) =
     let pos =
         collide preCollisionPos model.Pos model.CollisionInfo info.PossibleObstacles
 
-    let facing = Vector2((float32 << sign) vel.X, (float32 << sign) vel.Y)
+    let facing =
+        Vector2((float32 << sign) model.Input.X, (float32 << sign) model.Input.Y)
 
     //halting will not change the direction faced :)
     let facing =
@@ -211,12 +217,20 @@ let playerPhysics model (info: PhysicsInfo) =
 
     let target = pos + (60f * facing) + Vector2(0f, 20f)
 
-    { model with
-        Target = target
-        Facing = facing
-        Vel = vel
-        Pos = pos
-        IsMoving = velLength > 0f }
+    if model.Holding then
+        { model with
+            Target = target
+            Facing = facing
+            Vel = Vector2.Zero
+            Pos = model.Pos
+            IsMoving = false }
+    else
+        { model with
+            Target = target
+            Facing = facing
+            Vel = vel
+            Pos = pos
+            IsMoving = velLength > 0f }
 
 let playerAnimations newModel oldModel =
     let directionCommands =
@@ -444,10 +458,12 @@ let updatePlayer (message: PlayerMessage) (worldModel: Model) =
 
         { model with CharacterState = newState },
         (Cmd.ofMsg << SpriteMessage << Sprite.SwitchAnimation) (transformAnimation, 80, true)
+    | Hold holding -> { model with Holding = holding }, Cmd.none
 
 
 let update (message: Message) (model: Model) : Model * Cmd<Message> =
     let player = model.Player
+
     match message with
     | PlayerMessage playerMsg ->
         let (newPlayerModel, playerCommand) = updatePlayer playerMsg model
@@ -529,7 +545,7 @@ let renderWorld (model: Model) =
             let color =
                 option {
                     let! (tile, ind) = model.PlayerTarget
-                    let! target = if i = ind then Some tile else None                    
+                    let! target = if i = ind then Some tile else None
                     let illegal = Option.isSome target.Collider || Option.isSome target.Entity
                     return if illegal then Color.Orange else Color.Green
                 }
@@ -584,7 +600,11 @@ let viewPlayer model (cameraPos: Vector2) (dispatch: PlayerMessage -> unit) =
 
       //IO
       yield directions Keys.Up Keys.Down Keys.Left Keys.Right (fun f -> dispatch (Input f))
-      yield onkeydown Keys.Space (fun _ -> dispatch (TransformCharacter)) ]
+      yield onkeydown Keys.Space (fun _ -> dispatch (TransformCharacter))
+      yield onkeydown Keys.LeftControl (fun _ -> dispatch (Hold true))
+      yield onkeyup Keys.LeftControl (fun _ -> dispatch (Hold false))
+
+      ]
 
 let view model (dispatch: Message -> unit) =
     [ yield onupdate (fun input -> dispatch (PhysicsTick input.totalGameTime))
