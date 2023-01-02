@@ -6,6 +6,7 @@ TODO:
 - nicer toggling of debug sprites
 - quick check for collision exclusion of far away objects
 - simplify away the pre-sending potential collider objects since world+player are now one
+- use the stopped animation
 
 DOING:
 - sprites for more directions pls
