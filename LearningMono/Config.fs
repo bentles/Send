@@ -73,8 +73,8 @@ let bigCharImage =
       Offset = Vector2.Zero }
 
 let smallCharImage =
-    { PixelSize = (416, 192)
-      Rows = 3
+    { PixelSize = (416, 256)
+      Rows = 4
       Columns = 8
       TextureName = "smallChar"
       Offset = Vector2(0f, -18f) }
