@@ -61,6 +61,7 @@ type PlayerModel =
       Input: Vector2
 
       Carrying: Entity.Model list
+      Target: Vector2
 
       //physics
       Facing: Vector2
@@ -85,6 +86,7 @@ let initPlayer x y (playerConfig: PlayerConfig) (spriteConfig: SpriteConfig) =
           Entity.initNoCollider Entity.Timer p
           Entity.initNoCollider Entity.Timer p ]
       Facing = Vector2(1f, 0f)
+      Target = p + 60f * Vector2(1f, 0f)
       Pos = p
       MaxVelocity = playerConfig.SmallMaxVelocity
       Acc = playerConfig.Acc
@@ -174,7 +176,7 @@ let updateCarryingPositions (carrying: Entity.Model list) (pos: Vector2) (charSt
     Cmd.ofMsg (CarryingMessage(Sprite.Message.SetPos pos))
 
 
-let physics model (info: PhysicsInfo) =
+let playerPhysics model (info: PhysicsInfo) =
     let dt = (float32 (info.Time - lastTick)) / 1000f
     lastTick <- info.Time
 
@@ -207,13 +209,16 @@ let physics model (info: PhysicsInfo) =
         else
             Vector2.Normalize(facing)
 
+    let target = pos + (60f * facing) + Vector2(0f, 20f)
+
     { model with
+        Target = target
         Facing = facing
         Vel = vel
         Pos = pos
         IsMoving = velLength > 0f }
 
-let animations newModel oldModel =
+let playerAnimations newModel oldModel =
     let directionCommands =
         if newModel.Facing.X <> oldModel.Facing.X then
             [ Cmd.ofMsg (SpriteMessage(Sprite.SetDirection(newModel.Facing.X < 0f))) ]
@@ -276,6 +281,7 @@ let renderCarrying (carrying: Entity.Model list) (cameraPos: Vector2) (charState
 [<Struct>]
 type Tile =
     { FloorType: FloorType
+      Targeted: bool
       Collider: AABB option
       Entity: Entity.Model option }
 
@@ -287,6 +293,8 @@ type Model =
 
       //player and camera
       Player: PlayerModel
+      PlayerTarget: (Tile * int) option
+
       CameraPos: Vector2 }
 
 
@@ -302,13 +310,13 @@ let updateCameraPos (playerPos: Vector2) (oldCamPos: Vector2) : Vector2 =
 let halfScreenOffset (camPos: Vector2) : Vector2 =
     Vector2.Subtract(camPos, Vector2(800f, 450f))
 
-let getCollidables (blocks: Tile[]) : AABB seq =
-    blocks
-    |> Seq.choose (fun block ->
-        match block.Collider with
+let getCollidables (tiles: Tile[]) : AABB seq =
+    tiles
+    |> Seq.choose (fun tile ->
+        match tile.Collider with
         | Some collider -> Some collider
         | _ ->
-            match block.Entity with
+            match tile.Entity with
             | Some { Collider = collider } -> collider
             | _ -> None)
 
@@ -333,11 +341,13 @@ let init (worldConfig: WorldConfig) =
     let createCollidableTile t xx yy =
         { FloorType = t
           Entity = None
+          Targeted = false
           Collider = Some(createColliderFromCoords xx yy half) }
 
     let createNonCollidableTile t =
         { FloorType = t
           Collider = None
+          Targeted = false
           Entity = None }
 
     let createTimerOnGrass (coords: Vector2) =
@@ -345,6 +355,7 @@ let init (worldConfig: WorldConfig) =
 
         { FloorType = FloorType.Grass
           Collider = None
+          Targeted = false
           Entity = Some(Entity.init Entity.Timer pos) }
 
     let createObserverOnGrass (coords: Vector2) =
@@ -352,6 +363,7 @@ let init (worldConfig: WorldConfig) =
 
         { FloorType = FloorType.Grass
           Collider = None
+          Targeted = false
           Entity = Some(Entity.init Entity.Observer pos) }
 
     let blocks =
@@ -375,6 +387,7 @@ let init (worldConfig: WorldConfig) =
       ChunkBlockLength = worldConfig.WorldTileLength
       TileWidth = worldConfig.TileWidth
       Player = initPlayer 0 0 playerConfig charSprite
+      PlayerTarget = None
       CameraPos = Vector2(0f, -0f) }
 
 
@@ -392,8 +405,8 @@ let updatePlayer (message: PlayerMessage) (worldModel: Model) =
     match message with
     | Input direction -> { model with Input = direction }, Cmd.none
     | PlayerPhysicsTick info ->
-        let newModel = physics model info
-        let aniCommands = animations newModel model
+        let newModel = playerPhysics model info
+        let aniCommands = playerAnimations newModel model
         newModel, aniCommands
     | SpriteMessage sm ->
         let (newSprite, event) = Sprite.update sm model.SpriteInfo
@@ -435,8 +448,6 @@ let updatePlayer (message: PlayerMessage) (worldModel: Model) =
 
 let update (message: Message) (model: Model) : Model * Cmd<Message> =
     let player = model.Player
-    let targetOffset = 60f
-
     match message with
     | PlayerMessage playerMsg ->
         let (newPlayerModel, playerCommand) = updatePlayer playerMsg model
@@ -444,25 +455,24 @@ let update (message: Message) (model: Model) : Model * Cmd<Message> =
     | PickUpEntity ->
         match player.CharacterState with
         | Small _ ->
-            let tileAndIndex = getTileAtPos (player.Pos + (targetOffset * player.Facing)) model.Tiles // need the concept of 'facing' to add an offset here :'(
-
-            match tileAndIndex with
-            | Some({ Entity = Some entity } as tile, i) ->
-                model.Tiles[i] <- { tile with Entity = None } // TODO: no mutation
-                { model with Player = { player with Carrying = entity :: player.Carrying } }, Cmd.none
-            | _ -> model, Cmd.none
+            option {
+                let! (tile, i) = model.PlayerTarget
+                model.Tiles[i] <- { tile with Entity = None }
+                let! entity = tile.Entity
+                return { model with Player = { player with Carrying = entity :: player.Carrying } }, Cmd.none
+            }
+            |> Option.defaultValue (model, Cmd.none)
         | _ -> model, Cmd.none
     | PlaceEntity ->
         match player.CharacterState with
         | Small _ ->
-            let target = player.Pos + (targetOffset * player.Facing) // might have to build this into player??
-            let tileAndIndex = getTileAtPos target model.Tiles // need the concept of 'facing' to add an offset here :'(
+            let tileAndIndex = model.PlayerTarget // need the concept of 'facing' to add an offset here :'(
 
             match tileAndIndex with
             | Some({ Entity = None } as tile, i) ->
                 match player.Carrying with
                 | entity :: rest ->
-                    let rounded = posRounded target worldConfig
+                    let rounded = posRounded player.Target worldConfig
 
                     model.Tiles[i] <- { tile with Entity = Some(Entity.init entity.Type rounded) } //TODO: no mutation
                     { model with Player = { player with Carrying = rest } }, Cmd.none
@@ -476,11 +486,14 @@ let update (message: Message) (model: Model) : Model * Cmd<Message> =
               PossibleObstacles = getCollidables model.Tiles }
 
         let player, playerMsg = updatePlayer (PlayerPhysicsTick info) model
+        let tileAndIndex = getTileAtPos player.Target model.Tiles
+
         let newCameraPos = updateCameraPos player.Pos model.CameraPos
 
         { model with
             CameraPos = newCameraPos
-            Player = player },
+            Player = player
+            PlayerTarget = tileAndIndex },
         Cmd.map PlayerMessage playerMsg
 
 
@@ -493,6 +506,7 @@ let renderWorld (model: Model) =
     let sourceRect = rect 0 0 blockWidth blockWidth
 
     let cameraOffset = -(halfScreenOffset model.CameraPos)
+
 
     seq {
         for i in 0 .. (model.Tiles.Length - 1) do
@@ -512,8 +526,17 @@ let renderWorld (model: Model) =
             let actualX = startX + xBlockOffSet + int (cameraOffset.X)
             let actualY = startY + yBlockOffSet + int (cameraOffset.Y)
 
+            let color =
+                option {
+                    let! (tile, ind) = model.PlayerTarget
+                    let! target = if i = ind then Some tile else None                    
+                    let illegal = Option.isSome target.Collider || Option.isSome target.Entity
+                    return if illegal then Color.Orange else Color.Green
+                }
+                |> Option.defaultValue Color.White
+
             let floor =
-                image texture Color.White (sourceRect.Width, sourceRect.Height) (actualX, actualY)
+                image texture color (sourceRect.Width, sourceRect.Height) (actualX, actualY)
 
             let entity =
                 block.Entity
