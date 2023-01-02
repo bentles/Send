@@ -23,6 +23,7 @@ type Model =
       LastFrameTime: int64
       FrameLength: int64
       FlipH: bool
+      FlipV: bool
       ScreenPos: Vector2 }
 
 let currentImageConfigAndRelativePos images (animation: AnimationConfig) =
@@ -52,6 +53,7 @@ let init pos (config: SpriteConfig) =
           Tint = singleConfig.Tint
           AnimationState = Stopped (imageSpriteConfig, 0)
           FlipH = false
+          FlipV = false
 
           LastFrameTime = 0L
           FrameLength = 300L
@@ -69,6 +71,7 @@ let init pos (config: SpriteConfig) =
           Tint = aniConfig.Tint
           AnimationState = Stopped(aniConfig.InitAnimation, 0)
           FlipH = false
+          FlipV = false
 
           LastFrameTime = 0L
           FrameLength = 300L
@@ -80,7 +83,7 @@ type Message =
     | StartAnimation
     | AnimTick of int64
     | SetPos of Vector2
-    | SetDirection of bool
+    | SetDirection of bool * bool
 
 type Events =
     | None
@@ -102,10 +105,11 @@ let spriteSourceRect (spriteInfo: ImageConfig) (aniState: AnimationState) pos =
 
 let drawSprite (model: Model) (cameraPos:Vector2): Viewable =
     OnDraw(fun loadedAssets _ (spriteBatch: SpriteBatch) ->
-
         let texture = loadedAssets.textures[model.CurrentImage.TextureName]
 
-        let sourceRect = spriteSourceRect model.CurrentImage model.AnimationState model.RelativeYPos
+        //by convention the flipped sprite will be above the unflipped one
+        let flipV = if model.FlipV then -1 else 0
+        let sourceRect = spriteSourceRect model.CurrentImage model.AnimationState (model.RelativeYPos + flipV)
 
         let spriteCenter =
             Vector2(float32 (sourceRect.Width / 2), float32 (sourceRect.Height / 2))
@@ -183,7 +187,7 @@ let update message model =
         , Events.None
     | AnimTick dt -> animTick model dt
     | SetPos p -> { model with ScreenPos = p }, Events.None
-    | SetDirection flipH -> { model with FlipH = flipH }, Events.None
+    | SetDirection (flipH, flipV) -> { model with FlipH = flipH; FlipV = flipV }, Events.None
 
 
 let view model (cameraPos:Vector2) (dispatch: Message -> unit) =

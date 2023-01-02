@@ -9,6 +9,7 @@ open Collision
 open Debug
 open Input
 open FsToolkit.ErrorHandling
+open Player
 
 let coordsToPos (xx: float32) (yy: float32) (half: Vector2) =
     let startX = 0f
@@ -43,77 +44,6 @@ let createColliderFromCoords (xx: float32) (yy: float32) (half: Vector2) =
 type FloorType =
     | Empty
     | Grass
-
-type CharacterState =
-    | Small of bool
-    | Growing
-    | Shrinking
-
-type CollisionInfo =
-    {
-      //collision
-      Half: Vector2
-      Offset: Vector2 }
-
-type PlayerModel =
-    { SpriteInfo: Sprite.Model
-      CharacterState: CharacterState
-
-      Input: Vector2
-      Holding: bool
-
-      Carrying: Entity.Model list
-      Target: Vector2
-
-      //physics
-      Facing: Vector2
-      Pos: Vector2
-      Acc: float32
-      MaxVelocity: float32
-      Friction: float32
-      Vel: Vector2
-      IsMoving: bool
-
-      CollisionInfo: CollisionInfo }
-
-let initPlayer x y (playerConfig: PlayerConfig) (spriteConfig: SpriteConfig) =
-    let p = Vector2(float32 x, float32 y)
-
-    { SpriteInfo = Sprite.init p spriteConfig
-      CharacterState = Small true
-      Input = Vector2.Zero
-      Holding = false
-
-      Carrying =
-          [ Entity.initNoCollider Entity.Observer p
-            Entity.initNoCollider Entity.Observer p
-            Entity.initNoCollider Entity.Timer p
-            Entity.initNoCollider Entity.Timer p ]
-      Facing = Vector2(1f, 0f)
-      Target = p + 60f * Vector2(1f, 0f)
-      Pos = p
-      MaxVelocity = playerConfig.SmallMaxVelocity
-      Acc = playerConfig.Acc
-      Friction = playerConfig.Slow
-      Vel = Vector2.Zero
-      IsMoving = false
-      CollisionInfo =
-        { Half = playerConfig.AABBConfig.Half
-          Offset = playerConfig.AABBConfig.Offset } }
-
-type PhysicsInfo =
-    { Time: int64
-      PossibleObstacles: AABB seq }
-
-type PlayerMessage =
-    | Input of dir: Vector2
-    | TransformCharacter
-    | Hold of bool
-    | PlayerPhysicsTick of info: PhysicsInfo
-    | SpriteMessage of Sprite.Message
-    | CarryingMessage of Sprite.Message
-
-let mutable lastTick = 0L // we use a mutable tick counter here in order to ensure precision
 
 let collider (pos: Vector2) (collisionInfo: CollisionInfo) : AABB =
     { Pos = pos + collisionInfo.Offset
@@ -180,10 +110,24 @@ let inputAffectsVelocityAssertions (input: Vector2) (oldVel: Vector2) (newVel: V
 let updateCarryingPositions (carrying: Entity.Model list) (pos: Vector2) (charState: CharacterState) =
     Cmd.ofMsg (CarryingMessage(Sprite.Message.SetPos pos))
 
+let mutable lastTick = 0L // we use a mutable tick counter here in order to ensure precision
 
 let playerPhysics model (info: PhysicsInfo) =
     let dt = (float32 (info.Time - lastTick)) / 1000f
     lastTick <- info.Time
+
+    // record when last x and y were pressed
+    let xinputTime, lastXDir =
+        if model.Input.X <> 0f then
+            info.Time, model.Input.X
+        else
+            model.XInputTimeAndDir
+
+    let yinputTime, lastYDir =
+        if model.Input.Y <> 0f then
+            info.Time, model.Input.Y
+        else
+            model.YInputTimeAndDir
 
     let acc =
         match (model.Input, model.Vel) with
@@ -205,21 +149,33 @@ let playerPhysics model (info: PhysicsInfo) =
     let pos =
         collide preCollisionPos model.Pos model.CollisionInfo info.PossibleObstacles
 
-    let facing =
-        Vector2((float32 << sign) model.Input.X, (float32 << sign) model.Input.Y)
+    let dx = (float32 (info.Time - xinputTime)) / 1000f
+    let dy = (float32 (info.Time - yinputTime)) / 1000f
 
-    //halting will not change the direction faced :)
-    let facing =
-        if facing = Vector2.Zero then
-            model.Facing
-        else
-            Vector2.Normalize(facing)
+    let minTime = 0.08f
+    let diagonal = abs(dx - dy) < minTime;
+
+    let facing = 
+        match (model.Input.X, model.Input.Y) with
+        | (0f, 0f) when diagonal -> Vector2(lastXDir, lastYDir)
+        | (0f, 0f) when dx < dy -> Vector2(lastXDir, 0f)
+        | (0f, 0f) when dy <= dx -> Vector2(0f, lastYDir)
+
+        | (0f, 1f) when dx < minTime -> Vector2(lastXDir, 1f)
+        | (1f, 0f) when dy < minTime -> Vector2(1f, lastYDir)
+        | (0f, -1f) when dx < minTime -> Vector2(lastXDir, -1f)
+        | (-1f, 0f) when dy < minTime -> Vector2(-1f, lastYDir)
+        | _ -> model.Input
+
+    let facing = Vector2.Normalize(facing)
 
     let target = pos + (60f * facing) + Vector2(0f, 20f)
 
     if model.Holding then
         { model with
             Target = target
+            XInputTimeAndDir = xinputTime, lastXDir
+            YInputTimeAndDir = yinputTime, lastYDir
             Facing = facing
             Vel = Vector2.Zero
             Pos = model.Pos
@@ -228,14 +184,16 @@ let playerPhysics model (info: PhysicsInfo) =
         { model with
             Target = target
             Facing = facing
+            XInputTimeAndDir = xinputTime, lastXDir
+            YInputTimeAndDir = yinputTime, lastYDir
             Vel = vel
             Pos = pos
             IsMoving = velLength > 0f }
 
 let playerAnimations newModel oldModel =
     let directionCommands =
-        if newModel.Facing.X <> oldModel.Facing.X then
-            [ Cmd.ofMsg (SpriteMessage(Sprite.SetDirection(newModel.Facing.X < 0f))) ]
+        if newModel.Facing.X <> oldModel.Facing.X || newModel.Facing.Y <> oldModel.Facing.Y then
+            [ Cmd.ofMsg (SpriteMessage(Sprite.SetDirection(newModel.Facing.X < 0f, newModel.Facing.Y < 0f))) ]
         else
             []
 
@@ -595,7 +553,10 @@ let viewPlayer model (cameraPos: Vector2) (dispatch: PlayerMessage -> unit) =
       yield! renderCarrying model.Carrying cameraPos model.CharacterState
 
       //debug
-      yield debugText $"X:{model.Pos.X} \nY:{model.Pos.Y}" (10, 200)
+      yield
+          debugText
+              $"pos:{model.Pos.X}  {model.Pos.Y}\ninput:{model.Input.X}  {model.Input.Y} \nfacing:{model.Facing.X}  {model.Facing.Y}"
+              (40, 300)
       //yield renderAABB (collider model.Pos model.CollisionInfo) cameraPos
 
       //IO

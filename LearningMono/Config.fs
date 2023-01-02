@@ -108,7 +108,7 @@ let imageSpriteConfig =
 
 let CharAnimations =
     {| SmallWalk =
-        { Index = 0
+        { Index = 1
           Looping = true
           Speed = 120
           Columns = 8 }
