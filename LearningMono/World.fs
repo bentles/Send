@@ -10,7 +10,7 @@ open Debug
 open Input
 open FsToolkit.ErrorHandling
 open Player
-open Utilities
+open Utility
 
 
 type FloorType =

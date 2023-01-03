@@ -1,4 +1,4 @@
-﻿module Utilities
+﻿module Utility
 
 open Microsoft.Xna.Framework
 open Config
