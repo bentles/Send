@@ -10,40 +10,32 @@ open Debug
 open Input
 open FsToolkit.ErrorHandling
 open Player
+open Utilities
 
-let coordsToPos (xx: float32) (yy: float32) (half: Vector2) =
-    let startX = 0f
-    let startY = 0f
-
-    let xBlockOffSet = float32 (xx * float32 worldConfig.TileWidth)
-    let yBlockOffSet = float32 (yy * float32 worldConfig.TileWidth)
-
-    let actualX = startX + xBlockOffSet + half.X
-    let actualY = startY + yBlockOffSet + half.Y
-
-    Vector2(actualX, actualY)
-
-let posToCoords (pos: Vector2) : (int * int) =
-    let x = int (pos.X / float32 worldConfig.TileWidth)
-    let y = int (pos.Y / float32 worldConfig.TileWidth)
-    (x, y)
-
-let posRounded (pos: Vector2) (worldConfig: WorldConfig) =
-    let x =
-        (floor (pos.X / float32 worldConfig.TileWidth)) * float32 worldConfig.TileWidth
-
-    let y =
-        (floor (pos.Y / float32 worldConfig.TileWidth)) * float32 worldConfig.TileWidth
-
-    Vector2(x, y) + Vector2(float32 (worldConfig.TileWidth / 2))
-
-let createColliderFromCoords (xx: float32) (yy: float32) (half: Vector2) =
-    { Pos = coordsToPos xx yy half
-      Half = half }
 
 type FloorType =
     | Empty
     | Grass
+
+[<Struct>]
+type Tile =
+    { FloorType: FloorType
+      Targeted: bool
+      Collider: AABB option
+      Entity: Entity.Model option }
+
+type Model =
+    { Tiles: Tile[]
+      TileWidth: int
+
+      ChunkBlockLength: int
+      Dt: float32
+
+      //player and camera
+      Player: PlayerModel
+      PlayerTarget: (Tile * int) option
+
+      CameraPos: Vector2 }
 
 let collider (pos: Vector2) (collisionInfo: CollisionInfo) : AABB =
     { Pos = pos + collisionInfo.Offset
@@ -110,11 +102,9 @@ let inputAffectsVelocityAssertions (input: Vector2) (oldVel: Vector2) (newVel: V
 let updateCarryingPositions (carrying: Entity.Model list) (pos: Vector2) (charState: CharacterState) =
     Cmd.ofMsg (CarryingMessage(Sprite.Message.SetPos pos))
 
-let mutable lastTick = 0L // we use a mutable tick counter here in order to ensure precision
 
 let playerPhysics model (info: PhysicsInfo) =
-    let dt = (float32 (info.Time - lastTick)) / 1000f
-    lastTick <- info.Time
+    let dt = info.Dt
 
     // record when last x and y were pressed
     let xinputTime, lastXDir =
@@ -250,26 +240,6 @@ let renderCarrying (carrying: Entity.Model list) (cameraPos: Vector2) (charState
         let offSetPos = cameraPos + offsetStart + (Vector2(0f, 25f) * (float32 i))
         Sprite.view c.Sprite offSetPos (fun f -> ()))
 
-[<Struct>]
-type Tile =
-    { FloorType: FloorType
-      Targeted: bool
-      Collider: AABB option
-      Entity: Entity.Model option }
-
-type Model =
-    { Tiles: Tile[]
-      TileWidth: int
-
-      ChunkBlockLength: int
-
-      //player and camera
-      Player: PlayerModel
-      PlayerTarget: (Tile * int) option
-
-      CameraPos: Vector2 }
-
-
 let updateCameraPos (playerPos: Vector2) (oldCamPos: Vector2) : Vector2 =
     let diff = Vector2.Subtract(playerPos, oldCamPos)
     let halfDiff = Vector2.Multiply(diff, 0.25f)
@@ -359,6 +329,7 @@ let init (worldConfig: WorldConfig) =
       ChunkBlockLength = worldConfig.WorldTileLength
       TileWidth = worldConfig.TileWidth
       Player = initPlayer 0 0 playerConfig charSprite
+      Dt = 0f
       PlayerTarget = None
       CameraPos = Vector2(0f, -0f) }
 
@@ -418,6 +389,7 @@ let updatePlayer (message: PlayerMessage) (worldModel: Model) =
         (Cmd.ofMsg << SpriteMessage << Sprite.SwitchAnimation) (transformAnimation, 80, true)
     | Hold holding -> { model with Holding = holding }, Cmd.none
 
+let mutable lastTick = 0L // we use a mutable tick counter here in order to ensure precision
 
 let update (message: Message) (model: Model) : Model * Cmd<Message> =
     let player = model.Player
@@ -455,8 +427,12 @@ let update (message: Message) (model: Model) : Model * Cmd<Message> =
         | _ -> model, Cmd.none
     | PhysicsTick time ->
         //TODO: get a list of things the player could interact with
+        let dt = (float32 (time - lastTick)) / 1000f
+        lastTick <- time
+
         let (info: PhysicsInfo) =
             { Time = time
+              Dt = dt
               PossibleObstacles = getCollidables model.Tiles }
 
         let player, playerMsg = updatePlayer (PlayerPhysicsTick info) model
@@ -465,6 +441,7 @@ let update (message: Message) (model: Model) : Model * Cmd<Message> =
         let newCameraPos = updateCameraPos player.Pos model.CameraPos
 
         { model with
+            Dt = dt
             CameraPos = newCameraPos
             Player = player
             PlayerTarget = tileAndIndex },
@@ -569,6 +546,11 @@ let viewPlayer model (cameraPos: Vector2) (dispatch: PlayerMessage -> unit) =
 
 let view model (dispatch: Message -> unit) =
     [ yield onupdate (fun input -> dispatch (PhysicsTick input.totalGameTime))
+
+      yield
+          debugText
+              $"fps:{ round (1f / model.Dt) }"
+              (40, 100)
 
       yield! renderWorld model
       yield onkeydown Keys.Z (fun _ -> dispatch (PickUpEntity))

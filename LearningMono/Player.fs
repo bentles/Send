@@ -70,7 +70,8 @@ let initPlayer x y (playerConfig: PlayerConfig) (spriteConfig: SpriteConfig) =
 
 type PhysicsInfo =
     { Time: int64
-      PossibleObstacles: AABB seq }
+      PossibleObstacles: AABB seq
+      Dt: float32 }
 
 type PlayerMessage =
     | Input of dir: Vector2
