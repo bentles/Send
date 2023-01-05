@@ -1,7 +1,6 @@
 ﻿IDEAS:
 - design by contract
 	- put asserts wherever i have made assumptions
-
 - 
 
 TODO:
@@ -12,6 +11,16 @@ TODO:
 
 - add a filter observer
 - add a repeating pattern observable
+``` // TODO: something like this for later
+type Level =
+    | Level of WorldConfig
+
+type Screen =
+    | Menu
+    | Playing of Level
+    | GameOver ```
+
+
 
 DOING:
 - add the concept of a level and some way of setting them up

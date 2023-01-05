@@ -11,18 +11,8 @@ open Input
 open FsToolkit.ErrorHandling
 open Player
 open Utility
+open LevelConfig
 
-
-type FloorType =
-    | Empty
-    | Grass
-
-[<Struct>]
-type Tile =
-    { FloorType: FloorType
-      Targeted: bool
-      Collider: AABB option
-      Entity: Entity.Model option }
 
 type Model =
     { 
@@ -281,13 +271,11 @@ let init (worldConfig: WorldConfig) =
     let createCollidableTile t xx yy =
         { FloorType = t
           Entity = None
-          Targeted = false
           Collider = Some(createColliderFromCoords xx yy half) }
 
     let createNonCollidableTile t =
         { FloorType = t
           Collider = None
-          Targeted = false
           Entity = None }
 
     let createTimerOnGrass (coords: Vector2) =
@@ -295,7 +283,6 @@ let init (worldConfig: WorldConfig) =
 
         { FloorType = FloorType.Grass
           Collider = None
-          Targeted = false
           Entity = Some(Entity.init Entity.Timer pos) }
 
     let createObserverOnGrass (coords: Vector2) =
@@ -303,7 +290,6 @@ let init (worldConfig: WorldConfig) =
 
         { FloorType = FloorType.Grass
           Collider = None
-          Targeted = false
           Entity = Some(Entity.init Entity.Observer pos) }
 
     let blocks =
@@ -521,34 +507,40 @@ let renderWorld (model: Model) (worldConfig:WorldConfig) =
 
 let viewPlayer model (cameraPos: Vector2) (dispatch: PlayerMessage -> unit) =
     [
-      //render
-      yield! Sprite.view model.SpriteInfo cameraPos (SpriteMessage >> dispatch)
-      yield! renderCarrying model.Carrying cameraPos model.CharacterState
-
-      //debug
-      yield
-          debugText
-              $"pos:{model.Pos.X}  {model.Pos.Y}\ninput:{model.Input.X}  {model.Input.Y} \nfacing:{model.Facing.X}  {model.Facing.Y}"
-              (40, 300)
-      //yield renderAABB (collider model.Pos model.CollisionInfo) cameraPos
-
-      //IO
+      //input
       yield directions Keys.Up Keys.Down Keys.Left Keys.Right (fun f -> dispatch (Input f))
       yield onkeydown Keys.Space (fun _ -> dispatch (TransformCharacter))
       yield onkeydown Keys.LeftControl (fun _ -> dispatch (Hold true))
       yield onkeyup Keys.LeftControl (fun _ -> dispatch (Hold false))
 
+      //render
+      yield! Sprite.view model.SpriteInfo cameraPos (SpriteMessage >> dispatch)
+      yield! renderCarrying model.Carrying cameraPos model.CharacterState
+
+      //debug
+      //yield
+      //    debugText
+      //        $"pos:{model.Pos.X}  {model.Pos.Y}\ninput:{model.Input.X}  {model.Input.Y} \nfacing:{model.Facing.X}  {model.Facing.Y}"
+      //        (40, 300)
+      //yield renderAABB (collider model.Pos model.CollisionInfo) cameraPos
       ]
 
 let view model (dispatch: Message -> unit) =
-    [ yield onupdate (fun input -> dispatch (PhysicsTick input.totalGameTime))
-
-      yield
-          debugText
-              $"fps:{ round (1f / model.Dt) }"
-              (40, 100)
-
-      yield! renderWorld model worldConfig
+    [ 
+      // input
       yield onkeydown Keys.Z (fun _ -> dispatch (PickUpEntity))
       yield onkeydown Keys.X (fun _ -> dispatch (PlaceEntity))
-      yield! viewPlayer model.Player (halfScreenOffset model.CameraPos) (PlayerMessage >> dispatch) ]
+
+      // physics
+      yield onupdate (fun input -> dispatch (PhysicsTick input.totalGameTime))
+
+      //render
+      yield! renderWorld model worldConfig
+      yield! viewPlayer model.Player (halfScreenOffset model.CameraPos) (PlayerMessage >> dispatch)
+     
+      //debug
+      //yield
+      //    debugText
+      //        $"fps:{ round (1f / model.Dt) }"
+      //        (40, 100)
+       ]
