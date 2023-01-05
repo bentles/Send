@@ -25,12 +25,10 @@ type Tile =
       Entity: Entity.Model option }
 
 type Model =
-    { Tiles: Tile[]
-      TileWidth: int
+    { 
+      Tiles: Tile[]
 
-      ChunkBlockLength: int
       Dt: float32
-
       //player and camera
       Player: PlayerModel
       PlayerTarget: (Tile * int) option
@@ -326,8 +324,6 @@ let init (worldConfig: WorldConfig) =
                    | x, y -> grassTile |]
 
     { Tiles = blocks
-      ChunkBlockLength = worldConfig.WorldTileLength
-      TileWidth = worldConfig.TileWidth
       Player = initPlayer 0 0 playerConfig charSprite
       Dt = 0f
       PlayerTarget = None
@@ -449,8 +445,8 @@ let update (message: Message) (model: Model) : Model * Cmd<Message> =
 
 
 // VIEW
-let renderWorld (model: Model) =
-    let blockWidth = model.TileWidth
+let renderWorld (model: Model) (worldConfig:WorldConfig) =
+    let blockWidth = worldConfig.TileWidth
     let empty = "tile"
     let grass = "grass"
 
@@ -471,8 +467,8 @@ let renderWorld (model: Model) =
             let startX = 0
             let startY = 0
 
-            let xBlockOffSet = (i % model.ChunkBlockLength) * blockWidth
-            let yBlockOffSet = (i / model.ChunkBlockLength) * blockWidth
+            let xBlockOffSet = (i % worldConfig.WorldTileLength) * blockWidth
+            let yBlockOffSet = (i / worldConfig.WorldTileLength) * blockWidth
 
             let actualX = startX + xBlockOffSet + int (cameraOffset.X)
             let actualY = startY + yBlockOffSet + int (cameraOffset.Y)
@@ -552,7 +548,7 @@ let view model (dispatch: Message -> unit) =
               $"fps:{ round (1f / model.Dt) }"
               (40, 100)
 
-      yield! renderWorld model
+      yield! renderWorld model worldConfig
       yield onkeydown Keys.Z (fun _ -> dispatch (PickUpEntity))
       yield onkeydown Keys.X (fun _ -> dispatch (PlaceEntity))
       yield! viewPlayer model.Player (halfScreenOffset model.CameraPos) (PlayerMessage >> dispatch) ]

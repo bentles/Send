@@ -2,16 +2,22 @@
 - design by contract
 	- put asserts wherever i have made assumptions
 
+- 
+
 TODO:
 - nicer toggling of debug sprites
 - quick check for collision exclusion of far away objects
 - simplify away the pre-sending potential collider objects since world+player are now one
 - use the stopped animation
 
+- add a filter observer
+- add a repeating pattern observable
+
 DOING:
-- sprites for more directions pls
+- add the concept of a level and some way of setting them up
 
 DONE:
+- sprites for more directions pls
 - concept of facing for the player
 - make the world
 	- entities vs blocks?
