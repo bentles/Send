@@ -9,8 +9,7 @@ TODO:
 - simplify away the pre-sending potential collider objects since world+player are now one
 - use the stopped animation
 
-- add a filter observer
-- add a repeating pattern observable
+
 ``` // TODO: something like this for later
 type Level =
     | Level of WorldConfig
@@ -19,11 +18,14 @@ type Screen =
     | Menu
     | Playing of Level
     | GameOver ```
+- add the concept of a level and some way of setting them up
 
-
+- THEN make levels and stuff
 
 DOING:
-- add the concept of a level and some way of setting them up
+- figure out if game idea is fun first
+	- add a filter observer
+	- add a repeating pattern observable
 
 DONE:
 - sprites for more directions pls

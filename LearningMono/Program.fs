@@ -3,6 +3,7 @@ open Xelmish.Model // required for config types used when using program.run
 open Xelmish.Viewables // required to get access to helpers like 'colour'
 open Microsoft.Xna.Framework
 open Config
+open System
 
 
 type Model = { World: World.Model
@@ -67,6 +68,7 @@ let main _ =
               PipelineFont("defaultFont", "./content/SourceCodePro") ]
           mouseVisible = false }
 
-    Program.mkProgram init update view |> Xelmish.Program.runGameLoop config
+    Program.mkProgram init update view 
+    |> Xelmish.Program.runGameLoop config
 
     0

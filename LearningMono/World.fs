@@ -307,7 +307,7 @@ let init (worldConfig: WorldConfig) =
                    | 8, 9 -> grassTile // 8f 9f
                    | 6, 9 -> grassTile // 6f 9f
                    | 7, 8 -> grassTile // 7f 8f
-                   | x, y -> grassTile |]
+                   | x, y -> grassTile |]// /* createTimerOnGrass (Vector2(float32 x, float32 y)) */ |]
 
     { Tiles = blocks
       Player = initPlayer 0 0 playerConfig charSprite
@@ -539,8 +539,9 @@ let view model (dispatch: Message -> unit) =
       yield! viewPlayer model.Player (halfScreenOffset model.CameraPos) (PlayerMessage >> dispatch)
      
       //debug
-      //yield
-      //    debugText
-      //        $"fps:{ round (1f / model.Dt) }"
-      //        (40, 100)
+      // ok this is a complete lie since the timestep is fixed
+      yield
+          debugText
+              $"fps:{ round (1f / model.Dt) }"
+              (40, 100)
        ]
