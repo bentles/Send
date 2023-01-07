@@ -24,10 +24,7 @@ type Model =
       //player and camera
       Player: PlayerModel
       PlayerTarget: (Tile * int) option
-
       CameraPos: Vector2 }
-
-
 
 let calcVelocity modelVel modelMaxVel (acc: Vector2) (dt: float32) =
     let vel = modelVel + acc * dt
@@ -54,7 +51,7 @@ let inputAffectsVelocityAssertions (input: Vector2) (oldVel: Vector2) (newVel: V
     else
         Vector2.Dot(input, newVel) >= Vector2.Dot(input, newVel) - AcceptableError
 
-let updateCarryingPositions (carrying: Entity.Model list) (pos: Vector2) (charState: CharacterState) =
+let updateCarryingPositions (pos: Vector2) =
     Cmd.ofMsg (CarryingMessage(Sprite.Message.SetPos pos))
 
 
@@ -115,24 +112,20 @@ let playerPhysics model (info: PhysicsInfo) =
     let facing = Vector2.Normalize(facing)
     let target = pos + (60f * facing) + Vector2(0f, 20f)
 
-    if model.Holding then
-        { model with
-            Target = target
-            XInputTimeAndDir = xinputTime, lastXDir
-            YInputTimeAndDir = yinputTime, lastYDir
-            Facing = facing
-            Vel = Vector2.Zero
-            Pos = model.Pos
-            IsMoving = false }
-    else
-        { model with
-            Target = target
-            XInputTimeAndDir = xinputTime, lastXDir
-            YInputTimeAndDir = yinputTime, lastYDir
-            Facing = facing
-            Vel = vel
-            Pos = pos
-            IsMoving = velLength > 0f }
+    let (vel, pos, isMoving) = 
+        if model.Holding then
+            (Vector2.Zero, model.Pos, false)
+        else 
+            (vel, pos, velLength > 0f)
+
+    { model with
+        Target = target
+        XInputTimeAndDir = xinputTime, lastXDir
+        YInputTimeAndDir = yinputTime, lastYDir
+        Facing = facing
+        Vel = vel
+        Pos = pos
+        IsMoving = isMoving }
 
 let playerAnimations newModel oldModel =
     let directionCommands =
@@ -157,7 +150,7 @@ let playerAnimations newModel oldModel =
     let setPosMsg = Cmd.ofMsg (SpriteMessage(Sprite.SetPos newModel.Pos))
 
     let carryCommand =
-        updateCarryingPositions newModel.Carrying newModel.Pos newModel.CharacterState
+        updateCarryingPositions newModel.Pos
 
     Cmd.batch [ setPosMsg; carryCommand; yield! animationCommands; yield! directionCommands ]
 
