@@ -106,7 +106,7 @@ let imageSpriteConfig =
       Index = 0
       Columns = 1 }
 
-let CharConfig = {| BigFrames = 100; SmallFrames = 80 |}
+let CharConfig = {| BigFrames = 50; SmallFrames = 90 |}
 
 let CharAnimations =
     {| SmallWalk =

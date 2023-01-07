@@ -42,7 +42,7 @@ let currentImageConfigAndRelativePos images (animation: AnimationConfig) =
 
     getImage y images
 
-let init pos (config: SpriteConfig) =
+let init pos time (config: SpriteConfig) =
     match config with
      | SingleSpriteConfig singleConfig ->
         { Images = [ singleConfig.Image ]
@@ -55,7 +55,7 @@ let init pos (config: SpriteConfig) =
           FlipH = false
           FlipV = false
 
-          LastFrameTime = 0L
+          LastFrameTime = time
           FrameLength = singleConfig.FrameLength
           ScreenPos = pos }
         
@@ -73,7 +73,7 @@ let init pos (config: SpriteConfig) =
           FlipH = false
           FlipV = false
 
-          LastFrameTime = 0L
+          LastFrameTime = time
           FrameLength = aniConfig.FrameLength
           ScreenPos = pos }
 

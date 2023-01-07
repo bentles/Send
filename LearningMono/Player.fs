@@ -40,10 +40,10 @@ type PlayerModel =
 
       CollisionInfo: CollisionInfo }
 
-let initPlayer x y (playerConfig: PlayerConfig) (spriteConfig: SpriteConfig) =
+let initPlayer x y (playerConfig: PlayerConfig) (spriteConfig: SpriteConfig) time =
     let p = Vector2(float32 x, float32 y)
 
-    { SpriteInfo = Sprite.init p spriteConfig
+    { SpriteInfo = Sprite.init p time spriteConfig
       CharacterState = Small true
       Input = Vector2.Zero
       XInputTimeAndDir = -1000, 1f
@@ -52,10 +52,10 @@ let initPlayer x y (playerConfig: PlayerConfig) (spriteConfig: SpriteConfig) =
       Holding = false
 
       Carrying =
-          [ Entity.initNoCollider Entity.Observer p
-            Entity.initNoCollider Entity.Observer p
-            Entity.initNoCollider Entity.Timer p
-            Entity.initNoCollider Entity.Timer p ]
+          [ Entity.initNoCollider Entity.Observer p time
+            Entity.initNoCollider Entity.Observer p time
+            Entity.initNoCollider Entity.Timer p time
+            Entity.initNoCollider Entity.Timer p time]
       Facing = Vector2(1f, 0f)
       Target = p + 60f * Vector2(1f, 0f)
       Pos = p

@@ -19,6 +19,7 @@ type Model =
       Tiles: Tile[]
 
       Dt: float32
+      TimeElapsed: int64
       //player and camera
       Player: PlayerModel
       PlayerTarget: (Tile * int) option
@@ -264,7 +265,7 @@ let getTileAtPos (pos: Vector2) (tiles: Tile[]) : (Tile * int) option =
         let index = y * worldConfig.WorldTileLength + x
         Some(tiles[index], index)
 
-let init (worldConfig: WorldConfig) =
+let init (worldConfig: WorldConfig) time =
     let tileHalf = float32 (worldConfig.TileWidth / 2)
     let half = Vector2(tileHalf)
 
@@ -280,21 +281,21 @@ let init (worldConfig: WorldConfig) =
           Observable = None
           Entity = None }
 
-    let createTimerOnGrass (coords: Vector2) =
+    let createTimerOnGrass (coords: Vector2) time =
         let pos = coordsToPos coords.X coords.Y half
 
         { FloorType = FloorType.Grass
           Collider = None
           Observable = None
-          Entity = Some(Entity.init Entity.Timer pos) }
+          Entity = Some(Entity.init Entity.Timer pos time) }
 
-    let createObserverOnGrass (coords: Vector2) =
+    let createObserverOnGrass (coords: Vector2) time =
         let pos = coordsToPos coords.X coords.Y half
 
         { FloorType = FloorType.Grass
           Collider = None
           Observable = None
-          Entity = Some(Entity.init Entity.Observer pos) }
+          Entity = Some(Entity.init Entity.Observer pos time) }
 
     let blocks =
         [| for yy in 0 .. (worldConfig.WorldTileLength - 1) do
@@ -303,9 +304,9 @@ let init (worldConfig: WorldConfig) =
 
                    match xx, yy with
                    | 0, 0 -> createNonCollidableTile FloorType.Grass
-                   | 2, 2 -> createTimerOnGrass (Vector2(2f))
-                   | 3, 3 -> createObserverOnGrass (Vector2(3f))
-                   | 5, 5 -> createCollidableTile FloorType.Empty 5f 5f
+                   | 2, 2 -> createTimerOnGrass (Vector2(2f)) time
+                   | 3, 3 -> createObserverOnGrass (Vector2(3f)) time
+                   | 5, 5 -> createCollidableTile FloorType.Empty 5f 5f 
                    | 5, 6 -> grassTile // 5f 6f
                    | 7, 9 -> grassTile // 7f 9f
                    | 8, 9 -> grassTile // 8f 9f
@@ -314,9 +315,10 @@ let init (worldConfig: WorldConfig) =
                    | x, y -> grassTile |]// /* createTimerOnGrass (Vector2(float32 x, float32 y)) */ |]
 
     { Tiles = blocks
-      Player = initPlayer 0 0 playerConfig charSprite
+      Player = initPlayer 0 0 playerConfig charSprite time
       Dt = 0f
       PlayerTarget = None
+      TimeElapsed = 0
       CameraPos = Vector2(0f, -0f) }
 
 
@@ -414,7 +416,7 @@ let update (message: Message) (model: Model) : Model * Cmd<Message> =
                 match player.Carrying with
                 | entity :: rest ->
                     let rounded = posRounded player.Target worldConfig
-                    let entity = Entity.init entity.Type rounded
+                    let entity = Entity.init entity.Type rounded model.TimeElapsed
                     let sprite, ev = Sprite.update Sprite.StartAnimation entity.Sprite
                     let entity = { entity with Sprite = sprite }
 
@@ -443,6 +445,7 @@ let update (message: Message) (model: Model) : Model * Cmd<Message> =
 
         { model with
             Dt = dt
+            TimeElapsed = time
             Tiles = tiles
             CameraPos = newCameraPos
             Player = player
@@ -560,8 +563,8 @@ let view model (dispatch: Message -> unit) =
      
       //debug
       // ok this is a complete lie since the timestep is fixed
-      yield
-          debugText
-              $"fps:{ round (1f / model.Dt) }"
-              (40, 100)
+      //yield
+      //    debugText
+      //        $"fps:{ round (1f / model.Dt) }"
+      //        (40, 100)
        ]

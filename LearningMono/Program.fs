@@ -9,6 +9,7 @@ open System
 type Model = { World: World.Model
                Levels: WorldConfig list
                CurrentLevel: int
+               TimeElapsed: int64
     }
 
 let initLevel (level: WorldConfig) =
@@ -18,15 +19,16 @@ let init () =
     let level1 = worldConfig
     let level2 = worldConfig
 
-    { World = (initLevel level1)
+    { World = (initLevel level1 0)
       Levels = [level1; level2]
       CurrentLevel = 0
+      TimeElapsed = 0
     }, Cmd.none
 
 type Message =
     | WorldMessage of World.Message
     | NextLevel
-    | Tick
+    | Tick of int64
 
 let update message (model: Model) =
     match message with
@@ -35,15 +37,17 @@ let update message (model: Model) =
         { model with World = newWorld }, Cmd.map WorldMessage cmd
     | NextLevel -> 
         let nextLevel = (model.CurrentLevel + 1) % model.Levels.Length
-        { model with CurrentLevel = nextLevel; World = initLevel model.Levels[nextLevel] }, Cmd.none
-    | Tick -> model, Cmd.none
+        { model with CurrentLevel = nextLevel; World = initLevel model.Levels[nextLevel] model.TimeElapsed }, Cmd.none
+    | Tick time -> { model with TimeElapsed = time } , Cmd.none
 
 
 let view (model: Model) (dispatch: Message -> unit) =
     [ yield! World.view model.World (WorldMessage >> dispatch)
 
+      yield onupdate (fun input -> dispatch (Tick input.totalGameTime))
+
       //input
-      yield onkeydown Keys.N (fun _ -> dispatch (NextLevel))
+      yield onkeydown Keys.N (fun input -> dispatch (NextLevel))
       yield onkeydown Keys.Escape exit ]
 
 [<EntryPoint>]
