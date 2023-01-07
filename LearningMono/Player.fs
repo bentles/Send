@@ -10,11 +10,7 @@ type CharacterState =
     | Growing
     | Shrinking
 
-type CollisionInfo =
-    {
-      //collision
-      Half: Vector2
-      Offset: Vector2 }
+
 
 type PlayerModel =
     { SpriteInfo: Sprite.Model

@@ -20,15 +20,14 @@ type Model =
 
       Dt: float32
       TimeElapsed: int64
+
       //player and camera
       Player: PlayerModel
       PlayerTarget: (Tile * int) option
 
       CameraPos: Vector2 }
 
-let collider (pos: Vector2) (collisionInfo: CollisionInfo) : AABB =
-    { Pos = pos + collisionInfo.Offset
-      Half = collisionInfo.Half }
+
 
 let calcVelocity modelVel modelMaxVel (acc: Vector2) (dt: float32) =
     let vel = modelVel + acc * dt
@@ -48,39 +47,6 @@ let calcVelocity modelVel modelMaxVel (acc: Vector2) (dt: float32) =
 
     vel, velLength
 
-let collide pos oldPos colInfo obstacles =
-    let sweepIntoWithOffset pos oldPos obstacles =
-        let deltaPos = pos - oldPos
-        let sweepResult = sweepInto (collider oldPos colInfo) obstacles deltaPos
-        let result = { sweepResult with Pos = sweepResult.Pos - colInfo.Offset }
-
-        //collision distance should be <= unadjusted distance
-        assert ((result.Pos - oldPos).Length() <= deltaPos.Length() + AcceptableError)
-        result
-
-
-    if Seq.isEmpty obstacles then
-        pos
-    else
-        let sweep1 = sweepIntoWithOffset pos oldPos obstacles
-
-        match sweep1.Hit with
-        | Some hit ->
-            let movementIntoAABB = pos - sweep1.Pos
-            let vectorOut = (hit.Normal * hit.Normal) * movementIntoAABB //grab the component that points out
-            let deltaParallel = movementIntoAABB - vectorOut //calc component along the surface
-
-            if deltaParallel = Vector2.Zero then
-                sweep1.Pos
-            else
-                // collide again
-                let sweep2 = sweepIntoWithOffset (sweep1.Pos + deltaParallel) sweep1.Pos obstacles
-
-                match sweep2.Hit with
-                | Some hit2 -> sweep2.Pos
-                | None -> sweep1.Pos + deltaParallel
-
-        | None -> pos
 
 let inputAffectsVelocityAssertions (input: Vector2) (oldVel: Vector2) (newVel: Vector2) : bool =
     if input = Vector2.Zero then
@@ -161,9 +127,9 @@ let playerPhysics model (info: PhysicsInfo) =
     else
         { model with
             Target = target
-            Facing = facing
             XInputTimeAndDir = xinputTime, lastXDir
             YInputTimeAndDir = yinputTime, lastYDir
+            Facing = facing
             Vel = vel
             Pos = pos
             IsMoving = velLength > 0f }
