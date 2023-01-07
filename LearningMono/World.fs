@@ -146,7 +146,6 @@ let playerPhysics model (info: PhysicsInfo) =
         | _ -> model.Input
 
     let facing = Vector2.Normalize(facing)
-
     let target = pos + (60f * facing) + Vector2(0f, 20f)
 
     if model.Holding then

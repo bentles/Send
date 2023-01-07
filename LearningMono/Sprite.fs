@@ -56,7 +56,7 @@ let init pos (config: SpriteConfig) =
           FlipV = false
 
           LastFrameTime = 0L
-          FrameLength = 300L
+          FrameLength = singleConfig.FrameLength
           ScreenPos = pos }
         
      | AnimatedSpriteConfig aniConfig ->
@@ -74,7 +74,7 @@ let init pos (config: SpriteConfig) =
           FlipV = false
 
           LastFrameTime = 0L
-          FrameLength = 300L
+          FrameLength = aniConfig.FrameLength
           ScreenPos = pos }
 
 type Message =
