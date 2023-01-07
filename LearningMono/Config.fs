@@ -106,29 +106,29 @@ let imageSpriteConfig =
       Index = 0
       Columns = 1 }
 
+let CharConfig = {| BigFrames = 100; SmallFrames = 80 |}
+
 let CharAnimations =
     {| SmallWalk =
         { Index = 1
           Looping = true
-          Speed = 120
+          Speed = CharConfig.SmallFrames
           Columns = 8 }
        SmallToBig =
         { Index = 4
           Looping = false
-          Speed = 80
+          Speed = CharConfig.BigFrames
           Columns = 8 }
        BigToSmall =
         { Index = 5
           Looping = false
-          Speed = 80
+          Speed = CharConfig.BigFrames
           Columns = 8 }
        BigWalk =
         { Index = 7
           Looping = true
-          Speed = 80
+          Speed = CharConfig.BigFrames
           Columns = 8 } |}
-
-let CharConfig = {| BigSpeed = 80; SmallSpeed = 120 |}
 
 let charSprite: SpriteConfig =
     AnimatedSpriteConfig
@@ -144,10 +144,10 @@ let timerSpriteConfig =
           InitAnimation =
             { Index = 0
               Looping = true
-              Speed = 80
+              Speed = 100
               Columns = 4 }
           Tint = Color.White
-          FrameLength = 300L }
+          FrameLength = 100L }
 
 let observerSpriteConfig =
     SingleSpriteConfig

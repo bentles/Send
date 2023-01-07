@@ -133,12 +133,12 @@ let drawSprite (model: Model) (cameraPos:Vector2): Viewable =
             0f
         ))
 
-let animTick model dt =
-    let t = model.LastFrameTime + dt
+let animTick model time =
+    let t = time - model.LastFrameTime
 
     let (t, inc) =
         match (t > model.FrameLength) with
-        | true -> (model.LastFrameTime - model.FrameLength, 1)
+        | true -> (time, 1)
         | false -> model.LastFrameTime, 0
 
     let (newAnimationState, event) =

@@ -178,12 +178,13 @@ let playerAnimations newModel oldModel =
     let animationCommands =
         match (oldModel.IsMoving, newModel.IsMoving, oldModel.CharacterState) with
         | (false, true, Small isSmall) ->
-            let walkAnimation =
+            let walkAnimation, speed =
                 match isSmall with
-                | true -> CharAnimations.SmallWalk
-                | false -> CharAnimations.BigWalk
+                | true -> CharAnimations.SmallWalk, CharConfig.BigFrames
+                | false -> CharAnimations.BigWalk, CharConfig.SmallFrames
 
-            [ (Cmd.ofMsg << SpriteMessage << Sprite.SwitchAnimation) (walkAnimation, 80, true) ]
+
+            [ (Cmd.ofMsg << SpriteMessage << Sprite.SwitchAnimation) (walkAnimation, speed, true) ]
         | (true, false, Small _) -> [ (Cmd.ofMsg << SpriteMessage) Sprite.Stop ]
         | _ -> []
 
@@ -203,10 +204,10 @@ let transformStart (characterState: CharacterState) =
 
 let transformComplete (characterState: CharacterState) =
     match characterState with
-    | Shrinking -> Small true, CharAnimations.SmallWalk
-    | Growing -> Small false, CharAnimations.BigWalk
-    | Small true -> Small true, CharAnimations.SmallWalk
-    | Small false -> Small false, CharAnimations.BigWalk
+    | Shrinking -> Small true, CharAnimations.SmallWalk, CharConfig.SmallFrames
+    | Growing -> Small false, CharAnimations.BigWalk, CharConfig.BigFrames
+    | Small true -> Small true, CharAnimations.SmallWalk, CharConfig.SmallFrames
+    | Small false -> Small false, CharAnimations.BigWalk, CharConfig.BigFrames
 
 let renderAABB (aabb: AABB) (cameraPos: Vector2) =
     image
@@ -271,11 +272,13 @@ let init (worldConfig: WorldConfig) =
     let createCollidableTile t xx yy =
         { FloorType = t
           Entity = None
+          Observable = None
           Collider = Some(createColliderFromCoords xx yy half) }
 
     let createNonCollidableTile t =
         { FloorType = t
           Collider = None
+          Observable = None
           Entity = None }
 
     let createTimerOnGrass (coords: Vector2) =
@@ -283,6 +286,7 @@ let init (worldConfig: WorldConfig) =
 
         { FloorType = FloorType.Grass
           Collider = None
+          Observable = None
           Entity = Some(Entity.init Entity.Timer pos) }
 
     let createObserverOnGrass (coords: Vector2) =
@@ -290,6 +294,7 @@ let init (worldConfig: WorldConfig) =
 
         { FloorType = FloorType.Grass
           Collider = None
+          Observable = None
           Entity = Some(Entity.init Entity.Observer pos) }
 
     let blocks =
@@ -323,7 +328,6 @@ type Message =
     | PlaceEntity
     | PhysicsTick of time: int64
 
-
 let updatePlayer (message: PlayerMessage) (worldModel: Model) =
     let model = worldModel.Player
 
@@ -339,7 +343,7 @@ let updatePlayer (message: PlayerMessage) (worldModel: Model) =
         let model, cmd =
             match event with
             | Sprite.AnimationComplete _ ->
-                let (newState, walkAni) = transformComplete model.CharacterState
+                let (newState, walkAni, speed) = transformComplete model.CharacterState
 
                 let maxVelocity =
                     match newState with
@@ -352,7 +356,7 @@ let updatePlayer (message: PlayerMessage) (worldModel: Model) =
                         CharacterState = newState
                         MaxVelocity = maxVelocity }
 
-                modl, (Cmd.ofMsg << SpriteMessage << Sprite.SwitchAnimation) (walkAni, 80, modl.IsMoving)
+                modl, (Cmd.ofMsg << SpriteMessage << Sprite.SwitchAnimation) (walkAni, speed, modl.IsMoving)
             | Sprite.None -> model, Cmd.none
 
         { model with SpriteInfo = newSprite }, cmd
@@ -368,8 +372,18 @@ let updatePlayer (message: PlayerMessage) (worldModel: Model) =
         let (newState, transformAnimation) = transformStart model.CharacterState
 
         { model with CharacterState = newState },
-        (Cmd.ofMsg << SpriteMessage << Sprite.SwitchAnimation) (transformAnimation, 80, true)
+        (Cmd.ofMsg << SpriteMessage << Sprite.SwitchAnimation) (transformAnimation, 100, true)
     | Hold holding -> { model with Holding = holding }, Cmd.none
+
+
+let updateWorld (totalTime:int64) (tiles: Tile[]): Tile[] = 
+    tiles |> Array.map (fun tile -> 
+        let entity = tile.Entity |> Option.map (fun entity -> 
+               let (sprite, ev) = (Sprite.update (Sprite.AnimTick totalTime) entity.Sprite)
+               { entity with Sprite = sprite }
+               )
+        { tile with Entity = entity }
+    )
 
 let mutable lastTick = 0L // we use a mutable tick counter here in order to ensure precision
 
@@ -401,8 +415,12 @@ let update (message: Message) (model: Model) : Model * Cmd<Message> =
                 match player.Carrying with
                 | entity :: rest ->
                     let rounded = posRounded player.Target worldConfig
+                    let entity = Entity.init entity.Type rounded
+                    let sprite, ev = Sprite.update Sprite.StartAnimation entity.Sprite
+                    let entity = { entity with Sprite = sprite }
 
-                    model.Tiles[i] <- { tile with Entity = Some(Entity.init entity.Type rounded) } //TODO: no mutation
+                    model.Tiles[i] <- { tile with Entity = Some(entity) } //TODO: no mutation
+
                     { model with Player = { player with Carrying = rest } }, Cmd.none
                 | _ -> model, Cmd.none
             | _ -> model, Cmd.none
@@ -420,10 +438,13 @@ let update (message: Message) (model: Model) : Model * Cmd<Message> =
         let player, playerMsg = updatePlayer (PlayerPhysicsTick info) model
         let tileAndIndex = getTileAtPos player.Target model.Tiles
 
+        let tiles = updateWorld time model.Tiles
+
         let newCameraPos = updateCameraPos player.Pos model.CameraPos
 
         { model with
             Dt = dt
+            Tiles = tiles
             CameraPos = newCameraPos
             Player = player
             PlayerTarget = tileAndIndex },
