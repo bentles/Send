@@ -255,7 +255,7 @@ let init (worldConfig: WorldConfig) time =
                    | 8, 9 -> grassTile // 8f 9f
                    | 6, 9 -> grassTile // 6f 9f
                    | 7, 8 -> grassTile // 7f 8f
-                   | x, y -> createTimerOnGrass (Vector2(float32 x, float32 y)) time |] // /* createTimerOnGrass (Vector2(float32 x, float32 y)) */ |]
+                   | x, y -> grassTile |] // /* createTimerOnGrass (Vector2(float32 x, float32 y)) */ |]
 
     { Tiles = blocks
       Player = initPlayer 0 0 playerConfig charSprite time
