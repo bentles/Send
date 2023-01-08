@@ -44,35 +44,33 @@ let currentImageConfigAndRelativePos images (animation: AnimationConfig) =
 
 let init pos time (config: SpriteConfig) =
     match config with
-     | SingleSpriteConfig singleConfig ->
+    | SingleSpriteConfig singleConfig ->
         { Images = [ singleConfig.Image ]
-
           CurrentImage = singleConfig.Image
           RelativeYPos = 0
-
           Tint = singleConfig.Tint
-          AnimationState = Stopped (imageSpriteConfig, 0)
+          AnimationState = Stopped(imageSpriteConfig, 0)
           FlipH = false
           FlipV = false
-
           LastFrameTime = time
           FrameLength = singleConfig.FrameLength
           ScreenPos = pos }
-        
-     | AnimatedSpriteConfig aniConfig ->
+
+    | AnimatedSpriteConfig aniConfig ->
         let (img, yPos) =
             currentImageConfigAndRelativePos aniConfig.Images aniConfig.InitAnimation
 
         { Images = aniConfig.Images
-
           CurrentImage = img
           RelativeYPos = yPos
-
           Tint = aniConfig.Tint
-          AnimationState = Stopped(aniConfig.InitAnimation, 0)
+          AnimationState =
+            if aniConfig.Started then
+                Started(aniConfig.InitAnimation, 0)
+            else
+                Stopped(aniConfig.InitAnimation, 0)
           FlipH = false
           FlipV = false
-
           LastFrameTime = time
           FrameLength = aniConfig.FrameLength
           ScreenPos = pos }
@@ -104,13 +102,15 @@ let spriteSourceRect (spriteInfo: ImageConfig) (aniState: AnimationState) pos =
     rect x y width height
 
 
-let drawSprite (model: Model) (cameraPos:Vector2): Viewable =
+let drawSprite (model: Model) (cameraPos: Vector2) : Viewable =
     OnDraw(fun loadedAssets _ (spriteBatch: SpriteBatch) ->
         let texture = loadedAssets.textures[model.CurrentImage.TextureName]
 
         //by convention the flipped sprite will be above the unflipped one
         let flipV = if model.FlipV then -1 else 0
-        let sourceRect = spriteSourceRect model.CurrentImage model.AnimationState (model.RelativeYPos + flipV)
+
+        let sourceRect =
+            spriteSourceRect model.CurrentImage model.AnimationState (model.RelativeYPos + flipV)
 
         let spriteCenter =
             Vector2(float32 (sourceRect.Width / 2), float32 (sourceRect.Height / 2))
@@ -118,7 +118,7 @@ let drawSprite (model: Model) (cameraPos:Vector2): Viewable =
         let cameraOffset = -cameraPos
 
         let actualX = int (model.ScreenPos.X + cameraOffset.X)
-        let actualY =  int (model.ScreenPos.Y + cameraOffset.Y)
+        let actualY = int (model.ScreenPos.Y + cameraOffset.Y)
 
         spriteBatch.Draw(
             texture,
@@ -175,6 +175,7 @@ let update message model =
         , Events.None
     | SwitchAnimation(newAni, increment, start) ->
         let (img, yPos) = currentImageConfigAndRelativePos model.Images newAni
+
         { model with
             AnimationState = if start then Started(newAni, 0) else Stopped(newAni, 0)
             CurrentImage = img
@@ -188,11 +189,15 @@ let update message model =
         , Events.None
     | AnimTick dt -> animTick model dt
     | SetPos p -> { model with ScreenPos = p }, Events.None
-    | SetDirection (flipH, flipV) -> { model with FlipH = flipH; FlipV = flipV }, Events.None
+    | SetDirection(flipH, flipV) ->
+        { model with
+            FlipH = flipH
+            FlipV = flipV },
+        Events.None
 
 
-let view model (cameraPos:Vector2) (dispatch: Message -> unit) =
-    seq { 
-      yield drawSprite model cameraPos
-      yield onupdate (fun input -> dispatch (AnimTick input.totalGameTime)) 
+let view model (cameraPos: Vector2) (dispatch: Message -> unit) =
+    seq {
+        yield drawSprite model cameraPos
+        yield onupdate (fun input -> dispatch (AnimTick input.totalGameTime))
     }

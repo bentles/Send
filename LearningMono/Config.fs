@@ -44,6 +44,7 @@ type AnimationConfig =
 type AnimatedSpriteConfig =
     { Images: ImageConfig list
       InitAnimation: AnimationConfig
+      Started: bool
       Tint: Color
       FrameLength: int64 }
 
@@ -134,6 +135,7 @@ let charSprite: SpriteConfig =
     AnimatedSpriteConfig
         { Images = [ smallCharImage; bigCharImage ]
           InitAnimation = CharAnimations.SmallWalk
+          Started = false
           Tint = Color.White
           FrameLength = 300L }
 
@@ -146,6 +148,7 @@ let timerSpriteConfig =
               Looping = true
               Speed = 100
               Columns = 4 }
+          Started = true
           Tint = Color.White
           FrameLength = 100L }
 
