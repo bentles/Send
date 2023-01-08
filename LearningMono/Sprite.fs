@@ -88,6 +88,7 @@ type Message =
 type Events =
     | None
     | AnimationComplete of int
+    | AnimationLooped of int
 
 let spriteSourceRect (spriteInfo: ImageConfig) (aniState: AnimationState) pos =
     let totalWidth, totalHeight = spriteInfo.PixelSize
@@ -191,6 +192,7 @@ let update message model =
 
 
 let view model (cameraPos:Vector2) (dispatch: Message -> unit) =
-    [ yield drawSprite model cameraPos
-
-      yield onupdate (fun input -> dispatch (AnimTick input.totalGameTime)) ]
+    seq { 
+      yield drawSprite model cameraPos
+      yield onupdate (fun input -> dispatch (AnimTick input.totalGameTime)) 
+    }

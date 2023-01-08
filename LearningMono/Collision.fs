@@ -3,6 +3,7 @@
 open Microsoft.Xna.Framework
 open System
 open Config
+open Xelmish.Viewables
 
 let EPSILON = 1e-8f
 
@@ -30,6 +31,13 @@ type Sweep =
     { Hit: Hit option
       Pos: Vector2
       Time: float32 } //default to 1
+
+let renderAABB (aabb: AABB) (cameraPos: Vector2) =
+    image
+        "tile"
+        Color.Red
+        (int (aabb.Half.X * 2f), int (aabb.Half.Y * 2f))
+        (int (aabb.Pos.X - aabb.Half.X - cameraPos.X), int (aabb.Pos.Y - aabb.Half.Y - cameraPos.Y))
 
 let collider (pos: Vector2) (collisionInfo: CollisionInfo) : AABB =
     { Pos = pos + collisionInfo.Offset

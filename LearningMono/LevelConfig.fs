@@ -10,16 +10,23 @@ type FloorType =
     | Empty
     | Grass
 
-type Producer = {
-    Observable: IObservable<EntityType>
-
-}
-
+[<Struct>]
 type Tile =
     { FloorType: FloorType
       Collider: AABB option
-      Observable: IObservable<EntityType> option
-      Entity: Entity.Model option }
+
+      Subscriptions: Tile list
+      Action: (EntityType -> EntityType) option
+      Entity: Entity.Model option       
+    }
+
+let defaultTile = {
+    FloorType = FloorType.Empty
+    Collider = None
+    Subscriptions = []
+    Action = None
+    Entity = None
+}
 
 type LevelConfig = 
     {

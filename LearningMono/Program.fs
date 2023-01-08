@@ -42,13 +42,14 @@ let update message (model: Model) =
 
 
 let view (model: Model) (dispatch: Message -> unit) =
-    [ yield! World.view model.World (WorldMessage >> dispatch)
+    seq { 
+      yield! World.view model.World (WorldMessage >> dispatch)
 
       yield onupdate (fun input -> dispatch (Tick input.totalGameTime))
 
       //input
       yield onkeydown Keys.N (fun input -> dispatch (NextLevel))
-      yield onkeydown Keys.Escape exit ]
+      yield onkeydown Keys.Escape exit } |> Seq.toList
 
 [<EntryPoint>]
 let main _ =

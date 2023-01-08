@@ -15,10 +15,10 @@ open LevelConfig
 
 
 type Model =
-    { 
-      Tiles: Tile[]
+    { Tiles: Tile[]
 
       Dt: float32
+      Slow: bool
       TimeElapsed: int64
 
       //player and camera
@@ -95,9 +95,9 @@ let playerPhysics model (info: PhysicsInfo) =
     let dy = (float32 (info.Time - yinputTime)) / 1000f
 
     let minTime = 0.08f
-    let diagonal = abs(dx - dy) < minTime;
+    let diagonal = abs (dx - dy) < minTime
 
-    let facing = 
+    let facing =
         match (model.Input.X, model.Input.Y) with
         | (0f, 0f) when diagonal -> Vector2(lastXDir, lastYDir)
         | (0f, 0f) when dx < dy -> Vector2(lastXDir, 0f)
@@ -112,10 +112,10 @@ let playerPhysics model (info: PhysicsInfo) =
     let facing = Vector2.Normalize(facing)
     let target = pos + (60f * facing) + Vector2(0f, 20f)
 
-    let (vel, pos, isMoving) = 
+    let (vel, pos, isMoving) =
         if model.Holding then
             (Vector2.Zero, model.Pos, false)
-        else 
+        else
             (vel, pos, velLength > 0f)
 
     { model with
@@ -142,15 +142,13 @@ let playerAnimations newModel oldModel =
                 | true -> CharAnimations.SmallWalk, CharConfig.BigFrames
                 | false -> CharAnimations.BigWalk, CharConfig.SmallFrames
 
-
             [ (Cmd.ofMsg << SpriteMessage << Sprite.SwitchAnimation) (walkAnimation, speed, true) ]
         | (true, false, Small _) -> [ (Cmd.ofMsg << SpriteMessage) Sprite.Stop ]
         | _ -> []
 
     let setPosMsg = Cmd.ofMsg (SpriteMessage(Sprite.SetPos newModel.Pos))
 
-    let carryCommand =
-        updateCarryingPositions newModel.Pos
+    let carryCommand = updateCarryingPositions newModel.Pos
 
     Cmd.batch [ setPosMsg; carryCommand; yield! animationCommands; yield! directionCommands ]
 
@@ -168,13 +166,6 @@ let transformComplete (characterState: CharacterState) =
     | Small true -> Small true, CharAnimations.SmallWalk, CharConfig.SmallFrames
     | Small false -> Small false, CharAnimations.BigWalk, CharConfig.BigFrames
 
-let renderAABB (aabb: AABB) (cameraPos: Vector2) =
-    image
-        "tile"
-        Color.Red
-        (int (aabb.Half.X * 2f), int (aabb.Half.Y * 2f))
-        (int (aabb.Pos.X - aabb.Half.X - cameraPos.X), int (aabb.Pos.Y - aabb.Half.Y - cameraPos.Y))
-
 let renderCarrying (carrying: Entity.Model list) (cameraPos: Vector2) (charState: CharacterState) =
     let offsetStart =
         match charState with
@@ -183,8 +174,8 @@ let renderCarrying (carrying: Entity.Model list) (cameraPos: Vector2) (charState
         | _ -> Vector2(0f, 55f)
 
     carrying
-    |> List.indexed
-    |> List.collect (fun (i, c) ->
+    |> Seq.indexed
+    |> Seq.collect (fun (i, c) ->
         let offSetPos = cameraPos + offsetStart + (Vector2(0f, 25f) * (float32 i))
         Sprite.view c.Sprite offSetPos (fun f -> ()))
 
@@ -229,32 +220,25 @@ let init (worldConfig: WorldConfig) time =
     let half = Vector2(tileHalf)
 
     let createCollidableTile t xx yy =
-        { FloorType = t
-          Entity = None
-          Observable = None
-          Collider = Some(createColliderFromCoords xx yy half) }
+        { defaultTile with
+            FloorType = t
+            Collider = Some(createColliderFromCoords xx yy half) }
 
-    let createNonCollidableTile t =
-        { FloorType = t
-          Collider = None
-          Observable = None
-          Entity = None }
+    let createNonCollidableTile t = { defaultTile with FloorType = t }
 
     let createTimerOnGrass (coords: Vector2) time =
         let pos = coordsToPos coords.X coords.Y half
 
-        { FloorType = FloorType.Grass
-          Collider = None
-          Observable = None
-          Entity = Some(Entity.init Entity.Timer pos time) }
+        { defaultTile with
+            FloorType = FloorType.Grass
+            Entity = Some(Entity.init Entity.Timer pos time) }
 
     let createObserverOnGrass (coords: Vector2) time =
         let pos = coordsToPos coords.X coords.Y half
 
-        { FloorType = FloorType.Grass
-          Collider = None
-          Observable = None
-          Entity = Some(Entity.init Entity.Observer pos time) }
+        { defaultTile with
+            FloorType = FloorType.Grass
+            Entity = Some(Entity.init Entity.Observer pos time) }
 
     let blocks =
         [| for yy in 0 .. (worldConfig.WorldTileLength - 1) do
@@ -265,16 +249,17 @@ let init (worldConfig: WorldConfig) time =
                    | 0, 0 -> createNonCollidableTile FloorType.Grass
                    | 2, 2 -> createTimerOnGrass (Vector2(2f)) time
                    | 3, 3 -> createObserverOnGrass (Vector2(3f)) time
-                   | 5, 5 -> createCollidableTile FloorType.Empty 5f 5f 
+                   | 5, 5 -> createCollidableTile FloorType.Empty 5f 5f
                    | 5, 6 -> grassTile // 5f 6f
                    | 7, 9 -> grassTile // 7f 9f
                    | 8, 9 -> grassTile // 8f 9f
                    | 6, 9 -> grassTile // 6f 9f
                    | 7, 8 -> grassTile // 7f 8f
-                   | x, y -> grassTile |]// /* createTimerOnGrass (Vector2(float32 x, float32 y)) */ |]
+                   | x, y -> createTimerOnGrass (Vector2(float32 x, float32 y)) time |] // /* createTimerOnGrass (Vector2(float32 x, float32 y)) */ |]
 
     { Tiles = blocks
       Player = initPlayer 0 0 playerConfig charSprite time
+      Slow = false
       Dt = 0f
       PlayerTarget = None
       TimeElapsed = 0
@@ -286,7 +271,7 @@ type Message =
     | PlayerMessage of PlayerMessage
     | PickUpEntity
     | PlaceEntity
-    | PhysicsTick of time: int64
+    | PhysicsTick of time: int64 * slow: bool
 
 let updatePlayer (message: PlayerMessage) (worldModel: Model) =
     let model = worldModel.Player
@@ -317,6 +302,7 @@ let updatePlayer (message: PlayerMessage) (worldModel: Model) =
                         MaxVelocity = maxVelocity }
 
                 modl, (Cmd.ofMsg << SpriteMessage << Sprite.SwitchAnimation) (walkAni, speed, modl.IsMoving)
+            | Sprite.AnimationLooped _
             | Sprite.None -> model, Cmd.none
 
         { model with SpriteInfo = newSprite }, cmd
@@ -336,14 +322,22 @@ let updatePlayer (message: PlayerMessage) (worldModel: Model) =
     | Hold holding -> { model with Holding = holding }, Cmd.none
 
 
-let updateWorld (totalTime:int64) (tiles: Tile[]): Tile[] = 
-    tiles |> Array.map (fun tile -> 
-        let entity = tile.Entity |> Option.map (fun entity -> 
-               let (sprite, ev) = (Sprite.update (Sprite.AnimTick totalTime) entity.Sprite)
-               { entity with Sprite = sprite }
-               )
-        { tile with Entity = entity }
-    )
+let updateWorld (totalTime: int64) (tiles: Tile[]) : Tile[] =
+    tiles
+    |> Array.map (fun tile ->
+        let entity =
+            tile.Entity
+            |> Option.map (fun entity ->
+                let (sprite, event) = (Sprite.update (Sprite.AnimTick totalTime) entity.Sprite)
+
+                match event with
+                | Sprite.AnimationLooped i -> ()
+                | _ -> ()
+
+
+                { entity with Sprite = sprite })
+
+        { tile with Entity = entity })
 
 let mutable lastTick = 0L // we use a mutable tick counter here in order to ensure precision
 
@@ -385,7 +379,7 @@ let update (message: Message) (model: Model) : Model * Cmd<Message> =
                 | _ -> model, Cmd.none
             | _ -> model, Cmd.none
         | _ -> model, Cmd.none
-    | PhysicsTick time ->
+    | PhysicsTick (time, slow) ->
         //TODO: get a list of things the player could interact with
         let dt = (float32 (time - lastTick)) / 1000f
         lastTick <- time
@@ -404,6 +398,7 @@ let update (message: Message) (model: Model) : Model * Cmd<Message> =
 
         { model with
             Dt = dt
+            Slow = slow
             TimeElapsed = time
             Tiles = tiles
             CameraPos = newCameraPos
@@ -413,7 +408,7 @@ let update (message: Message) (model: Model) : Model * Cmd<Message> =
 
 
 // VIEW
-let renderWorld (model: Model) (worldConfig:WorldConfig) =
+let renderWorld (model: Model) (worldConfig: WorldConfig) =
     let blockWidth = worldConfig.TileWidth
     let empty = "tile"
     let grass = "grass"
@@ -488,7 +483,7 @@ let renderWorld (model: Model) (worldConfig:WorldConfig) =
     }
 
 let viewPlayer model (cameraPos: Vector2) (dispatch: PlayerMessage -> unit) =
-    [
+    seq {
       //input
       yield directions Keys.Up Keys.Down Keys.Left Keys.Right (fun f -> dispatch (Input f))
       yield onkeydown Keys.Space (fun _ -> dispatch (TransformCharacter))
@@ -505,25 +500,25 @@ let viewPlayer model (cameraPos: Vector2) (dispatch: PlayerMessage -> unit) =
       //        $"pos:{model.Pos.X}  {model.Pos.Y}\ninput:{model.Input.X}  {model.Input.Y} \nfacing:{model.Facing.X}  {model.Facing.Y}"
       //        (40, 300)
       //yield renderAABB (collider model.Pos model.CollisionInfo) cameraPos
-      ]
+      }
 
 let view model (dispatch: Message -> unit) =
-    [ 
+    seq {
       // input
       yield onkeydown Keys.Z (fun _ -> dispatch (PickUpEntity))
       yield onkeydown Keys.X (fun _ -> dispatch (PlaceEntity))
 
       // physics
-      yield onupdate (fun input -> dispatch (PhysicsTick input.totalGameTime))
+      yield onupdate (fun input -> dispatch (PhysicsTick (input.totalGameTime, input.gameTime.IsRunningSlowly)))
 
       //render
       yield! renderWorld model worldConfig
       yield! viewPlayer model.Player (halfScreenOffset model.CameraPos) (PlayerMessage >> dispatch)
-     
+
       //debug
       // ok this is a complete lie since the timestep is fixed
-      //yield
-      //    debugText
-      //        $"fps:{ round (1f / model.Dt) }"
-      //        (40, 100)
-       ]
+      yield
+          debugText
+              $"running slow?:{ model.Slow }"
+              (40, 100)
+      }
