@@ -12,6 +12,7 @@ open FsToolkit.ErrorHandling
 open Player
 open Utility
 open LevelConfig
+open Entity
 
 
 type Model =
@@ -229,8 +230,15 @@ let init (worldConfig: WorldConfig) time =
     let createTimerOnGrass (coords: Vector2) time =
         let pos = coordsToPos coords.X coords.Y half
 
+        let infiniteList = repeatList [ Rock; Rock; Rock ]
+
         { defaultTile with
             FloorType = FloorType.Grass
+            Reactive =
+                Subject
+                    { Generate = (fun () -> Seq.head infiniteList)
+                      Subscriptions = [] }
+
             Entity = Some(Entity.init Entity.Timer pos time) }
 
     let createObserverOnGrass (coords: Vector2) time =
@@ -271,7 +279,41 @@ type Message =
     | PlayerMessage of PlayerMessage
     | PickUpEntity
     | PlaceEntity
+    | TileEvents of (int * EntityType) list
     | PhysicsTick of time: int64 * slow: bool
+
+let updateWorld (totalTime: int64) (tiles: Tile[]) : Tile[] * Cmd<Message> =
+    let newTilesAndEvents = 
+        tiles
+        |> Array.map (fun tile ->
+            let (entityAndEvent) =
+                option {
+                    let! entity = tile.Entity
+                    let (sprite, ev) = (Sprite.update (Sprite.AnimTick totalTime) entity.Sprite)
+                    let r = ({ entity with Sprite = sprite }, ev)
+                    return r
+                }        
+
+            match entityAndEvent with
+            | Some (entity, event) -> ({ tile with Entity = Some entity }, event)
+            | None -> { tile with Entity = None }, Sprite.None
+        )
+    
+    let tiles, _ = Array.unzip newTilesAndEvents
+    let messages =
+        seq {
+            for tile, event in newTilesAndEvents do
+            match event, tile.Reactive with
+            | Sprite.AnimationLooped i, Subject s ->
+                let newVal = s.Generate() 
+                for sub in s.Subscriptions do
+                    yield (sub, newVal)
+            | _ -> do ()
+        } |> Seq.toList
+
+    match messages with
+    | [] -> tiles,Cmd.none
+    | messages -> tiles,(Cmd.ofMsg<<TileEvents) messages
 
 let updatePlayer (message: PlayerMessage) (worldModel: Model) =
     let model = worldModel.Player
@@ -322,23 +364,6 @@ let updatePlayer (message: PlayerMessage) (worldModel: Model) =
     | Hold holding -> { model with Holding = holding }, Cmd.none
 
 
-let updateWorld (totalTime: int64) (tiles: Tile[]) : Tile[] =
-    tiles
-    |> Array.map (fun tile ->
-        let entity =
-            tile.Entity
-            |> Option.map (fun entity ->
-                let (sprite, event) = (Sprite.update (Sprite.AnimTick totalTime) entity.Sprite)
-
-                match event with
-                | Sprite.AnimationLooped i -> ()
-                | _ -> ()
-
-
-                { entity with Sprite = sprite })
-
-        { tile with Entity = entity })
-
 let mutable lastTick = 0L // we use a mutable tick counter here in order to ensure precision
 
 let update (message: Message) (model: Model) : Model * Cmd<Message> =
@@ -379,7 +404,7 @@ let update (message: Message) (model: Model) : Model * Cmd<Message> =
                 | _ -> model, Cmd.none
             | _ -> model, Cmd.none
         | _ -> model, Cmd.none
-    | PhysicsTick (time, slow) ->
+    | PhysicsTick(time, slow) ->
         //TODO: get a list of things the player could interact with
         let dt = (float32 (time - lastTick)) / 1000f
         lastTick <- time
@@ -392,7 +417,7 @@ let update (message: Message) (model: Model) : Model * Cmd<Message> =
         let player, playerMsg = updatePlayer (PlayerPhysicsTick info) model
         let tileAndIndex = getTileAtPos player.Target model.Tiles
 
-        let tiles = updateWorld time model.Tiles
+        let tiles, worldMsg = updateWorld time model.Tiles
 
         let newCameraPos = updateCameraPos player.Pos model.CameraPos
 
@@ -404,8 +429,25 @@ let update (message: Message) (model: Model) : Model * Cmd<Message> =
             CameraPos = newCameraPos
             Player = player
             PlayerTarget = tileAndIndex },
-        Cmd.map PlayerMessage playerMsg
+        Cmd.batch [ Cmd.map PlayerMessage playerMsg ; worldMsg]
+    | TileEvents events -> 
+        let allMessages =
+            events |> Seq.collect (fun (eventIndex ,entityType) -> 
+                match model.Tiles[eventIndex].Reactive with 
+                | Observable ob -> 
+                    let result = ob.Action entityType
+                    seq {
+                        for sub in ob.Subscriptions do
+                            yield (sub, result)
+                    }
+                | _ -> Seq.empty
+                ) |> Seq.toList
 
+        //TODO: in theory the tiles should update so I can show the user
+        // but alas they do not
+        match allMessages with
+         | [] -> model,Cmd.none
+         | messages -> model,(Cmd.ofMsg<<TileEvents) messages
 
 // VIEW
 let renderWorld (model: Model) (worldConfig: WorldConfig) =
@@ -414,9 +456,7 @@ let renderWorld (model: Model) (worldConfig: WorldConfig) =
     let grass = "grass"
 
     let sourceRect = rect 0 0 blockWidth blockWidth
-
     let cameraOffset = -(halfScreenOffset model.CameraPos)
-
 
     seq {
         for i in 0 .. (model.Tiles.Length - 1) do
@@ -484,41 +524,38 @@ let renderWorld (model: Model) (worldConfig: WorldConfig) =
 
 let viewPlayer model (cameraPos: Vector2) (dispatch: PlayerMessage -> unit) =
     seq {
-      //input
-      yield directions Keys.Up Keys.Down Keys.Left Keys.Right (fun f -> dispatch (Input f))
-      yield onkeydown Keys.Space (fun _ -> dispatch (TransformCharacter))
-      yield onkeydown Keys.LeftControl (fun _ -> dispatch (Hold true))
-      yield onkeyup Keys.LeftControl (fun _ -> dispatch (Hold false))
+        //input
+        yield directions Keys.Up Keys.Down Keys.Left Keys.Right (fun f -> dispatch (Input f))
+        yield onkeydown Keys.Space (fun _ -> dispatch (TransformCharacter))
+        yield onkeydown Keys.LeftControl (fun _ -> dispatch (Hold true))
+        yield onkeyup Keys.LeftControl (fun _ -> dispatch (Hold false))
 
-      //render
-      yield! Sprite.view model.SpriteInfo cameraPos (SpriteMessage >> dispatch)
-      yield! renderCarrying model.Carrying cameraPos model.CharacterState
+        //render
+        yield! Sprite.view model.SpriteInfo cameraPos (SpriteMessage >> dispatch)
+        yield! renderCarrying model.Carrying cameraPos model.CharacterState
 
-      //debug
-      //yield
-      //    debugText
-      //        $"pos:{model.Pos.X}  {model.Pos.Y}\ninput:{model.Input.X}  {model.Input.Y} \nfacing:{model.Facing.X}  {model.Facing.Y}"
-      //        (40, 300)
-      //yield renderAABB (collider model.Pos model.CollisionInfo) cameraPos
-      }
+    //debug
+    //yield
+    //    debugText
+    //        $"pos:{model.Pos.X}  {model.Pos.Y}\ninput:{model.Input.X}  {model.Input.Y} \nfacing:{model.Facing.X}  {model.Facing.Y}"
+    //        (40, 300)
+    //yield renderAABB (collider model.Pos model.CollisionInfo) cameraPos
+    }
 
 let view model (dispatch: Message -> unit) =
     seq {
-      // input
-      yield onkeydown Keys.Z (fun _ -> dispatch (PickUpEntity))
-      yield onkeydown Keys.X (fun _ -> dispatch (PlaceEntity))
+        // input
+        yield onkeydown Keys.Z (fun _ -> dispatch (PickUpEntity))
+        yield onkeydown Keys.X (fun _ -> dispatch (PlaceEntity))
 
-      // physics
-      yield onupdate (fun input -> dispatch (PhysicsTick (input.totalGameTime, input.gameTime.IsRunningSlowly)))
+        // physics
+        yield onupdate (fun input -> dispatch (PhysicsTick(input.totalGameTime, input.gameTime.IsRunningSlowly)))
 
-      //render
-      yield! renderWorld model worldConfig
-      yield! viewPlayer model.Player (halfScreenOffset model.CameraPos) (PlayerMessage >> dispatch)
+        //render
+        yield! renderWorld model worldConfig
+        yield! viewPlayer model.Player (halfScreenOffset model.CameraPos) (PlayerMessage >> dispatch)
 
-      //debug
-      // ok this is a complete lie since the timestep is fixed
-      yield
-          debugText
-              $"running slow?:{ model.Slow }"
-              (40, 100)
-      }
+        //debug
+        // ok this is a complete lie since the timestep is fixed
+        yield debugText $"running slow?:{model.Slow}" (40, 100)
+    }

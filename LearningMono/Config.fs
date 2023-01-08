@@ -16,7 +16,7 @@ type blocks
 type WorldConfig =
     { TileWidth: int; WorldTileLength: int }
 
-let worldConfig = { TileWidth = 50; WorldTileLength = 50 }
+let worldConfig = { TileWidth = 50; WorldTileLength = 10 }
 
 // player config
 type AABBConfig = { Half: Vector2; Offset: Vector2 }
