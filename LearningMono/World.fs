@@ -167,7 +167,7 @@ let transformComplete (characterState: CharacterState) =
     | Small true -> Small true, CharAnimations.SmallWalk, CharConfig.SmallFrames
     | Small false -> Small false, CharAnimations.BigWalk, CharConfig.BigFrames
 
-let renderCarrying (carrying: Entity.Model list) (cameraPos: Vector2) (charState: CharacterState) =
+let viewPlayerCarrying (carrying: Entity.Model list) (cameraPos: Vector2) (charState: CharacterState) =
     let offsetStart =
         match charState with
         | Small true -> Vector2(0f, 40f)
@@ -446,7 +446,7 @@ let update (message: Message) (model: Model) : Model * Cmd<Message> =
         Cmd.batch [ Cmd.map PlayerMessage playerMsg ]
 
 // VIEW
-let renderWorld (model: Model) (worldConfig: WorldConfig) =
+let viewWorld (model: Model) (worldConfig: WorldConfig) =
     let blockWidth = worldConfig.TileWidth
     let empty = "tile"
     let grass = "grass"
@@ -456,10 +456,10 @@ let renderWorld (model: Model) (worldConfig: WorldConfig) =
 
     seq {
         for i in 0 .. (model.Tiles.Length - 1) do
-            let block = model.Tiles[i]
+            let tile = model.Tiles[i]
 
             let texture =
-                match block.FloorType with
+                match tile.FloorType with
                 | FloorType.Grass -> grass
                 | FloorType.Empty -> empty
 
@@ -485,11 +485,11 @@ let renderWorld (model: Model) (worldConfig: WorldConfig) =
                 image texture color (sourceRect.Width, sourceRect.Height) (actualX, actualY)
 
             let entity =
-                block.Entity
+                tile.Entity
                 |> Option.map (fun (entity: Entity.Model) -> Sprite.view entity.Sprite -cameraOffset (fun f -> ()))
 
             let debug =
-                block.Collider
+                tile.Collider
                 |> Option.map (fun (b: AABB) ->
                     image
                         empty
@@ -498,8 +498,10 @@ let renderWorld (model: Model) (worldConfig: WorldConfig) =
                         (int (b.Pos.X - b.Half.X + cameraOffset.X), int (b.Pos.Y - b.Half.Y + cameraOffset.Y)))
                 |> Option.toList
 
+            
+
             let entityDebug =
-                block.Entity
+                tile.Entity
                 |> Option.bind (fun e -> e.Collider)
                 |> Option.map (fun (b: AABB) ->
                     image
@@ -509,10 +511,18 @@ let renderWorld (model: Model) (worldConfig: WorldConfig) =
                         (int (b.Pos.X - b.Half.X + cameraOffset.X), int (b.Pos.Y - b.Half.Y + cameraOffset.Y)))
                 |> Option.toList
 
+            let emitting = 
+                match tile.Reactive with
+                    | Some (Observable ({ ToEmit = Some (Emitting s) }, _)) //ok lol this seems a bit much 
+                    | Some (Subject ({ ToEmit = Some (Emitting s) }, _)) -> 
+                        entityDebug
+                    | _ -> []
+
             match entity with
             | Some s ->
                 yield floor
                 yield! s
+                yield! emitting
             //yield! debug
             //yield! entityDebug
             | None -> yield floor
@@ -528,7 +538,7 @@ let viewPlayer model (cameraPos: Vector2) (dispatch: PlayerMessage -> unit) =
 
         //render
         yield! Sprite.view model.SpriteInfo cameraPos (SpriteMessage >> dispatch)
-        yield! renderCarrying model.Carrying cameraPos model.CharacterState
+        yield! viewPlayerCarrying model.Carrying cameraPos model.CharacterState
 
     //debug
     //yield
@@ -548,7 +558,7 @@ let view model (dispatch: Message -> unit) =
         yield onupdate (fun input -> dispatch (PhysicsTick(input.totalGameTime, input.gameTime.IsRunningSlowly)))
 
         //render
-        yield! renderWorld model worldConfig
+        yield! viewWorld model worldConfig
         yield! viewPlayer model.Player (halfScreenOffset model.CameraPos) (PlayerMessage >> dispatch)
 
         //debug
