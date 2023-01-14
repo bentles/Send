@@ -3,6 +3,7 @@
 open Microsoft.Xna.Framework
 open Config
 open Collision
+open Xelmish.Model
 
 let coordsToPos (xx: float32) (yy: float32) (half: Vector2) =
     let startX = 0f
@@ -34,3 +35,24 @@ let createColliderFromCoords (xx: float32) (yy: float32) (half: Vector2) =
     { Pos = coordsToPos xx yy half
       Half = half }
 
+let imageWithSource (key: string) (colour: Color) (srcSize: int * int) (srcPos: int * int) (destSize: int * int) (destPos: int * int): Viewable =
+   
+    OnDraw(fun loadedAssets _ (spriteBatch: SpriteBatch) ->
+        let texture = loadedAssets.textures[key]
+        let (x, y) = destPos
+        let (width, height) = destSize
+
+        let (sourceX, sourceY) = srcPos
+        let (sourceWidth, sourceHeight) = srcSize
+
+        spriteBatch.Draw(
+            texture,
+            Rectangle(x, y, width, height),
+            Rectangle(sourceX, sourceY, sourceWidth, sourceHeight),
+            colour,
+            0f,
+            Vector2.Zero,            
+            Graphics.SpriteEffects.None,
+            0f
+        ))
+    

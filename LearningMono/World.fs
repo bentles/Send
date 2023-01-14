@@ -56,7 +56,7 @@ let updateCarryingPositions (pos: Vector2) =
     Cmd.ofMsg (CarryingMessage(Sprite.Message.SetPos pos))
 
 
-let playerPhysics model (info: PhysicsInfo) =
+let updatePlayerPhysics model (info: PhysicsInfo) =
     let dt = info.Dt
 
     // record when last x and y were pressed
@@ -128,7 +128,7 @@ let playerPhysics model (info: PhysicsInfo) =
         Pos = pos
         IsMoving = isMoving }
 
-let playerAnimations newModel oldModel =
+let updatePlayerAnimations newModel oldModel =
     let directionCommands =
         if newModel.Facing.X <> oldModel.Facing.X || newModel.Facing.Y <> oldModel.Facing.Y then
             [ Cmd.ofMsg (SpriteMessage(Sprite.SetDirection(newModel.Facing.X < 0f, newModel.Facing.Y < 0f))) ]
@@ -236,15 +236,15 @@ let init (worldConfig: WorldConfig) time =
             FloorType = FloorType.Grass
             Reactive =
                 (Some << Subject) (
-                    { TicksSinceLastEmit = 0
+                    { TicksSinceEmit = 0
                       GenerationNumber = 0
-                      ToEmit = None },
+                      ToEmit = Nothing },
                     listEmitter
                 )
 
             Entity = Some(Entity.init Entity.Timer pos time) }
 
-    let createObserverOnGrass (coords: Vector2) time =
+    let createObserverOnGrass (coords: Vector2) time func =
         let pos = coordsToPos coords.X coords.Y half
 
         { defaultTile with
@@ -252,10 +252,10 @@ let init (worldConfig: WorldConfig) time =
             Reactive =
                 (Some(
                     Observable(
-                        { ToEmit = None
+                        { ToEmit = Nothing
                           Observing = 22
-                          TicksSinceLastEmit = 0 },
-                        onlyRock
+                          TicksSinceEmit = 0 },
+                        func
                     )
                 ))
             Entity = Some(Entity.init Entity.Observer pos time) }
@@ -268,10 +268,10 @@ let init (worldConfig: WorldConfig) time =
                    match xx, yy with
                    | 0, 0 -> createNonCollidableTile FloorType.Grass
                    | 2, 2 -> createTimerOnGrass (Vector2(2f)) time
-                   | 3, 3 -> createObserverOnGrass (Vector2(3f)) time
+                   | 3, 3 -> createObserverOnGrass (Vector2(3f)) time onlyRock
                    | 5, 5 -> createCollidableTile FloorType.Empty 5f 5f
-                   | 5, 6 -> grassTile // 5f 6f
-                   | 7, 9 -> grassTile // 7f 9f
+                   | 5, 6 -> createObserverOnGrass (Vector2(5f, 6f)) time id
+                   | 7, 9 -> createObserverOnGrass (Vector2(7f, 9f)) time mapToTimer
                    | 8, 9 -> grassTile // 8f 9f
                    | 6, 9 -> grassTile // 6f 9f
                    | 7, 8 -> grassTile // 7f 8f
@@ -302,8 +302,7 @@ let updateWorldReactive (tiles: Tile[]) : Tile[] =
 
                 let newReactive =
                     match reactive with
-                    | Subject(subject, update) -> 
-                        Subject((update subject), update)
+                    | Subject(subject, update) -> Subject((update subject), update)
                     | Observable(observable, update) -> Observable((update observable tiles), update)
 
                 return newReactive
@@ -332,8 +331,8 @@ let updatePlayer (message: PlayerMessage) (worldModel: Model) =
     match message with
     | Input direction -> { model with Input = direction }, Cmd.none
     | PlayerPhysicsTick info ->
-        let newModel = playerPhysics model info
-        let aniCommands = playerAnimations newModel model
+        let newModel = updatePlayerPhysics model info
+        let aniCommands = updatePlayerAnimations newModel model
         newModel, aniCommands
     | SpriteMessage sm ->
         let (newSprite, event) = Sprite.update sm model.SpriteInfo
@@ -446,6 +445,16 @@ let update (message: Message) (model: Model) : Model * Cmd<Message> =
         Cmd.batch [ Cmd.map PlayerMessage playerMsg ]
 
 // VIEW
+
+let viewEmitting (entityType: EntityType) (ticksSinceLast:int) pos =
+    let imageInfo = getEmitImage entityType
+    let (width, height) = (imageInfo.PixelSize)
+    let size = (width / imageInfo.Columns , height / imageInfo.Rows)
+    if ticksSinceLast < 20 then
+        [imageWithSource imageInfo.TextureName (Color.FromNonPremultiplied(255,255,255,150)) size (0,0) size pos]
+    else
+        []
+
 let viewWorld (model: Model) (worldConfig: WorldConfig) =
     let blockWidth = worldConfig.TileWidth
     let empty = "tile"
@@ -498,8 +507,6 @@ let viewWorld (model: Model) (worldConfig: WorldConfig) =
                         (int (b.Pos.X - b.Half.X + cameraOffset.X), int (b.Pos.Y - b.Half.Y + cameraOffset.Y)))
                 |> Option.toList
 
-            
-
             let entityDebug =
                 tile.Entity
                 |> Option.bind (fun e -> e.Collider)
@@ -511,12 +518,13 @@ let viewWorld (model: Model) (worldConfig: WorldConfig) =
                         (int (b.Pos.X - b.Half.X + cameraOffset.X), int (b.Pos.Y - b.Half.Y + cameraOffset.Y)))
                 |> Option.toList
 
-            let emitting = 
+            let emitting =
                 match tile.Reactive with
-                    | Some (Observable ({ ToEmit = Some (Emitting s) }, _)) //ok lol this seems a bit much 
-                    | Some (Subject ({ ToEmit = Some (Emitting s) }, _)) -> 
-                        entityDebug
-                    | _ -> []
+                | Some(Observable({ ToEmit = Emitting s; TicksSinceEmit = t }, _)) 
+                | Some(Subject({ ToEmit = Emitting s; TicksSinceEmit = t }, _)) 
+                | Some(Subject({ ToEmit = Emitted s; TicksSinceEmit = t }, _)) 
+                | Some(Observable ({ ToEmit = Emitted s; TicksSinceEmit = t }, _)) -> viewEmitting s t (actualX, actualY - 20) 
+                | _ -> []
 
             match entity with
             | Some s ->

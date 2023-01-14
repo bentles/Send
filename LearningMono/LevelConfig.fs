@@ -7,6 +7,8 @@ open Entity
 type Emit =
     | WillEmit of EntityType
     | Emitting of EntityType
+    | Emitted of EntityType
+    | Nothing
 
 // Level primitives
 type FloorType =
@@ -14,36 +16,37 @@ type FloorType =
     | Grass
 
 type Observable =
-    { ToEmit: Emit option
-      TicksSinceLastEmit: int
+    { ToEmit: Emit
+      TicksSinceEmit: int
       Observing: int }
 
 type Subject =
-    { ToEmit: Emit option
-      TicksSinceLastEmit: int
+    { ToEmit: Emit
+      TicksSinceEmit: int
       GenerationNumber: int }
 
 let buildRepeatListEmittingEvery (list: EntityType list) (every: int) =
     let length = list.Length
 
     fun (subject: Subject) ->
-        if subject.TicksSinceLastEmit > every then
+        if subject.TicksSinceEmit > every then
             let index = subject.GenerationNumber % length
             let itemToEmit = List.item index list
 
             { subject with
-                TicksSinceLastEmit = 0
+                TicksSinceEmit = 0
                 GenerationNumber = subject.GenerationNumber + 1
-                ToEmit = Some(WillEmit itemToEmit) }
+                ToEmit = WillEmit itemToEmit }
         else
             { subject with
-                TicksSinceLastEmit = subject.TicksSinceLastEmit + 1
+                TicksSinceEmit = subject.TicksSinceEmit + 1
                 ToEmit =
                     match subject.ToEmit with
-                    | Some(WillEmit t) ->
+                    | WillEmit t ->
                         printfn "%A" subject.ToEmit
-                        Some(Emitting t)
-                    | _ -> None }
+                        Emitting t
+                    | Emitting t -> Emitted t
+                    | other -> other }
 
 let buildRepeatItemEmitEvery (item: EntityType) (every: int) =
     buildRepeatListEmittingEvery [ item ] every
@@ -70,36 +73,47 @@ type LevelConfig =
       LevelBuilder: unit -> Tile[] }
 
 
-let buildObserver (observerFunc: EntityType -> Emit option) =
+let buildObserver (observerFunc: EntityType -> Emit) =
     let observer (observable: Observable) (tiles: Tile[]) =
         //if you have your own stuffs do that
         let toEmit =
             match observable.ToEmit with
-            | Some(WillEmit t) -> Some(Emitting t)
-            | _ -> None
+            | WillEmit t -> Emitting t
+            | Emitting t -> Emitted t
+            | other -> other
 
         //otherwise check in on the thing you are observing
         let toEmit =
-            if toEmit.IsNone then
+            match toEmit with
+            | Nothing
+            | Emitted _ as cur ->
                 let tile = Array.item observable.Observing tiles
 
                 match tile.Reactive with
-                | Some(Observable({ ToEmit = Some(Emitting s) }, _)) //ok lol this seems a bit much
-                | Some(Subject({ ToEmit = Some(Emitting s) }, _)) ->
-                    printfn "observing %A" s
-                    observerFunc s
-                | _ -> None
-            else
-                toEmit
+                | Some(Observable({ ToEmit = (Emitting s) }, _)) //ok lol this seems a bit much
+                | Some(Subject({ ToEmit = (Emitting s) }, _)) -> observerFunc s
+                | _ -> cur
+            | _ -> toEmit
 
-        { observable with ToEmit = toEmit }
+        let ticks =
+            match toEmit with
+            | Emitting t -> 0
+            | _ -> observable.TicksSinceEmit + 1
+
+        { observable with
+            ToEmit = toEmit
+            TicksSinceEmit = ticks }
 
     observer
 
-let mapper = buildObserver (fun e -> Some(Emitting e))
+let id = buildObserver (fun e -> Emitting e)
+
+let mapToTimer = buildObserver (fun e -> Emitting Timer)
 
 let onlyRock =
     buildObserver (fun e ->
         match e with
-        | Rock -> Some(WillEmit e)
-        | _ -> None)
+        | Rock ->
+            printfn "observing %A" e
+            WillEmit e
+        | _ -> Nothing)

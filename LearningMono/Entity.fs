@@ -20,6 +20,12 @@ let getSpriteConfig (eType: EntityType) : SpriteConfig =
     | Timer -> timerSpriteConfig
     | Observer -> observerSpriteConfig
 
+let getEmitImage (eType: EntityType)  =
+    match eType with
+    | Rock -> rockImage
+    | Timer -> timerImage
+    | Observer -> observerImage
+
 let getCollider (eType: EntityType) (pos: Vector2) : AABB =
     match eType with
     | Rock -> { Pos = pos; Half = Vector2(10f, 10f) }
