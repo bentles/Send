@@ -48,10 +48,6 @@ TODO:
 - use the stopped animation
 
 
-
-
-
-
 DOING:
 - figure out if game idea is fun first
 	- add a filter observer

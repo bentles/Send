@@ -230,15 +230,14 @@ let init (worldConfig: WorldConfig) time =
     let createTimerOnGrass (coords: Vector2) time =
         let pos = coordsToPos coords.X coords.Y half
 
-        let listEmitter = buildRepeatListEmitEvery [ Rock; Timer; Timer ] 10
+        let listEmitter = buildRepeatListEmittingEvery [ Rock; Timer; Timer ] 60
 
         { defaultTile with
             FloorType = FloorType.Grass
             Reactive =
                 (Some << Subject) (
-                    { TicksSinceLastGeneration = 0
+                    { TicksSinceLastEmit = 0
                       GenerationNumber = 0
-                      Subscriptions = [ 33 ]
                       ToEmit = None },
                     listEmitter
                 )
@@ -251,12 +250,14 @@ let init (worldConfig: WorldConfig) time =
         { defaultTile with
             FloorType = FloorType.Grass
             Reactive =
-                (Some << Observable)
-                    { Action =
-                        (fun s ->
-                            printf "%A" s |> ignore
-                            s)
-                      Subscriptions = [] }
+                (Some(
+                    Observable(
+                        { ToEmit = None
+                          Observing = 22
+                          TicksSinceLastEmit = 0 },
+                        mapper
+                    )
+                ))
             Entity = Some(Entity.init Entity.Observer pos time) }
 
     let blocks =
@@ -290,9 +291,7 @@ type Message =
     | PlayerMessage of PlayerMessage
     | PickUpEntity
     | PlaceEntity
-    | TileEvents of (int * EntityType) list
     | PhysicsTick of time: int64 * slow: bool
-
 
 let updateWorldReactive (tiles: Tile[]) : Tile[] =
     tiles
@@ -303,8 +302,9 @@ let updateWorldReactive (tiles: Tile[]) : Tile[] =
 
                 let newReactive =
                     match reactive with
-                    | Subject(subject, update) -> Subject((update subject), update)
-                    | other -> other
+                    | Subject(subject, update) -> 
+                        Subject((update subject), update)
+                    | Observable(observable, update) -> Observable((update observable tiles), update)
 
                 return newReactive
             }
@@ -444,26 +444,6 @@ let update (message: Message) (model: Model) : Model * Cmd<Message> =
             Player = player
             PlayerTarget = tileAndIndex },
         Cmd.batch [ Cmd.map PlayerMessage playerMsg ]
-    | TileEvents events ->
-        let allMessages =
-            events
-            |> Seq.collect (fun (eventIndex, entityType) ->
-                match model.Tiles[eventIndex].Reactive with
-                | Some (Observable ob) ->
-                    let result = ob.Action entityType
-
-                    seq {
-                        for sub in ob.Subscriptions do
-                            yield (sub, result)
-                    }
-                | _ -> Seq.empty)
-            |> Seq.toList
-
-        //TODO: in theory the tiles should update so I can show the user
-        // but alas they do not
-        match allMessages with
-        | [] -> model, Cmd.none
-        | messages -> model, (Cmd.ofMsg << TileEvents) messages
 
 // VIEW
 let renderWorld (model: Model) (worldConfig: WorldConfig) =
