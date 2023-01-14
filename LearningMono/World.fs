@@ -230,14 +230,18 @@ let init (worldConfig: WorldConfig) time =
     let createTimerOnGrass (coords: Vector2) time =
         let pos = coordsToPos coords.X coords.Y half
 
-        let infiniteList = repeatList [ Rock; Timer; Timer ]
+        let listEmitter = buildRepeatListEmitEvery [ Rock; Timer; Timer ] 10
 
         { defaultTile with
             FloorType = FloorType.Grass
             Reactive =
-                Subject
-                    { Generate = (fun () -> Seq.head infiniteList) //TODO: had my mutable brain enabled here :(
-                      Subscriptions = [33] }
+                (Some << Subject) (
+                    { TicksSinceLastGeneration = 0
+                      GenerationNumber = 0
+                      Subscriptions = [ 33 ]
+                      ToEmit = None },
+                    listEmitter
+                )
 
             Entity = Some(Entity.init Entity.Timer pos time) }
 
@@ -247,10 +251,11 @@ let init (worldConfig: WorldConfig) time =
         { defaultTile with
             FloorType = FloorType.Grass
             Reactive =
-                Observable
-                    { Action = (fun s ->
-                        printf "%A" s |> ignore
-                        s)
+                (Some << Observable)
+                    { Action =
+                        (fun s ->
+                            printf "%A" s |> ignore
+                            s)
                       Subscriptions = [] }
             Entity = Some(Entity.init Entity.Observer pos time) }
 
@@ -288,38 +293,38 @@ type Message =
     | TileEvents of (int * EntityType) list
     | PhysicsTick of time: int64 * slow: bool
 
-let updateWorld (totalTime: int64) (tiles: Tile[]) : Tile[] * Cmd<Message> =
-    let newTilesAndEvents = 
-        tiles
-        |> Array.map (fun tile ->
-            let (entityAndEvent) =
-                option {
-                    let! entity = tile.Entity
-                    let (sprite, ev) = (Sprite.update (Sprite.AnimTick totalTime) entity.Sprite)
-                    let r = ({ entity with Sprite = sprite }, ev)
-                    return r
-                }        
 
-            match entityAndEvent with
-            | Some (entity, event) -> ({ tile with Entity = Some entity }, event)
-            | None -> { tile with Entity = None }, Sprite.None
-        )
-    
-    let tiles, _ = Array.unzip newTilesAndEvents
-    let messages =
-        seq {
-            for tile, event in newTilesAndEvents do
-            match event, tile.Reactive with
-            | Sprite.AnimationLooped i, Subject s ->
-                let newVal = s.Generate() 
-                for sub in s.Subscriptions do
-                    yield (sub, newVal)
-            | _ -> do ()
-        } |> Seq.toList
+let updateWorldReactive (tiles: Tile[]) : Tile[] =
+    tiles
+    |> Array.map (fun tile ->
+        let reactive =
+            option {
+                let! reactive = tile.Reactive
 
-    match messages with
-    | [] -> tiles,Cmd.none
-    | messages -> tiles,(Cmd.ofMsg<<TileEvents) messages
+                let newReactive =
+                    match reactive with
+                    | Subject(subject, update) -> Subject((update subject), update)
+                    | other -> other
+
+                return newReactive
+            }
+
+        { tile with Reactive = reactive })
+
+let updateWorldSprites (totalTime: int64) (tiles: Tile[]) : Tile[] =
+    tiles
+    |> Array.map (fun tile ->
+        let entityy =
+            option {
+                let! entity = tile.Entity
+                let (sprite, ev) = (Sprite.update (Sprite.AnimTick totalTime) entity.Sprite)
+                let r = ({ entity with Sprite = sprite })
+                return r
+            }
+
+        match entityy with
+        | Some(entity) -> { tile with Entity = Some entity }
+        | None -> { tile with Entity = None })
 
 let updatePlayer (message: PlayerMessage) (worldModel: Model) =
     let model = worldModel.Player
@@ -423,7 +428,10 @@ let update (message: Message) (model: Model) : Model * Cmd<Message> =
         let player, playerMsg = updatePlayer (PlayerPhysicsTick info) model
         let tileAndIndex = getTileAtPos player.Target model.Tiles
 
-        let tiles, worldMsg = updateWorld time model.Tiles
+        let tiles = updateWorldReactive model.Tiles
+
+        //TODO: move this outside??
+        let tiles = updateWorldSprites time tiles
 
         let newCameraPos = updateCameraPos player.Pos model.CameraPos
 
@@ -435,25 +443,27 @@ let update (message: Message) (model: Model) : Model * Cmd<Message> =
             CameraPos = newCameraPos
             Player = player
             PlayerTarget = tileAndIndex },
-        Cmd.batch [ Cmd.map PlayerMessage playerMsg ; worldMsg]
-    | TileEvents events -> 
+        Cmd.batch [ Cmd.map PlayerMessage playerMsg ]
+    | TileEvents events ->
         let allMessages =
-            events |> Seq.collect (fun (eventIndex ,entityType) -> 
-                match model.Tiles[eventIndex].Reactive with 
-                | Observable ob -> 
+            events
+            |> Seq.collect (fun (eventIndex, entityType) ->
+                match model.Tiles[eventIndex].Reactive with
+                | Some (Observable ob) ->
                     let result = ob.Action entityType
+
                     seq {
                         for sub in ob.Subscriptions do
                             yield (sub, result)
                     }
-                | _ -> Seq.empty
-                ) |> Seq.toList
+                | _ -> Seq.empty)
+            |> Seq.toList
 
         //TODO: in theory the tiles should update so I can show the user
         // but alas they do not
         match allMessages with
-         | [] -> model,Cmd.none
-         | messages -> model,(Cmd.ofMsg<<TileEvents) messages
+        | [] -> model, Cmd.none
+        | messages -> model, (Cmd.ofMsg << TileEvents) messages
 
 // VIEW
 let renderWorld (model: Model) (worldConfig: WorldConfig) =
