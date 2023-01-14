@@ -255,7 +255,7 @@ let init (worldConfig: WorldConfig) time =
                         { ToEmit = None
                           Observing = 22
                           TicksSinceLastEmit = 0 },
-                        mapper
+                        filterToRock
                     )
                 ))
             Entity = Some(Entity.init Entity.Observer pos time) }

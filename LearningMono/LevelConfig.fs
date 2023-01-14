@@ -90,6 +90,32 @@ let mapper (observable: Observable) (tiles:Tile[]) =
             else toEmit
 
         { observable with ToEmit = toEmit }
+
+
+let filterToRock (observable: Observable) (tiles:Tile[]) =
+        //if you have your own stuffs do that
+        let toEmit = match observable.ToEmit with
+                            | Some(WillEmit t) ->                                
+                                Some(Emitting t)
+                            | _ -> None 
+        
+        //otherwise check in on the thing you are observing
+        let toEmit =
+            if toEmit.IsNone then
+                let tile = Array.item observable.Observing tiles
+ 
+                match tile.Reactive with
+                | Some (Observable ({ ToEmit = Some (Emitting s) }, _)) //ok lol this seems a bit much 
+                | Some (Subject ({ ToEmit = Some (Emitting s) }, _)) -> 
+                    match s with 
+                    | Rock -> 
+                        printfn "observing %A" s
+                        Some (WillEmit s)
+                    | _ -> None
+                | _ -> None
+            else toEmit
+
+        { observable with ToEmit = toEmit }
                 
 
 
