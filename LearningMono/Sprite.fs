@@ -149,7 +149,13 @@ let animTick model time =
             let nextX = oldX + inc
 
             if ani.Looping then
-                Started(ani, ((oldX + inc) % ani.Columns)), Events.None
+                let x = ((oldX + inc) % ani.Columns)
+                let event =
+                    if x = 0 then
+                        Events.AnimationLooped ani.Index
+                    else
+                        Events.None
+                Started(ani, x), event
             else
                 let lastFrame = ani.Columns - 1
 

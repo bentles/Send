@@ -230,14 +230,14 @@ let init (worldConfig: WorldConfig) time =
     let createTimerOnGrass (coords: Vector2) time =
         let pos = coordsToPos coords.X coords.Y half
 
-        let infiniteList = repeatList [ Rock; Rock; Rock ]
+        let infiniteList = repeatList [ Rock; Timer; Timer ]
 
         { defaultTile with
             FloorType = FloorType.Grass
             Reactive =
                 Subject
-                    { Generate = (fun () -> Seq.head infiniteList)
-                      Subscriptions = [] }
+                    { Generate = (fun () -> Seq.head infiniteList) //TODO: had my mutable brain enabled here :(
+                      Subscriptions = [33] }
 
             Entity = Some(Entity.init Entity.Timer pos time) }
 
@@ -246,6 +246,12 @@ let init (worldConfig: WorldConfig) time =
 
         { defaultTile with
             FloorType = FloorType.Grass
+            Reactive =
+                Observable
+                    { Action = (fun s ->
+                        printf "%A" s |> ignore
+                        s)
+                      Subscriptions = [] }
             Entity = Some(Entity.init Entity.Observer pos time) }
 
     let blocks =

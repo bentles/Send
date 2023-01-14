@@ -146,11 +146,11 @@ let timerSpriteConfig =
           InitAnimation =
             { Index = 0
               Looping = true
-              Speed = 100
+              Speed = 300
               Columns = 4 }
           Started = true
           Tint = Color.White
-          FrameLength = 100L }
+          FrameLength = 300L }
 
 let observerSpriteConfig =
     SingleSpriteConfig

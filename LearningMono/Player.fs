@@ -49,9 +49,9 @@ let initPlayer x y (playerConfig: PlayerConfig) (spriteConfig: SpriteConfig) tim
 
       Carrying =
           [ Entity.initNoCollider Entity.Observer p time
-            Entity.initNoCollider Entity.Observer p time
-            Entity.initNoCollider Entity.Timer p time
-            Entity.initNoCollider Entity.Timer p time]
+            Entity.initNoCollider Entity.Observer p time ]
+         //   Entity.initNoCollider Entity.Timer p time
+         //   Entity.initNoCollider Entity.Timer p time]
       Facing = Vector2(1f, 0f)
       Target = p + 60f * Vector2(1f, 0f)
       Pos = p
