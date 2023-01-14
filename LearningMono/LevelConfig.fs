@@ -40,7 +40,7 @@ let buildRepeatListEmittingEvery (list: EntityType list) (every: int) =
                 TicksSinceLastEmit = subject.TicksSinceLastEmit + 1
                 ToEmit =
                     match subject.ToEmit with
-                    | Some(WillEmit t) -> 
+                    | Some(WillEmit t) ->
                         printfn "%A" subject.ToEmit
                         Some(Emitting t)
                     | _ -> None }
@@ -51,6 +51,7 @@ let buildRepeatItemEmitEvery (item: EntityType) (every: int) =
 type Reactive =
     | Observable of Observable * (Observable -> Tile[] -> Observable)
     | Subject of Subject * (Subject -> Subject)
+
 and Tile =
     { FloorType: FloorType
       Collider: AABB option
@@ -69,54 +70,36 @@ type LevelConfig =
       LevelBuilder: unit -> Tile[] }
 
 
-let mapper (observable: Observable) (tiles:Tile[]) =
+let buildObserver (observerFunc: EntityType -> Emit option) =
+    let observer (observable: Observable) (tiles: Tile[]) =
         //if you have your own stuffs do that
-        let toEmit = match observable.ToEmit with
-                            | Some(WillEmit t) ->                                
-                                Some(Emitting t)
-                            | _ -> None 
-        
+        let toEmit =
+            match observable.ToEmit with
+            | Some(WillEmit t) -> Some(Emitting t)
+            | _ -> None
+
         //otherwise check in on the thing you are observing
         let toEmit =
             if toEmit.IsNone then
                 let tile = Array.item observable.Observing tiles
- 
+
                 match tile.Reactive with
-                | Some (Observable ({ ToEmit = Some (Emitting s) }, _)) //ok lol this seems a bit much 
-                | Some (Subject ({ ToEmit = Some (Emitting s) }, _)) -> 
+                | Some(Observable({ ToEmit = Some(Emitting s) }, _)) //ok lol this seems a bit much
+                | Some(Subject({ ToEmit = Some(Emitting s) }, _)) ->
                     printfn "observing %A" s
-                    Some (WillEmit s) 
+                    observerFunc s
                 | _ -> None
-            else toEmit
+            else
+                toEmit
 
         { observable with ToEmit = toEmit }
 
+    observer
 
-let filterToRock (observable: Observable) (tiles:Tile[]) =
-        //if you have your own stuffs do that
-        let toEmit = match observable.ToEmit with
-                            | Some(WillEmit t) ->                                
-                                Some(Emitting t)
-                            | _ -> None 
-        
-        //otherwise check in on the thing you are observing
-        let toEmit =
-            if toEmit.IsNone then
-                let tile = Array.item observable.Observing tiles
- 
-                match tile.Reactive with
-                | Some (Observable ({ ToEmit = Some (Emitting s) }, _)) //ok lol this seems a bit much 
-                | Some (Subject ({ ToEmit = Some (Emitting s) }, _)) -> 
-                    match s with 
-                    | Rock -> 
-                        printfn "observing %A" s
-                        Some (WillEmit s)
-                    | _ -> None
-                | _ -> None
-            else toEmit
+let mapper = buildObserver (fun e -> Some(Emitting e))
 
-        { observable with ToEmit = toEmit }
-                
-
-
-        
+let onlyRock =
+    buildObserver (fun e ->
+        match e with
+        | Rock -> Some(WillEmit e)
+        | _ -> None)
