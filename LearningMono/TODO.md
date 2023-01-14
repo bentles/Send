@@ -46,6 +46,11 @@ TODO:
 - quick check for collision exclusion of far away objects
 - simplify away the pre-sending potential collider objects since world+player are now one
 - use the stopped animation
+- finally add the carrying limits for big/small
+- fix pick up and put down logic
+- simplify all the things
+	- entity and reactive are linked but not in the model
+
 
 
 DOING:
