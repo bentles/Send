@@ -48,8 +48,8 @@ let initPlayer x y (playerConfig: PlayerConfig) (spriteConfig: SpriteConfig) tim
       Holding = false
 
       Carrying =
-          [ Entity.initNoCollider Entity.Observer p time
-            Entity.initNoCollider Entity.Observer p time ]
+          [ Entity.initNoCollider (Entity.Observer Entity.Id) p time
+            Entity.initNoCollider (Entity.Observer Entity.Id) p time ]
          //   Entity.initNoCollider Entity.Timer p time
          //   Entity.initNoCollider Entity.Timer p time]
       Facing = Vector2(1f, 0f)

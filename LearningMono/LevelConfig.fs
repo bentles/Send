@@ -3,6 +3,8 @@
 open Microsoft.Xna.Framework
 open Collision
 open Entity
+open Utility
+open Config
 
 type Emit =
     | WillEmit of EntityType
@@ -117,3 +119,46 @@ let onlyRock =
             printfn "observing %A" e
             WillEmit e
         | _ -> Nothing)
+
+let tileHalf = float32 (worldConfig.TileWidth / 2)
+let half = Vector2(tileHalf)
+
+let createCollidableTile t xx yy =
+    { defaultTile with
+        FloorType = t
+        Collider = Some(createColliderFromCoords xx yy half) }
+
+let createNonCollidableTile t = { defaultTile with FloorType = t }
+
+let createTimerOnGrass (coords: Vector2) time =
+    let pos = coordsToPos coords.X coords.Y half
+
+    let listEmitter = buildRepeatListEmittingEvery [ Rock; Timer; Timer ] 60
+
+    { defaultTile with
+        FloorType = FloorType.Grass
+        Reactive =
+            (Some << Subject) (
+                { TicksSinceEmit = 0
+                  GenerationNumber = 0
+                  ToEmit = Nothing },
+                listEmitter
+            )
+
+        Entity = Some(Entity.init Entity.Timer pos time) }
+
+let createObserverOnGrass (coords: Vector2) time func =
+    let pos = coordsToPos coords.X coords.Y half
+
+    { defaultTile with
+        FloorType = FloorType.Grass
+        Reactive =
+            (Some(
+                Observable(
+                    { ToEmit = Nothing
+                      Observing = 22
+                      TicksSinceEmit = 0 },
+                    func
+                )
+            ))
+        Entity = Some(Entity.init (Entity.Observer Entity.Id) pos time) }

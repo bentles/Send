@@ -87,12 +87,15 @@ let timerImage =
       TextureName = "timer"
       Offset = Vector2(0f, 0f) }
 
-let observerImage =
-    { PixelSize = (50, 50)
-      Rows = 1
+let idImage =
+    { PixelSize = (50, 150)
+      Rows = 3
       Columns = 1
-      TextureName = "observer"
+      TextureName = "id"
       Offset = Vector2(0f, 0f) }
+
+let mapImage = { idImage with TextureName = "map" }
+let filterImage = { idImage with TextureName = "filter" }
 
 let rockImage =
     { PixelSize = (50, 50)
@@ -152,11 +155,14 @@ let timerSpriteConfig =
           Tint = Color.White
           FrameLength = 300L }
 
-let observerSpriteConfig =
-    SingleSpriteConfig
-        { Image = observerImage
-          Tint = Color.White
-          FrameLength = 300L }
+let idConfig =
+    { Image = idImage
+      Tint = Color.White
+      FrameLength = 300L }
+
+let idSpriteConfig = SingleSpriteConfig idConfig
+let mapSpriteConfig = SingleSpriteConfig { idConfig with Image = mapImage }
+let filterSpriteConfig = SingleSpriteConfig { idConfig with Image = filterImage }
 
 let rockSpriteConfig =
     SingleSpriteConfig
