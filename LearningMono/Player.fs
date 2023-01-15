@@ -64,6 +64,13 @@ let initPlayer x y (playerConfig: PlayerConfig) (spriteConfig: SpriteConfig) tim
         { Half = playerConfig.AABBConfig.Half
           Offset = playerConfig.AABBConfig.Offset } }
 
+
+let getPlayerPickupLimit (characterState:CharacterState) =
+    match characterState with
+    | Small true -> 3
+    | Small false -> 8
+    | _ -> 0
+
 type PhysicsInfo =
     { Time: int64
       PossibleObstacles: AABB seq

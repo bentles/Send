@@ -384,11 +384,18 @@ let update (message: Message) (model: Model) : Model * Cmd<Message> =
         let (newPlayerModel, playerCommand) = updatePlayer playerMsg model
         { model with Player = newPlayerModel }, Cmd.map PlayerMessage playerCommand
     | PickUpEntity ->
+        let playerLimit = getPlayerPickupLimit player.CharacterState
+
         match player.CharacterState with
-        | Small _ ->
+        | Small _ when player.Carrying.Length + 1 <= playerLimit ->
             option {
                 let! (tile, i) = model.PlayerTarget
-                model.Tiles[i] <- { tile with Entity = None }
+
+                model.Tiles[i] <-
+                    { tile with
+                        Entity = None
+                        Reactive = None }
+
                 let! entity = tile.Entity
                 return { model with Player = { player with Carrying = entity :: player.Carrying } }, Cmd.none
             }
@@ -446,12 +453,23 @@ let update (message: Message) (model: Model) : Model * Cmd<Message> =
 
 // VIEW
 
-let viewEmitting (entityType: EntityType) (ticksSinceLast:int) pos =
+let viewEmitting (entityType: EntityType) (ticksSinceLast: int) pos =
     let imageInfo = getEmitImage entityType
-    let (width, height) = (imageInfo.PixelSize)
-    let size = (width / imageInfo.Columns , height / imageInfo.Rows)
+    let (imageWidth, imageHeight) = (imageInfo.PixelSize)
+    let width, height = (imageWidth / imageInfo.Columns, imageHeight / imageInfo.Rows)
+
     if ticksSinceLast < 20 then
-        [imageWithSource imageInfo.TextureName (Color.FromNonPremultiplied(255,255,255,150)) size (0,0) size pos]
+        let alpha = int ((float32 (30 - ticksSinceLast) / 20f) * 220f)
+        let destSize = (int ((float width) / 1.5), int ((float height) / 1.5))
+        let x, y = pos
+
+        [ imageWithSource
+              imageInfo.TextureName
+              (Color.FromNonPremultiplied(255, 255, 255, alpha))
+              (width, height)
+              (0, 0)
+              destSize
+              (x + 20, y - 5) ]
     else
         []
 
@@ -520,10 +538,18 @@ let viewWorld (model: Model) (worldConfig: WorldConfig) =
 
             let emitting =
                 match tile.Reactive with
-                | Some(Observable({ ToEmit = Emitting s; TicksSinceEmit = t }, _)) 
-                | Some(Subject({ ToEmit = Emitting s; TicksSinceEmit = t }, _)) 
-                | Some(Subject({ ToEmit = Emitted s; TicksSinceEmit = t }, _)) 
-                | Some(Observable ({ ToEmit = Emitted s; TicksSinceEmit = t }, _)) -> viewEmitting s t (actualX, actualY - 20) 
+                | Some(Observable({ ToEmit = Emitting s
+                                    TicksSinceEmit = t },
+                                  _))
+                | Some(Subject({ ToEmit = Emitting s
+                                 TicksSinceEmit = t },
+                               _))
+                | Some(Subject({ ToEmit = Emitted s
+                                 TicksSinceEmit = t },
+                               _))
+                | Some(Observable({ ToEmit = Emitted s
+                                    TicksSinceEmit = t },
+                                  _)) -> viewEmitting s t (actualX, actualY)
                 | _ -> []
 
             match entity with
