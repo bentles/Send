@@ -253,19 +253,26 @@ type Message =
 let updateWorldReactive (tiles: Tile[]) : Tile[] =
     tiles
     |> Array.map (fun tile ->
-        let reactive =
+        let maybeEntity =
             option {
-                let! reactive = tile.Reactive
+                let! entity = tile.Entity
 
-                let newReactive =
-                    match reactive with
-                    | Subject(subject, update) -> Subject((update subject), update)
-                    | Observable(observable, update) -> Observable((update observable tiles), update)
+                let newEntityType =
+                    match entity.Type with
+                    | SubjectType(sType, subject) -> SubjectType(sType, subject.Action subject)
+                    | ObservableType(oType, ({ Observing = Some observing } as observable)) ->
+                        // get what is being is observed if anything
+                        let observedTile = Array.item observing tiles
 
-                return newReactive
+                        match observedTile.Entity with
+                        | Some observedEntity -> ObservableType(oType, observable.Action observable observedEntity.Type)
+                        | None -> ObservableType(oType, observable)
+                    | other -> other
+
+                return { entity with Type = newEntityType }
             }
 
-        { tile with Reactive = reactive })
+        { tile with Entity = maybeEntity })
 
 let updateWorldSprites (totalTime: int64) (tiles: Tile[]) : Tile[] =
     tiles
@@ -350,8 +357,7 @@ let update (message: Message) (model: Model) : Model * Cmd<Message> =
 
                 model.Tiles[i] <-
                     { tile with
-                        Entity = None
-                        Reactive = None }
+                        Entity = None }
 
                 let! entity = tile.Entity
                 return { model with Player = { player with Carrying = entity :: player.Carrying } }, Cmd.none
@@ -493,20 +499,14 @@ let viewWorld (model: Model) (worldConfig: WorldConfig) =
                         (int (b.Pos.X - b.Half.X + cameraOffset.X), int (b.Pos.Y - b.Half.Y + cameraOffset.Y)))
                 |> Option.toList
 
+            // lololol
             let emitting =
-                match tile.Reactive with
-                | Some(Observable({ ToEmit = Emitting s
-                                    TicksSinceEmit = t },
-                                  _))
-                | Some(Subject({ ToEmit = Emitting s
-                                 TicksSinceEmit = t },
-                               _))
-                | Some(Subject({ ToEmit = Emitted s
-                                 TicksSinceEmit = t },
-                               _))
-                | Some(Observable({ ToEmit = Emitted s
-                                    TicksSinceEmit = t },
-                                  _)) -> viewEmitting s t (actualX, actualY)
+                match tile.Entity with
+                | Some({ Type = ObservableType(_, { ToEmit = (Emitting s); TicksSinceEmit = t })})
+                | Some({ Type = SubjectType(_, { ToEmit = (Emitting s); TicksSinceEmit = t })})
+                | Some({ Type = ObservableType(_, { ToEmit = (Emitted s); TicksSinceEmit = t })})
+                | Some({ Type = SubjectType(_, { ToEmit = (Emitted s); TicksSinceEmit = t })})
+                    -> viewEmitting s t (actualX, actualY)
                 | _ -> []
 
             match entity with

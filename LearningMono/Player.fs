@@ -3,6 +3,7 @@
 open Microsoft.Xna.Framework
 open Config
 open Collision
+open LevelConfig
 
 
 type CharacterState =
@@ -48,10 +49,8 @@ let initPlayer x y (playerConfig: PlayerConfig) (spriteConfig: SpriteConfig) tim
       Holding = false
 
       Carrying =
-          [ Entity.initNoCollider (Entity.Observer Entity.Id) p time
-            Entity.initNoCollider (Entity.Observer Entity.Id) p time ]
-         //   Entity.initNoCollider Entity.Timer p time
-         //   Entity.initNoCollider Entity.Timer p time]
+          [ Entity.initNoCollider idObservable p time
+            Entity.initNoCollider idObservable p time ]
       Facing = Vector2(1f, 0f)
       Target = p + 60f * Vector2(1f, 0f)
       Pos = p

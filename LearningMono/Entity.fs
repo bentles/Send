@@ -4,15 +4,38 @@ open Collision
 open Config
 open Microsoft.Xna.Framework
 
-type ObserverType =
+type ObservableType =
     | Id
     | Map
     | Filter
 
+type SubjectType = 
+    | Timer
+
 type EntityType =
     | Rock
-    | Timer
-    | Observer of ObserverType
+    | SubjectType of SubjectType * Subject
+    | ObservableType of ObservableType * Observable
+
+and Observable =
+    { ToEmit: Emit
+      TicksSinceEmit: int
+      Observing: int option
+      Action: (Observable -> EntityType -> Observable)
+      }
+
+and Subject =
+    { ToEmit: Emit
+      TicksSinceEmit: int
+      GenerationNumber: int
+      Action: (Subject -> Subject)
+      }
+
+and Emit =
+    | WillEmit of EntityType
+    | Emitting of EntityType
+    | Emitted of EntityType
+    | Nothing
 
 type Model =
     { Sprite: Sprite.Model
@@ -22,8 +45,8 @@ type Model =
 let getSpriteConfig (eType: EntityType) : SpriteConfig =
     match eType with
     | Rock -> rockSpriteConfig
-    | Timer -> timerSpriteConfig
-    | Observer ob ->
+    | SubjectType _ -> timerSpriteConfig
+    | ObservableType (ob, _) ->
         match ob with
         | Id -> idSpriteConfig
         | Map -> mapSpriteConfig
@@ -32,8 +55,8 @@ let getSpriteConfig (eType: EntityType) : SpriteConfig =
 let getEmitImage (eType: EntityType) =
     match eType with
     | Rock -> rockImage
-    | Timer -> timerImage
-    | Observer ob ->
+    | SubjectType _ -> timerImage
+    | ObservableType (ob, _) ->
         match ob with
         | Id -> idImage
         | Map -> mapImage
@@ -42,8 +65,8 @@ let getEmitImage (eType: EntityType) =
 let getCollider (eType: EntityType) (pos: Vector2) : AABB =
     match eType with
     | Rock -> { Pos = pos; Half = Vector2(10f, 10f) }
-    | Timer -> { Pos = pos; Half = Vector2(10f, 10f) }
-    | Observer _ -> { Pos = pos; Half = Vector2(10f, 10f) }
+    | SubjectType _ -> { Pos = pos; Half = Vector2(10f, 10f) }
+    | ObservableType _ -> { Pos = pos; Half = Vector2(10f, 10f) }
 
 let init (entityType: EntityType) (pos: Vector2) (time) =
     let sprite = Sprite.init pos time (getSpriteConfig entityType)
