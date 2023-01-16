@@ -13,22 +13,22 @@ type SubjectType = | Timer
 
 type EntityType =
     | Rock
-    | SubjectType of Subject
-    | ObservableType of Observable
+    | Subject of SubjectData
+    | Observable of ObservableData
 
-and Observable =
+and ObservableData =
     { Type: ObservableType
       ToEmit: Emit
       TicksSinceEmit: int
       Observing: int option
-      Action: (Observable -> EntityType -> Observable) }
+      Action: (ObservableData -> EntityType -> ObservableData) }
 
-and Subject =
+and SubjectData =
     { Type: SubjectType
       ToEmit: Emit
       TicksSinceEmit: int
       GenerationNumber: int
-      Action: (Subject -> Subject) }
+      Action: (SubjectData -> SubjectData) }
 
 and Emit =
     | WillEmit of EntityType
@@ -44,8 +44,8 @@ type Model =
 let getSpriteConfig (eType: EntityType) : SpriteConfig =
     match eType with
     | Rock -> rockSpriteConfig
-    | SubjectType _ -> timerSpriteConfig
-    | ObservableType { Type = ob } ->
+    | Subject _ -> timerSpriteConfig
+    | Observable { Type = ob } ->
         match ob with
         | Id -> idSpriteConfig
         | Map -> mapSpriteConfig
@@ -54,8 +54,8 @@ let getSpriteConfig (eType: EntityType) : SpriteConfig =
 let getEmitImage (eType: EntityType) =
     match eType with
     | Rock -> rockImage
-    | SubjectType _ -> timerImage
-    | ObservableType { Type = ob } ->
+    | Subject _ -> timerImage
+    | Observable { Type = ob } ->
         match ob with
         | Id -> idImage
         | Map -> mapImage
@@ -64,8 +64,8 @@ let getEmitImage (eType: EntityType) =
 let getCollider (eType: EntityType) (pos: Vector2) : AABB =
     match eType with
     | Rock -> { Pos = pos; Half = Vector2(10f, 10f) }
-    | SubjectType _ -> { Pos = pos; Half = Vector2(10f, 10f) }
-    | ObservableType _ -> { Pos = pos; Half = Vector2(10f, 10f) }
+    | Subject _ -> { Pos = pos; Half = Vector2(10f, 10f) }
+    | Observable _ -> { Pos = pos; Half = Vector2(10f, 10f) }
 
 let init (entityType: EntityType) (pos: Vector2) (time) =
     let sprite = Sprite.init pos time (getSpriteConfig entityType)

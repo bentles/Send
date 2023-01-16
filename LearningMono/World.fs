@@ -260,15 +260,15 @@ let updateWorldReactive (tiles: Tile[]) : Tile[] =
 
                 let newEntityType =
                     match entity.Type with
-                    | SubjectType subject -> SubjectType(subject.Action subject)
-                    | ObservableType({ Type = oType
-                                       Observing = Some observing } as observable) ->
+                    | Subject subject -> Subject(subject.Action subject)
+                    | Observable({ Type = oType
+                                   Observing = Some observing } as observable) ->
                         // get what is being is observed if anything
                         let observedTile = Array.item observing tiles
 
                         match observedTile.Entity with
-                        | Some observedEntity -> ObservableType(observable.Action observable observedEntity.Type)
-                        | None -> ObservableType observable
+                        | Some observedEntity -> Observable(observable.Action observable observedEntity.Type)
+                        | None -> Observable observable
                     | other -> other
 
                 return { entity with Type = newEntityType }
@@ -502,14 +502,14 @@ let viewWorld (model: Model) (worldConfig: WorldConfig) =
             // lololol
             let emitting =
                 match tile.Entity with
-                | Some({ Type = ObservableType { ToEmit = (Emitting s)
-                                                 TicksSinceEmit = t } })
-                | Some({ Type = SubjectType { ToEmit = (Emitting s)
-                                              TicksSinceEmit = t } })
-                | Some({ Type = ObservableType { ToEmit = (Emitted s)
-                                                 TicksSinceEmit = t } })
-                | Some({ Type = SubjectType { ToEmit = (Emitted s)
-                                              TicksSinceEmit = t } }) -> viewEmitting s t (actualX, actualY)
+                | Some({ Type = Observable { ToEmit = (Emitting s)
+                                             TicksSinceEmit = t } })
+                | Some({ Type = Subject { ToEmit = (Emitting s)
+                                          TicksSinceEmit = t } })
+                | Some({ Type = Observable { ToEmit = (Emitted s)
+                                             TicksSinceEmit = t } })
+                | Some({ Type = Subject { ToEmit = (Emitted s)
+                                          TicksSinceEmit = t } }) -> viewEmitting s t (actualX, actualY)
                 | _ -> []
 
             match entity with

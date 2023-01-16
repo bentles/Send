@@ -28,7 +28,7 @@ type LevelConfig =
 let buildRepeatListEmittingEvery (list: EntityType list) (every: int) =
     let length = list.Length
 
-    fun (subject: Subject) ->
+    fun (subject: SubjectData) ->
         if subject.TicksSinceEmit > every then
             let index = subject.GenerationNumber % length
             let itemToEmit = List.item index list
@@ -52,7 +52,7 @@ let buildRepeatItemEmitEvery (every: int) (item: EntityType) =
     buildRepeatListEmittingEvery [ item ] every
 
 let rockTimer: EntityType =
-    SubjectType
+    Subject
         { Type = Timer
           ToEmit = Nothing
           TicksSinceEmit = 0
@@ -65,7 +65,7 @@ let buildObserverObserving
     (oType: ObservableType)
     (target: int option)
     : EntityType =
-    let observerFunc (observable: Observable) (observing: Entity.EntityType) =
+    let observerFunc (observable: ObservableData) (observing: Entity.EntityType) =
         //if you have your own stuffs do that
         let toEmit =
             match observable.ToEmit with
@@ -79,8 +79,8 @@ let buildObserverObserving
             | Nothing
             | Emitted _ as cur ->
                 match observing with
-                | SubjectType { ToEmit = (Emitting s) }
-                | ObservableType { ToEmit = (Emitting s) } -> observerFunc s
+                | Subject { ToEmit = (Emitting s) }
+                | Observable { ToEmit = (Emitting s) } -> observerFunc s
                 | _ -> cur
             | _ -> toEmit
 
@@ -93,7 +93,7 @@ let buildObserverObserving
             ToEmit = toEmit
             TicksSinceEmit = ticks }
 
-    ObservableType(
+    Observable(
         { Type = oType
           ToEmit = Nothing
           Action = observerFunc
@@ -133,7 +133,7 @@ let createTimerOnGrass (coords: Vector2) time =
     let listEmitter = buildRepeatListEmittingEvery [ Rock; rockTimer; rockTimer ] 60
 
     let subject =
-        Entity.SubjectType
+        Entity.Subject
             { Type = Entity.Timer
               TicksSinceEmit = 0
               GenerationNumber = 0
