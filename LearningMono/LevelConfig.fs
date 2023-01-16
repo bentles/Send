@@ -52,15 +52,19 @@ let buildRepeatItemEmitEvery (every: int) (item: EntityType) =
     buildRepeatListEmittingEvery [ item ] every
 
 let rockTimer: EntityType =
-    SubjectType(
-        Timer,
-        { ToEmit = Nothing
+    SubjectType
+        { Type = Timer
+          ToEmit = Nothing
           TicksSinceEmit = 0
           GenerationNumber = 0
           Action = buildRepeatItemEmitEvery 30 Rock }
-    )
 
-let buildObserverObserving (observerFunc: EntityType -> Emit) (oType: ObservableType) (target: int option) : EntityType =
+
+let buildObserverObserving
+    (observerFunc: EntityType -> Emit)
+    (oType: ObservableType)
+    (target: int option)
+    : EntityType =
     let observerFunc (observable: Observable) (observing: Entity.EntityType) =
         //if you have your own stuffs do that
         let toEmit =
@@ -75,8 +79,8 @@ let buildObserverObserving (observerFunc: EntityType -> Emit) (oType: Observable
             | Nothing
             | Emitted _ as cur ->
                 match observing with
-                | SubjectType(_, { ToEmit = (Emitting s) })
-                | ObservableType(_, { ToEmit = (Emitting s) }) -> observerFunc s
+                | SubjectType { ToEmit = (Emitting s) }
+                | ObservableType { ToEmit = (Emitting s) } -> observerFunc s
                 | _ -> cur
             | _ -> toEmit
 
@@ -90,8 +94,8 @@ let buildObserverObserving (observerFunc: EntityType -> Emit) (oType: Observable
             TicksSinceEmit = ticks }
 
     ObservableType(
-        oType,
-        { ToEmit = Nothing
+        { Type = oType
+          ToEmit = Nothing
           Action = observerFunc
           TicksSinceEmit = 0
           Observing = target }
@@ -105,12 +109,14 @@ let idObservable = buildObserverObserving (fun e -> Emitting e) Id
 let mapToTimer = buildObserverObserving (fun e -> Emitting rockTimer) Map
 
 let onlyRock =
-    buildObserverObserving (fun e ->
-        match e with
-        | Rock ->
-            printfn "observing %A" e
-            WillEmit e
-        | _ -> Nothing) Filter
+    buildObserverObserving
+        (fun e ->
+            match e with
+            | Rock ->
+                printfn "observing %A" e
+                WillEmit e
+            | _ -> Nothing)
+        Filter
 
 let tileHalf = float32 (worldConfig.TileWidth / 2)
 let half = Vector2(tileHalf)
@@ -127,19 +133,18 @@ let createTimerOnGrass (coords: Vector2) time =
     let listEmitter = buildRepeatListEmittingEvery [ Rock; rockTimer; rockTimer ] 60
 
     let subject =
-        Entity.SubjectType(
-            Entity.Timer,
-            { TicksSinceEmit = 0
+        Entity.SubjectType
+            { Type = Entity.Timer
+              TicksSinceEmit = 0
               GenerationNumber = 0
               ToEmit = Nothing
               Action = listEmitter }
-        )
 
     { defaultTile with
         FloorType = FloorType.Grass
         Entity = Some(Entity.init subject pos time) }
 
-let createObserverOnGrass (coords: Vector2) time observer:Tile =
+let createObserverOnGrass (coords: Vector2) time observer : Tile =
     let pos = coordsToPos coords.X coords.Y half
 
     { defaultTile with

@@ -222,6 +222,7 @@ let init (worldConfig: WorldConfig) time =
                for xx in 0 .. (worldConfig.WorldTileLength - 1) do
                    let grassTile = createNonCollidableTile FloorType.Grass
                    let subj = Some 22
+
                    match xx, yy with
                    | 0, 0 -> createNonCollidableTile FloorType.Grass
                    | 2, 2 -> createTimerOnGrass (Vector2(2f)) time
@@ -259,14 +260,15 @@ let updateWorldReactive (tiles: Tile[]) : Tile[] =
 
                 let newEntityType =
                     match entity.Type with
-                    | SubjectType(sType, subject) -> SubjectType(sType, subject.Action subject)
-                    | ObservableType(oType, ({ Observing = Some observing } as observable)) ->
+                    | SubjectType subject -> SubjectType(subject.Action subject)
+                    | ObservableType({ Type = oType
+                                       Observing = Some observing } as observable) ->
                         // get what is being is observed if anything
                         let observedTile = Array.item observing tiles
 
                         match observedTile.Entity with
-                        | Some observedEntity -> ObservableType(oType, observable.Action observable observedEntity.Type)
-                        | None -> ObservableType(oType, observable)
+                        | Some observedEntity -> ObservableType(observable.Action observable observedEntity.Type)
+                        | None -> ObservableType observable
                     | other -> other
 
                 return { entity with Type = newEntityType }
@@ -355,9 +357,7 @@ let update (message: Message) (model: Model) : Model * Cmd<Message> =
             option {
                 let! (tile, i) = model.PlayerTarget
 
-                model.Tiles[i] <-
-                    { tile with
-                        Entity = None }
+                model.Tiles[i] <- { tile with Entity = None }
 
                 let! entity = tile.Entity
                 return { model with Player = { player with Carrying = entity :: player.Carrying } }, Cmd.none
@@ -502,11 +502,14 @@ let viewWorld (model: Model) (worldConfig: WorldConfig) =
             // lololol
             let emitting =
                 match tile.Entity with
-                | Some({ Type = ObservableType(_, { ToEmit = (Emitting s); TicksSinceEmit = t })})
-                | Some({ Type = SubjectType(_, { ToEmit = (Emitting s); TicksSinceEmit = t })})
-                | Some({ Type = ObservableType(_, { ToEmit = (Emitted s); TicksSinceEmit = t })})
-                | Some({ Type = SubjectType(_, { ToEmit = (Emitted s); TicksSinceEmit = t })})
-                    -> viewEmitting s t (actualX, actualY)
+                | Some({ Type = ObservableType { ToEmit = (Emitting s)
+                                                 TicksSinceEmit = t } })
+                | Some({ Type = SubjectType { ToEmit = (Emitting s)
+                                              TicksSinceEmit = t } })
+                | Some({ Type = ObservableType { ToEmit = (Emitted s)
+                                                 TicksSinceEmit = t } })
+                | Some({ Type = SubjectType { ToEmit = (Emitted s)
+                                              TicksSinceEmit = t } }) -> viewEmitting s t (actualX, actualY)
                 | _ -> []
 
             match entity with

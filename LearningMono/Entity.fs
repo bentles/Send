@@ -9,27 +9,26 @@ type ObservableType =
     | Map
     | Filter
 
-type SubjectType = 
-    | Timer
+type SubjectType = | Timer
 
 type EntityType =
     | Rock
-    | SubjectType of SubjectType * Subject
-    | ObservableType of ObservableType * Observable
+    | SubjectType of Subject
+    | ObservableType of Observable
 
 and Observable =
-    { ToEmit: Emit
+    { Type: ObservableType
+      ToEmit: Emit
       TicksSinceEmit: int
       Observing: int option
-      Action: (Observable -> EntityType -> Observable)
-      }
+      Action: (Observable -> EntityType -> Observable) }
 
 and Subject =
-    { ToEmit: Emit
+    { Type: SubjectType
+      ToEmit: Emit
       TicksSinceEmit: int
       GenerationNumber: int
-      Action: (Subject -> Subject)
-      }
+      Action: (Subject -> Subject) }
 
 and Emit =
     | WillEmit of EntityType
@@ -46,7 +45,7 @@ let getSpriteConfig (eType: EntityType) : SpriteConfig =
     match eType with
     | Rock -> rockSpriteConfig
     | SubjectType _ -> timerSpriteConfig
-    | ObservableType (ob, _) ->
+    | ObservableType { Type = ob } ->
         match ob with
         | Id -> idSpriteConfig
         | Map -> mapSpriteConfig
@@ -56,7 +55,7 @@ let getEmitImage (eType: EntityType) =
     match eType with
     | Rock -> rockImage
     | SubjectType _ -> timerImage
-    | ObservableType (ob, _) ->
+    | ObservableType { Type = ob } ->
         match ob with
         | Id -> idImage
         | Map -> mapImage
