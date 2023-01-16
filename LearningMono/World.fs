@@ -221,14 +221,14 @@ let init (worldConfig: WorldConfig) time =
         [| for yy in 0 .. (worldConfig.WorldTileLength - 1) do
                for xx in 0 .. (worldConfig.WorldTileLength - 1) do
                    let grassTile = createNonCollidableTile FloorType.Grass
-
+                   let subj = Some 22
                    match xx, yy with
                    | 0, 0 -> createNonCollidableTile FloorType.Grass
                    | 2, 2 -> createTimerOnGrass (Vector2(2f)) time
-                   | 3, 3 -> createObserverOnGrass (Vector2(3f)) time onlyRock
+                   | 3, 3 -> createObserverOnGrass (Vector2(3f)) time (onlyRock subj)
                    | 5, 5 -> createCollidableTile FloorType.Empty 5f 5f
-                   | 5, 6 -> createObserverOnGrass (Vector2(5f, 6f)) time id
-                   | 7, 9 -> createObserverOnGrass (Vector2(7f, 9f)) time mapToTimer
+                   | 5, 6 -> createObserverOnGrass (Vector2(5f, 6f)) time (idObservable subj)
+                   | 7, 9 -> createObserverOnGrass (Vector2(7f, 9f)) time (mapToTimer subj)
                    | 8, 9 -> grassTile // 8f 9f
                    | 6, 9 -> grassTile // 6f 9f
                    | 7, 8 -> grassTile // 7f 8f

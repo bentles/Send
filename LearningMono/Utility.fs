@@ -38,15 +38,13 @@ let createColliderFromCoords (xx: float32) (yy: float32) (half: Vector2) =
 let imageWithSource (key: string) (colour: Color) (srcSize: int * int) (srcPos: int * int) (destSize: int * int) (destPos: int * int): Viewable =
    
     OnDraw(fun loadedAssets _ (spriteBatch: SpriteBatch) ->
-        let texture = loadedAssets.textures[key]
         let (x, y) = destPos
         let (width, height) = destSize
-
         let (sourceX, sourceY) = srcPos
         let (sourceWidth, sourceHeight) = srcSize
 
         spriteBatch.Draw(
-            texture,
+            loadedAssets.textures[key],
             Rectangle(x, y, width, height),
             Rectangle(sourceX, sourceY, sourceWidth, sourceHeight),
             colour,

@@ -100,17 +100,17 @@ let buildObserverObserving (observerFunc: EntityType -> Emit) (oType: Observable
 let buildObserver (observerFunc: EntityType -> Emit) (oType: ObservableType) =
     buildObserverObserving observerFunc oType None
 
-let idObservable = buildObserver (fun e -> Emitting e) Id
+let idObservable = buildObserverObserving (fun e -> Emitting e) Id
 
-let mapToTimer = buildObserver (fun e -> Emitting rockTimer) Map
+let mapToTimer = buildObserverObserving (fun e -> Emitting rockTimer) Map
 
 let onlyRock =
-    buildObserver (fun e ->
+    buildObserverObserving (fun e ->
         match e with
         | Rock ->
             printfn "observing %A" e
             WillEmit e
-        | _ -> Nothing)
+        | _ -> Nothing) Filter
 
 let tileHalf = float32 (worldConfig.TileWidth / 2)
 let half = Vector2(tileHalf)
@@ -139,11 +139,9 @@ let createTimerOnGrass (coords: Vector2) time =
         FloorType = FloorType.Grass
         Entity = Some(Entity.init subject pos time) }
 
-let createObserverOnGrass (coords: Vector2) time func =
+let createObserverOnGrass (coords: Vector2) time observer:Tile =
     let pos = coordsToPos coords.X coords.Y half
-
-    let observable = idObservable
 
     { defaultTile with
         FloorType = FloorType.Grass
-        Entity = Some(Entity.init observable pos time) }
+        Entity = Some(Entity.init observer pos time) }
