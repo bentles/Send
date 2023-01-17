@@ -79,3 +79,8 @@ let initNoCollider (entityType: EntityType) (pos: Vector2) time =
     { Type = entityType
       Sprite = Sprite.init pos time (getSpriteConfig entityType)
       Collider = None }
+
+let withTarget (entityType:EntityType) (target: int option) =
+    match entityType with
+    | Observable obs -> Observable { obs with Observing = target }
+    | other -> other

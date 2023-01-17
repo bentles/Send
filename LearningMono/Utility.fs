@@ -31,12 +31,35 @@ let posRounded (pos: Vector2) (worldConfig: WorldConfig) =
 
     Vector2(x, y) + Vector2(float32 (worldConfig.TileWidth / 2))
 
+let posToIndex (pos: Vector2) : int =
+    let x, y = posToCoords pos
+    y * worldConfig.WorldTileLength + x
+
+let coordsOutOfBounds (x: int, y: int) : bool =
+    x >= worldConfig.WorldTileLength
+    || x < 0
+    || y >= worldConfig.WorldTileLength
+    || y < 0
+
+let coordsToIndex (x: int, y: int) : int option =
+    if coordsOutOfBounds (x, y) then
+        None
+    else
+        Some(y * worldConfig.WorldTileLength + x)
+
 let createColliderFromCoords (xx: float32) (yy: float32) (half: Vector2) =
     { Pos = coordsToPos xx yy half
       Half = half }
 
-let imageWithSource (key: string) (colour: Color) (srcSize: int * int) (srcPos: int * int) (destSize: int * int) (destPos: int * int): Viewable =
-   
+let imageWithSource
+    (key: string)
+    (colour: Color)
+    (srcSize: int * int)
+    (srcPos: int * int)
+    (destSize: int * int)
+    (destPos: int * int)
+    : Viewable =
+
     OnDraw(fun loadedAssets _ (spriteBatch: SpriteBatch) ->
         let (x, y) = destPos
         let (width, height) = destSize
@@ -49,8 +72,7 @@ let imageWithSource (key: string) (colour: Color) (srcSize: int * int) (srcPos: 
             Rectangle(sourceX, sourceY, sourceWidth, sourceHeight),
             colour,
             0f,
-            Vector2.Zero,            
+            Vector2.Zero,
             Graphics.SpriteEffects.None,
             0f
         ))
-    

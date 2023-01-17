@@ -203,18 +203,9 @@ let getCollidables (tiles: Tile[]) : AABB seq =
             | _ -> None)
 
 let getTileAtPos (pos: Vector2) (tiles: Tile[]) : (Tile * int) option =
-    let (x, y) = posToCoords pos
-
-    if
-        x >= worldConfig.WorldTileLength
-        || x < 0
-        || y >= worldConfig.WorldTileLength
-        || y < 0
-    then
-        None
-    else
-        let index = y * worldConfig.WorldTileLength + x
-        Some(tiles[index], index)
+    let coords = posToCoords pos
+    let index = coordsToIndex coords
+    index |> Option.map (fun index -> tiles[index], index)
 
 let init (worldConfig: WorldConfig) time =
     let blocks =
@@ -229,7 +220,7 @@ let init (worldConfig: WorldConfig) time =
                    | 3, 3 -> createObserverOnGrass (Vector2(3f)) time (onlyRock subj)
                    | 5, 5 -> createCollidableTile FloorType.Empty 5f 5f
                    | 5, 6 -> createObserverOnGrass (Vector2(5f, 6f)) time (idObservable subj)
-                   | 7, 9 -> createObserverOnGrass (Vector2(7f, 9f)) time (mapToTimer subj)
+                   | 7, 9 -> createObserverOnGrass (Vector2(7f, 9f)) time (mapToTimer (Some 33))
                    | 8, 9 -> grassTile // 8f 9f
                    | 6, 9 -> grassTile // 6f 9f
                    | 7, 8 -> grassTile // 7f 8f
@@ -373,8 +364,13 @@ let update (message: Message) (model: Model) : Model * Cmd<Message> =
             | Some({ Entity = None } as tile, i) ->
                 match player.Carrying with
                 | entity :: rest ->
-                    let rounded = posRounded player.Target worldConfig
-                    let entity = Entity.init entity.Type rounded model.TimeElapsed
+                    //make a targeting function
+                    let roundedPos = posRounded player.Target worldConfig
+                    let (x,y) = posToCoords roundedPos
+                    let left = (x - 1, y)
+                    
+                    let entityType = withTarget entity.Type (coordsToIndex left)
+                    let entity = Entity.init entityType roundedPos model.TimeElapsed
                     let sprite, ev = Sprite.update Sprite.StartAnimation entity.Sprite
                     let entity = { entity with Sprite = sprite }
 
