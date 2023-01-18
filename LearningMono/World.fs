@@ -13,6 +13,7 @@ open Player
 open Utility
 open LevelConfig
 open Entity
+open System
 
 
 type Model =
@@ -366,10 +367,12 @@ let update (message: Message) (model: Model) : Model * Cmd<Message> =
                 | entity :: rest ->
                     //make a targeting function
                     let roundedPos = posRounded player.Target worldConfig
-                    let (x,y) = posToCoords roundedPos
-                    let left = (x - 1, y)
+                    let (x, y) = posToCoords roundedPos
                     
-                    let entityType = withTarget entity.Type (coordsToIndex left)
+                    let xface, yface = round player.Facing.X, round player.Facing.Y
+                    let at = (x + xface, y + yface)
+
+                    let entityType = withTarget entity.Type (coordsToIndex at)
                     let entity = Entity.init entityType roundedPos model.TimeElapsed
                     let sprite, ev = Sprite.update Sprite.StartAnimation entity.Sprite
                     let entity = { entity with Sprite = sprite }
@@ -422,15 +425,17 @@ let viewEmitting (entityType: EntityType) (ticksSinceLast: int) pos =
         let destSize = (int ((float width) / 1.5), int ((float height) / 1.5))
         let x, y = pos
 
-        [ imageWithSource
-              imageInfo.TextureName
-              (Color.FromNonPremultiplied(255, 255, 255, alpha))
-              (width, height)
-              (0, 0)
-              destSize
-              (x + 20, y - 5) ]
+        seq {
+            imageWithSource
+                imageInfo.TextureName
+                (Color.FromNonPremultiplied(255, 255, 255, alpha))
+                (width, height)
+                (0, 0)
+                destSize
+                (x + 20, y - 5)
+        }
     else
-        []
+        Seq.empty
 
 let viewWorld (model: Model) (worldConfig: WorldConfig) =
     let blockWidth = worldConfig.TileWidth
@@ -474,26 +479,26 @@ let viewWorld (model: Model) (worldConfig: WorldConfig) =
                 tile.Entity
                 |> Option.map (fun (entity: Entity.Model) -> Sprite.view entity.Sprite -cameraOffset (fun f -> ()))
 
-            let debug =
-                tile.Collider
-                |> Option.map (fun (b: AABB) ->
-                    image
-                        empty
-                        Color.Red
-                        (int (b.Half.X * 2f), int (b.Half.Y * 2f))
-                        (int (b.Pos.X - b.Half.X + cameraOffset.X), int (b.Pos.Y - b.Half.Y + cameraOffset.Y)))
-                |> Option.toList
+            //let debug =
+            //    tile.Collider
+            //    |> Option.map (fun (b: AABB) ->
+            //        image
+            //            empty
+            //            Color.Red
+            //            (int (b.Half.X * 2f), int (b.Half.Y * 2f))
+            //            (int (b.Pos.X - b.Half.X + cameraOffset.X), int (b.Pos.Y - b.Half.Y + cameraOffset.Y)))
+            //    |> Option.toList
 
-            let entityDebug =
-                tile.Entity
-                |> Option.bind (fun e -> e.Collider)
-                |> Option.map (fun (b: AABB) ->
-                    image
-                        empty
-                        Color.Red
-                        (int (b.Half.X * 2f), int (b.Half.Y * 2f))
-                        (int (b.Pos.X - b.Half.X + cameraOffset.X), int (b.Pos.Y - b.Half.Y + cameraOffset.Y)))
-                |> Option.toList
+            //let entityDebug =
+            //    tile.Entity
+            //    |> Option.bind (fun e -> e.Collider)
+            //    |> Option.map (fun (b: AABB) ->
+            //        image
+            //            empty
+            //            Color.Red
+            //            (int (b.Half.X * 2f), int (b.Half.Y * 2f))
+            //            (int (b.Pos.X - b.Half.X + cameraOffset.X), int (b.Pos.Y - b.Half.Y + cameraOffset.Y)))
+            //    |> Option.toList
 
             // lololol
             let emitting =
@@ -506,7 +511,7 @@ let viewWorld (model: Model) (worldConfig: WorldConfig) =
                                              TicksSinceEmit = t } })
                 | Some({ Type = Subject { ToEmit = (Emitted s)
                                           TicksSinceEmit = t } }) -> viewEmitting s t (actualX, actualY)
-                | _ -> []
+                | _ -> Seq.empty
 
             match entity with
             | Some s ->

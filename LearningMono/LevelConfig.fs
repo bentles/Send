@@ -43,7 +43,7 @@ let buildRepeatListEmittingEvery (list: EntityType list) (every: int) =
                 ToEmit =
                     match subject.ToEmit with
                     | WillEmit t ->
-                        printfn "%A" subject.ToEmit
+                        //printfn "%A" subject.ToEmit
                         Emitting t
                     | Emitting t -> Emitted t
                     | other -> other }
@@ -113,7 +113,17 @@ let onlyRock =
         (fun e ->
             match e with
             | Rock ->
-                printfn "observing %A" e
+                //printfn "observing %A" e
+                WillEmit e
+            | _ -> Nothing)
+        Filter
+
+let onlyTimer =
+    buildObserverObserving
+        (fun e ->
+            match e with
+            | Subject { Type = Timer } ->
+                //printfn "observing %A" e
                 WillEmit e
             | _ -> Nothing)
         Filter

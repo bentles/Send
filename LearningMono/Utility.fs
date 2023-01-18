@@ -76,3 +76,5 @@ let imageWithSource
             Graphics.SpriteEffects.None,
             0f
         ))
+
+let round (x:float32) = int (System.Math.Round(float x))

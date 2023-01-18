@@ -50,6 +50,9 @@ let initPlayer x y (playerConfig: PlayerConfig) (spriteConfig: SpriteConfig) tim
 
       Carrying =
           [ Entity.initNoCollider (idObservable None) p time
+            Entity.initNoCollider (idObservable None) p time
+            Entity.initNoCollider (onlyTimer None) p time
+            Entity.initNoCollider (idObservable None) p time
             Entity.initNoCollider (idObservable None) p time ]
       Facing = Vector2(1f, 0f)
       Target = p + 60f * Vector2(1f, 0f)
