@@ -218,7 +218,7 @@ let init (worldConfig: WorldConfig) time =
                    match xx, yy with
                    | 0, 0 -> createNonCollidableTile FloorType.Grass
                    | 2, 2 -> createTimerOnGrass (Vector2(2f)) time
-                   | 3, 3 -> createObserverOnGrass (Vector2(3f)) time (onlyRock subj)
+                   | 3, 3 -> createObserverOnGrass (Vector2(3f)) time (onlyRockFilter subj)
                    | 5, 5 -> createCollidableTile FloorType.Empty 5f 5f
                    | 5, 6 -> createObserverOnGrass (Vector2(5f, 6f)) time (idObservable subj)
                    | 7, 9 -> createObserverOnGrass (Vector2(7f, 9f)) time (mapToTimer (Some 33))
@@ -359,7 +359,7 @@ let update (message: Message) (model: Model) : Model * Cmd<Message> =
     | PlaceEntity ->
         match player.CharacterState with
         | Small _ ->
-            let tileAndIndex = model.PlayerTarget // need the concept of 'facing' to add an offset here :'(
+            let tileAndIndex = model.PlayerTarget
 
             match tileAndIndex with
             | Some({ Entity = None } as tile, i) ->

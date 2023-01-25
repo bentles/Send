@@ -1,46 +1,4 @@
-﻿IDEAS:
-- design by contract
-	- put asserts wherever i have made assumptions
--``` // TODO: something like this for later
-type Level =
-    | Level of WorldConfig
-
-type Screen =
-    | Menu
-    | Playing of Level
-    | GameOver ```
-- add the concept of a level and some way of setting them up
-
-- THEN make levels and stuff
-
-- observables and subjects
-	- option 1: build a tree of observables that I maintain as items are added and removed
-				
-	- option 2: have this tree be implicit and have the game loop process the connections by checking emits and subscription lists
-		- i guess im trying this for now
-		- option 2.1: have a list of subscribers
-			- how will update ordering work??
-				- first generators
-				- then? build a list of observers to update
-				- keep doing that but only allow things to be updated once per tick
-					- otherwise we could have an infinite loop
-			- how does unsubscribe work?
-				- you remove the block and then??
-				- i guess I can keep an subscribedTo field too and use that for unsub
-					- and for things like merge this will have to be a list
-		- option 2.2: have a subbedTo field
-
-		- option 2.3: observable style function setup
-			- howtf does this work???
-				- i dont think its possible because i dont directly have the tree structure to update
-
-- generator is just a function of time
-
-
-- investigate world datastructure options?
-	- user vctor from fsharpx for world??:
-	- use zipper data structure for world
-
+﻿
 TODO:
 - nicer toggling of debug sprites
 - quick check for collision exclusion of far away objects
@@ -51,6 +9,7 @@ TODO:
 
 DOING:
 - create a sink of some kind
+	
 
 DONE:
 - entity and reactive are linked but not in the model

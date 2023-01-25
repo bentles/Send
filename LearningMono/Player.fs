@@ -55,7 +55,7 @@ let initPlayer x y (playerConfig: PlayerConfig) (spriteConfig: SpriteConfig) tim
             Entity.initNoCollider (idObservable None) p time Entity.FacingRight
             Entity.initNoCollider (idObservable None) p time Entity.FacingRight
             Entity.initNoCollider (idObservable None) p time Entity.FacingRight
-            Entity.initNoCollider (onlyTimer None) p time Entity.FacingRight
+            Entity.initNoCollider (onlyTimerFilter None) p time Entity.FacingRight
             Entity.initNoCollider (idObservable None) p time Entity.FacingRight
             Entity.initNoCollider (idObservable None) p time Entity.FacingRight ]
       Facing = Vector2(1f, 0f)

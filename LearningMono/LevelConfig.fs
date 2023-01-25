@@ -49,14 +49,15 @@ let buildRepeatListEmittingEvery (list: EntityType list) (every: int) =
 let buildRepeatItemEmitEvery (every: int) (item: EntityType) =
     buildRepeatListEmittingEvery [ item ] every
 
-let rockTimer: EntityType =
+let buildTimer (every: int) (entity:EntityType) =
     Subject
         { Type = Timer
           ToEmit = Nothing
           TicksSinceEmit = 0
           GenerationNumber = 0
-          Action = buildRepeatItemEmitEvery 30 Rock }
+          Action = buildRepeatItemEmitEvery every entity }
 
+let rockTimer: EntityType = buildTimer 30 Rock
 
 let buildObserverObserving
     (observerFunc: EntityType -> Emit)
@@ -105,22 +106,20 @@ let idObservable = buildObserverObserving (fun e -> Emitting e) Id
 
 let mapToTimer = buildObserverObserving (fun e -> Emitting rockTimer) Map
 
-let onlyRock =
+let onlyRockFilter =
     buildObserverObserving
         (fun e ->
             match e with
             | Rock ->
-                //printfn "observing %A" e
                 WillEmit e
             | _ -> Nothing)
         Filter
 
-let onlyTimer =
+let onlyTimerFilter =
     buildObserverObserving
         (fun e ->
             match e with
             | Subject { Type = Timer } ->
-                //printfn "observing %A" e
                 WillEmit e
             | _ -> Nothing)
         Filter
@@ -137,7 +136,7 @@ let createNonCollidableTile t = { defaultTile with FloorType = t }
 
 let createTimerOnGrass (coords: Vector2) time =
     let pos = coordsToPos coords.X coords.Y half
-    let listEmitter = buildRepeatListEmittingEvery [ Rock; rockTimer; rockTimer ] 60
+    let listEmitter = buildRepeatListEmittingEvery [ Rock; rockTimer; (onlyRockFilter None) ] 60
 
     let subject =
         Entity.Subject
