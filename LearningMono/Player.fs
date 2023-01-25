@@ -11,8 +11,6 @@ type CharacterState =
     | Growing
     | Shrinking
 
-
-
 type PlayerModel =
     { SpriteInfo: Sprite.Model
       CharacterState: CharacterState
@@ -40,7 +38,7 @@ type PlayerModel =
 let initPlayer x y (playerConfig: PlayerConfig) (spriteConfig: SpriteConfig) time =
     let p = Vector2(float32 x, float32 y)
 
-    { SpriteInfo = Sprite.init p time spriteConfig
+    { SpriteInfo = Sprite.init p time spriteConfig None None
       CharacterState = Small true
       Input = Vector2.Zero
       XInputTimeAndDir = -1000, 1f
@@ -49,11 +47,17 @@ let initPlayer x y (playerConfig: PlayerConfig) (spriteConfig: SpriteConfig) tim
       Holding = false
 
       Carrying =
-          [ Entity.initNoCollider (idObservable None) p time
-            Entity.initNoCollider (idObservable None) p time
-            Entity.initNoCollider (onlyTimer None) p time
-            Entity.initNoCollider (idObservable None) p time
-            Entity.initNoCollider (idObservable None) p time ]
+          [ Entity.initNoCollider (idObservable None) p time Entity.FacingRight
+            Entity.initNoCollider (idObservable None) p time Entity.FacingRight
+            Entity.initNoCollider (idObservable None) p time Entity.FacingRight
+            Entity.initNoCollider (idObservable None) p time Entity.FacingRight
+            Entity.initNoCollider (idObservable None) p time Entity.FacingRight
+            Entity.initNoCollider (idObservable None) p time Entity.FacingRight
+            Entity.initNoCollider (idObservable None) p time Entity.FacingRight
+            Entity.initNoCollider (idObservable None) p time Entity.FacingRight
+            Entity.initNoCollider (onlyTimer None) p time Entity.FacingRight
+            Entity.initNoCollider (idObservable None) p time Entity.FacingRight
+            Entity.initNoCollider (idObservable None) p time Entity.FacingRight ]
       Facing = Vector2(1f, 0f)
       Target = p + 60f * Vector2(1f, 0f)
       Pos = p
@@ -69,8 +73,8 @@ let initPlayer x y (playerConfig: PlayerConfig) (spriteConfig: SpriteConfig) tim
 
 let getPlayerPickupLimit (characterState:CharacterState) =
     match characterState with
-    | Small true -> 3
-    | Small false -> 8
+    | Small true -> 15
+    | Small false -> 15
     | _ -> 0
 
 type PhysicsInfo =

@@ -4,6 +4,8 @@ open Collision
 open Config
 open Microsoft.Xna.Framework
 
+type Facing = FacingUp | FacingDown | FacingLeft | FacingRight
+
 type ObservableType =
     | Id
     | Map
@@ -39,6 +41,7 @@ and Emit =
 type Model =
     { Sprite: Sprite.Model
       Collider: AABB option
+      Facing: Facing
       Type: EntityType }
 
 let getSpriteConfig (eType: EntityType) : SpriteConfig =
@@ -67,17 +70,31 @@ let getCollider (eType: EntityType) (pos: Vector2) : AABB =
     | Subject _ -> { Pos = pos; Half = Vector2(10f, 10f) }
     | Observable _ -> { Pos = pos; Half = Vector2(10f, 10f) }
 
-let init (entityType: EntityType) (pos: Vector2) (time) =
-    let sprite = Sprite.init pos time (getSpriteConfig entityType)
+let init (entityType: EntityType) (pos: Vector2) (time) (facing:Facing) =
+    let config = (getSpriteConfig entityType)
+    let rowsLastIndex = (getTotalRows config) - 1
+
+    let ypos, flipped = 
+        match facing with 
+        | FacingLeft -> 0, true 
+        | FacingRight -> 0, false
+        | FacingUp -> 2, false
+        | FacingDown -> 1, false
+
+    let ypos = min ypos rowsLastIndex
+
+    let sprite = Sprite.init pos time config (Some ypos) (Some flipped)
     let collider = getCollider entityType pos
 
     { Type = entityType
       Sprite = sprite
+      Facing = facing
       Collider = Some collider }
 
-let initNoCollider (entityType: EntityType) (pos: Vector2) time =
+let initNoCollider (entityType: EntityType) (pos: Vector2) time (facing:Facing) =
     { Type = entityType
-      Sprite = Sprite.init pos time (getSpriteConfig entityType)
+      Sprite = Sprite.init pos time (getSpriteConfig entityType) None None
+      Facing = facing
       Collider = None }
 
 let withTarget (entityType:EntityType) (target: int option) =

@@ -26,8 +26,8 @@ type Model =
       FlipV: bool
       ScreenPos: Vector2 }
 
-let currentImageConfigAndRelativePos images (animation: AnimationConfig) =
-    let y = animation.Index
+let currentImageConfigAndRelativePos images (animation: AnimationConfig) (ypos: int option) =
+    let y = ypos |> Option.defaultValue animation.Index
 
     // check the index is reasonable
     assert (y < (images |> List.sumBy (fun a -> a.Rows)))
@@ -42,15 +42,15 @@ let currentImageConfigAndRelativePos images (animation: AnimationConfig) =
 
     getImage y images
 
-let init pos time (config: SpriteConfig) =
+let init pos time (config: SpriteConfig) (ypos: int option) (flipH: bool option) =
     match config with
     | SingleSpriteConfig singleConfig ->
         { Images = [ singleConfig.Image ]
           CurrentImage = singleConfig.Image
-          RelativeYPos = 0
+          RelativeYPos = ypos |> Option.defaultValue 0
           Tint = singleConfig.Tint
           AnimationState = Stopped(imageSpriteConfig, 0)
-          FlipH = false
+          FlipH = flipH |> Option.defaultValue false
           FlipV = false
           LastFrameTime = time
           FrameLength = singleConfig.FrameLength
@@ -58,7 +58,7 @@ let init pos time (config: SpriteConfig) =
 
     | AnimatedSpriteConfig aniConfig ->
         let (img, yPos) =
-            currentImageConfigAndRelativePos aniConfig.Images aniConfig.InitAnimation
+            currentImageConfigAndRelativePos aniConfig.Images aniConfig.InitAnimation ypos
 
         { Images = aniConfig.Images
           CurrentImage = img
@@ -69,7 +69,7 @@ let init pos time (config: SpriteConfig) =
                 Started(aniConfig.InitAnimation, 0)
             else
                 Stopped(aniConfig.InitAnimation, 0)
-          FlipH = false
+          FlipH = flipH |> Option.defaultValue false
           FlipV = false
           LastFrameTime = time
           FrameLength = aniConfig.FrameLength
@@ -180,7 +180,7 @@ let update message model =
         | Started(a, b) -> { model with AnimationState = Stopped(a, b) }
         , Events.None
     | SwitchAnimation(newAni, increment, start) ->
-        let (img, yPos) = currentImageConfigAndRelativePos model.Images newAni
+        let (img, yPos) = currentImageConfigAndRelativePos model.Images newAni Option.None
 
         { model with
             AnimationState = if start then Started(newAni, 0) else Stopped(newAni, 0)

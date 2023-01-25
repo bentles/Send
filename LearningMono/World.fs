@@ -129,7 +129,7 @@ let updatePlayerPhysics model (info: PhysicsInfo) =
         Pos = pos
         IsMoving = isMoving }
 
-let updatePlayerAnimations newModel oldModel =
+let updatePlayerAnimations (newModel:PlayerModel) (oldModel:PlayerModel) =
     let directionCommands =
         if newModel.Facing.X <> oldModel.Facing.X || newModel.Facing.Y <> oldModel.Facing.Y then
             [ Cmd.ofMsg (SpriteMessage(Sprite.SetDirection(newModel.Facing.X < 0f, newModel.Facing.Y < 0f))) ]
@@ -179,7 +179,7 @@ let viewPlayerCarrying (carrying: Entity.Model list) (cameraPos: Vector2) (charS
     |> Seq.indexed
     |> Seq.collect (fun (i, c) ->
         let offSetPos = cameraPos + offsetStart + (Vector2(0f, 25f) * (float32 i))
-        Sprite.view c.Sprite offSetPos (fun f -> ()))
+        Sprite.view c.Sprite offSetPos ignore)
 
 let updateCameraPos (playerPos: Vector2) (oldCamPos: Vector2) : Vector2 =
     let diff = Vector2.Subtract(playerPos, oldCamPos)
@@ -372,9 +372,19 @@ let update (message: Message) (model: Model) : Model * Cmd<Message> =
                     let xface, yface = round player.Facing.X, round player.Facing.Y
                     let at = (x + xface, y + yface)
 
+                    let facing = 
+                        match xface, yface with
+                        | (-1,0) -> Entity.FacingLeft
+                        | (1,0) -> Entity.FacingRight
+                        | (0,-1) -> Entity.FacingUp
+                        | (0,1) -> Entity.FacingDown
+                        | (_,-1) -> Entity.FacingUp
+                        | (_,1) -> Entity.FacingDown
+                        | _ -> Entity.FacingRight
+
                     let entityType = withTarget entity.Type (coordsToIndex at)
-                    let entity = Entity.init entityType roundedPos model.TimeElapsed
-                    let sprite, ev = Sprite.update Sprite.StartAnimation entity.Sprite
+                    let entity = Entity.init entityType roundedPos model.TimeElapsed facing
+                    let sprite, ev = Sprite.update Sprite.StartAnimation entity.Sprite 
                     let entity = { entity with Sprite = sprite }
 
                     model.Tiles[i] <- { tile with Entity = Some(entity) } //TODO: no mutation
@@ -527,6 +537,7 @@ let viewPlayer model (cameraPos: Vector2) (dispatch: PlayerMessage -> unit) =
     seq {
         //input
         yield directions Keys.Up Keys.Down Keys.Left Keys.Right (fun f -> dispatch (Input f))
+       // yield directions Keys.W Keys.S Keys.A Keys.D (fun f -> dispatch (Input f))
         yield onkeydown Keys.Space (fun _ -> dispatch (TransformCharacter))
         yield onkeydown Keys.LeftControl (fun _ -> dispatch (Hold true))
         yield onkeyup Keys.LeftControl (fun _ -> dispatch (Hold false))
@@ -548,6 +559,11 @@ let view model (dispatch: Message -> unit) =
         // input
         yield onkeydown Keys.Z (fun _ -> dispatch (PickUpEntity))
         yield onkeydown Keys.X (fun _ -> dispatch (PlaceEntity))
+
+        yield onupdate (fun input -> 
+            let mousePos = input.mouseState.Position
+            ()
+            )
 
         // physics
         yield onupdate (fun input -> dispatch (PhysicsTick(input.totalGameTime, input.gameTime.IsRunningSlowly)))

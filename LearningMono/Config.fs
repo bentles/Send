@@ -57,6 +57,11 @@ type SpriteConfig =
     | SingleSpriteConfig of SingleSpriteConfig
     | AnimatedSpriteConfig of AnimatedSpriteConfig
 
+let getTotalRows (config: SpriteConfig) =
+    match config with
+    | SingleSpriteConfig single -> single.Image.Rows
+    | AnimatedSpriteConfig anim -> anim.Images |> List.fold (fun acc img -> acc + img.Rows) 0
+
 let playerConfig =
     { BigMaxVelocity = 2f
       SmallMaxVelocity = 4.5f

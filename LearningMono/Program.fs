@@ -73,7 +73,7 @@ let main _ =
 
               //fonts
               PipelineFont("defaultFont", "./content/SourceCodePro") ]
-          mouseVisible = false }
+          mouseVisible = true }
 
     Program.mkProgram init update view 
     |> Xelmish.Program.runGameLoop config

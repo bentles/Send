@@ -152,11 +152,11 @@ let createTimerOnGrass (coords: Vector2) time =
 
     { defaultTile with
         FloorType = FloorType.Grass
-        Entity = Some(Entity.init subject pos time) }
+        Entity = Some(Entity.init subject pos time Entity.FacingRight) }
 
 let createObserverOnGrass (coords: Vector2) time observer : Tile =
     let pos = coordsToPos coords.X coords.Y half
 
     { defaultTile with
         FloorType = FloorType.Grass
-        Entity = Some(Entity.init observer pos time) }
+        Entity = Some(Entity.init observer pos time Entity.FacingRight) }
