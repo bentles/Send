@@ -42,9 +42,7 @@ let buildRepeatListEmittingEvery (list: EntityType list) (every: int) =
                 TicksSinceEmit = subject.TicksSinceEmit + 1
                 ToEmit =
                     match subject.ToEmit with
-                    | WillEmit t ->
-                        //printfn "%A" subject.ToEmit
-                        Emitting t
+                    | WillEmit t -> Emitting t
                     | Emitting t -> Emitted t
                     | other -> other }
 
@@ -79,8 +77,7 @@ let buildObserverObserving
             | Nothing
             | Emitted _ as cur ->
                 match observing with
-                | Subject { ToEmit = (Emitting s) }
-                | Observable { ToEmit = (Emitting s) } -> observerFunc s
+                | EmittingObservable (s, _) -> observerFunc s
                 | _ -> cur
             | _ -> toEmit
 

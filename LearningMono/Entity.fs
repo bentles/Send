@@ -70,6 +70,25 @@ let getCollider (eType: EntityType) (pos: Vector2) : AABB =
     | Subject _ -> { Pos = pos; Half = Vector2(10f, 10f) }
     | Observable _ -> { Pos = pos; Half = Vector2(10f, 10f) }
 
+
+let (|Emittinged|_|) (emit:Emit) =
+     match emit with
+     | Emitting e
+     | Emitted e -> Some (e)
+     | _ -> None
+
+let (|EmittingedObservable|_|) (emit:EntityType) =
+     match emit with
+     | Subject { ToEmit = Emittinged e; TicksSinceEmit = t } 
+     | Observable { ToEmit = Emittinged e; TicksSinceEmit = t } -> Some (e, t)
+     | _ -> None
+
+let (|EmittingObservable|_|) (emit:EntityType) =
+     match emit with
+     | Subject { ToEmit = Emitting e; TicksSinceEmit = t } 
+     | Observable { ToEmit = Emitting e; TicksSinceEmit = t } -> Some (e, t)
+     | _ -> None
+
 let init (entityType: EntityType) (pos: Vector2) (time) (facing:Facing) =
     let config = (getSpriteConfig entityType)
     let rowsLastIndex = (getTotalRows config) - 1

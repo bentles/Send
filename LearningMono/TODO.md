@@ -50,10 +50,11 @@ TODO:
 - prevent transform if carrying limits exceeded
 
 DOING:
-- entity and reactive are linked but not in the model
-- fix pick up and put down logic
+- create a sink of some kind
 
 DONE:
+- entity and reactive are linked but not in the model
+- fix pick up and put down logic
 - finally add the carrying limits for big/small
 - figure out if game idea is fun first
 	- add a filter observer

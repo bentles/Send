@@ -513,14 +513,7 @@ let viewWorld (model: Model) (worldConfig: WorldConfig) =
             // lololol
             let emitting =
                 match tile.Entity with
-                | Some({ Type = Observable { ToEmit = (Emitting s)
-                                             TicksSinceEmit = t } })
-                | Some({ Type = Subject { ToEmit = (Emitting s)
-                                          TicksSinceEmit = t } })
-                | Some({ Type = Observable { ToEmit = (Emitted s)
-                                             TicksSinceEmit = t } })
-                | Some({ Type = Subject { ToEmit = (Emitted s)
-                                          TicksSinceEmit = t } }) -> viewEmitting s t (actualX, actualY)
+                | Some({ Type = EmittingedObservable (s, t) }) -> viewEmitting s t (actualX, actualY)
                 | _ -> Seq.empty
 
             match entity with
