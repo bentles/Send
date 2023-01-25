@@ -7,12 +7,6 @@ open Xelmish.Model
 let window = Windowed(1600, 900)
 let AcceptableError = 0.001f
 
-[<Measure>]
-type pixels
-
-[<Measure>]
-type blocks
-
 type WorldConfig =
     { TileWidth: int; WorldTileLength: int }
 
