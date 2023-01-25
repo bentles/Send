@@ -40,6 +40,10 @@ type Screen =
 	- user vctor from fsharpx for world??:
 	- use zipper data structure for world
 
+Observable ideas:
+	- lets be real just copy rxmarbles
+	- it does seem like i need multi observers
+
 Sinks:
 	- we need some way to test that the player has achieved the correct signal
 		- single signal match
@@ -51,10 +55,15 @@ Sinks:
 	- how do I implement this?
 		- kind of like an observable with a reference subject
 			- implement a multi observer with compare then any subject i can think of???
-			- implement an observer with a verify function
+			- OR implement an observer with a verify function
 
 	- need to iron out what emitting means
 		- can something emit forever?
 			- no but maybe it's just a subject that emits every single frame
 
-Door
+
+
+Door:
+	- toggle
+	- single use
+
