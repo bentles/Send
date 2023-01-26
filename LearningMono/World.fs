@@ -157,9 +157,9 @@ let updatePlayerAnimations (newModel:PlayerModel) (oldModel:PlayerModel) =
 let transformStart (characterState: CharacterState) =
     match characterState with
     | Shrinking -> Growing, CharAnimations.SmallToBig
-    | Small true -> Growing, CharAnimations.BigToSmall
+    | Small true -> Growing, CharAnimations.SmallToBig
     | Growing -> Shrinking, CharAnimations.BigToSmall
-    | Small false -> Shrinking, CharAnimations.SmallToBig
+    | Small false -> Shrinking, CharAnimations.BigToSmall
 
 let transformComplete (characterState: CharacterState) =
     match characterState with
