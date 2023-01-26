@@ -163,10 +163,10 @@ let transformStart (characterState: CharacterState) =
 
 let transformComplete (characterState: CharacterState) =
     match characterState with
-    | Shrinking -> Small true, CharAnimations.SmallWalk, CharConfig.SmallFrames
-    | Growing -> Small false, CharAnimations.BigWalk, CharConfig.BigFrames
-    | Small true -> Small true, CharAnimations.SmallWalk, CharConfig.SmallFrames
-    | Small false -> Small false, CharAnimations.BigWalk, CharConfig.BigFrames
+    | Shrinking -> Small true, CharAnimations.SmallWalk
+    | Growing -> Small false, CharAnimations.BigWalk
+    | Small true -> Small true, CharAnimations.SmallWalk
+    | Small false -> Small false, CharAnimations.BigWalk
 
 let viewPlayerCarrying (carrying: Entity.Model list) (cameraPos: Vector2) (charState: CharacterState) =
     let offsetStart =
@@ -298,7 +298,7 @@ let updatePlayer (message: PlayerMessage) (worldModel: Model) =
         let model, cmd =
             match event with
             | Sprite.AnimationComplete _ ->
-                let (newState, walkAni, speed) = transformComplete model.CharacterState
+                let (newState, walkAni) = transformComplete model.CharacterState
 
                 let maxVelocity =
                     match newState with
@@ -311,7 +311,7 @@ let updatePlayer (message: PlayerMessage) (worldModel: Model) =
                         CharacterState = newState
                         MaxVelocity = maxVelocity }
 
-                modl, (Cmd.ofMsg << SpriteMessage << Sprite.SwitchAnimation) (walkAni, speed, modl.IsMoving)
+                modl, (Cmd.ofMsg << SpriteMessage << Sprite.SwitchAnimation) (walkAni, walkAni.Speed, modl.IsMoving)
             | Sprite.AnimationLooped _
             | Sprite.None -> model, Cmd.none
 
