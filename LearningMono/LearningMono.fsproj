@@ -20,6 +20,7 @@
     <Compile Include="Config.fs" />
     <Compile Include="Collision.fs" />
     <Compile Include="Utility.fs" />
+    <Compile Include="Assert.fs" />
     <Compile Include="Debug.fs" />
     <Compile Include="Input.fs" />
     <Compile Include="Sprite.fs" />
