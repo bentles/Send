@@ -13,7 +13,6 @@ open Player
 open Utility
 open LevelConfig
 open Entity
-open System
 
 
 type Model =
@@ -46,13 +45,6 @@ let calcVelocity modelVel modelMaxVel (acc: Vector2) (dt: float32) =
 
     vel, velLength
 
-
-let inputAffectsVelocityAssertions (input: Vector2) (oldVel: Vector2) (newVel: Vector2) : bool =
-    if input = Vector2.Zero then
-        newVel.Length() <= oldVel.Length() + AcceptableError
-    else
-        Vector2.Dot(input, newVel) >= Vector2.Dot(input, newVel) - AcceptableError
-
 let updateCarryingPositions (pos: Vector2) =
     Cmd.ofMsg (CarryingMessage(Sprite.Message.SetPos pos))
 
@@ -82,7 +74,7 @@ let updatePlayerPhysics model (info: PhysicsInfo) =
 
     let (vel, velLength) = calcVelocity model.Vel model.MaxVelocity acc dt
 
-    assert (inputAffectsVelocityAssertions model.Input model.Vel vel)
+    assert (Assert.inputAffectsVelocityAssertions model.Input model.Vel vel)
 
     //BlockWidth pixels is 1m
     let pixelsPerMeter = float32 worldConfig.TileWidth
