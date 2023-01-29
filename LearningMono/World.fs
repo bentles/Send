@@ -13,10 +13,11 @@ open Player
 open Utility
 open LevelConfig
 open Entity
+open FSharpx.Collections
 
 
 type Model =
-    { Tiles: Tile[]
+    { Tiles: PersistentVector<Tile>
 
       Dt: float32
       Slow: bool
@@ -121,7 +122,7 @@ let updatePlayerPhysics model (info: PhysicsInfo) =
         Pos = pos
         IsMoving = isMoving }
 
-let updatePlayerAnimations (newModel:PlayerModel) (oldModel:PlayerModel) =
+let updatePlayerAnimations (newModel: PlayerModel) (oldModel: PlayerModel) =
     let directionCommands =
         if newModel.Facing.X <> oldModel.Facing.X || newModel.Facing.Y <> oldModel.Facing.Y then
             [ Cmd.ofMsg (SpriteMessage(Sprite.SetDirection(newModel.Facing.X < 0f, newModel.Facing.Y < 0f))) ]
@@ -185,7 +186,7 @@ let updateCameraPos (playerPos: Vector2) (oldCamPos: Vector2) : Vector2 =
 let halfScreenOffset (camPos: Vector2) : Vector2 =
     Vector2.Subtract(camPos, Vector2(800f, 450f))
 
-let getCollidables (tiles: Tile[]) : AABB seq =
+let getCollidables (tiles: Tile seq) : AABB seq =
     tiles
     |> Seq.choose (fun tile ->
         match tile.Collider with
@@ -195,29 +196,32 @@ let getCollidables (tiles: Tile[]) : AABB seq =
             | Some { Collider = collider } -> collider
             | _ -> None)
 
-let getTileAtPos (pos: Vector2) (tiles: Tile[]) : (Tile * int) option =
+let getTileAtPos (pos: Vector2) (tiles: PersistentVector<Tile>) : (Tile * int) option =
     let coords = posToCoords pos
     let index = coordsToIndex coords
-    index |> Option.map (fun index -> tiles[index], index)
+    index |> Option.map (fun index -> PersistentVector.nth index tiles, index)
 
 let init (worldConfig: WorldConfig) time =
     let blocks =
-        [| for yy in 0 .. (worldConfig.WorldTileLength - 1) do
-               for xx in 0 .. (worldConfig.WorldTileLength - 1) do
-                   let grassTile = createNonCollidableTile FloorType.Grass
-                   let subj = Some 22
+        seq {
+            for yy in 0 .. (worldConfig.WorldTileLength - 1) do
+                for xx in 0 .. (worldConfig.WorldTileLength - 1) do
+                    let grassTile = createNonCollidableTile FloorType.Grass
+                    let subj = Some 22
 
-                   match xx, yy with
-                   | 0, 0 -> createNonCollidableTile FloorType.Grass
-                   | 2, 2 -> createTimerOnGrass (Vector2(2f)) time
-                   | 3, 3 -> createObserverOnGrass (Vector2(3f)) time (onlyRockFilter subj)
-                   | 5, 5 -> createCollidableTile FloorType.Empty 5f 5f
-                   | 5, 6 -> createObserverOnGrass (Vector2(5f, 6f)) time (idObservable subj)
-                   | 7, 9 -> createObserverOnGrass (Vector2(7f, 9f)) time (mapToTimer (Some 33))
-                   | 8, 9 -> grassTile // 8f 9f
-                   | 6, 9 -> grassTile // 6f 9f
-                   | 7, 8 -> grassTile // 7f 8f
-                   | x, y -> grassTile |] // /* createTimerOnGrass (Vector2(float32 x, float32 y)) */ |]
+                    match xx, yy with
+                    | 0, 0 -> createNonCollidableTile FloorType.Grass
+                    | 2, 2 -> createTimerOnGrass (Vector2(2f)) time
+                    | 3, 3 -> createObserverOnGrass (Vector2(3f)) time (onlyRockFilter subj)
+                    | 5, 5 -> createCollidableTile FloorType.Empty 5f 5f
+                    | 5, 6 -> createObserverOnGrass (Vector2(5f, 6f)) time (idObservable subj)
+                    | 7, 9 -> createObserverOnGrass (Vector2(7f, 9f)) time (mapToTimer (Some 33))
+                    | 8, 9 -> grassTile // 8f 9f
+                    | 6, 9 -> grassTile // 6f 9f
+                    | 7, 8 -> grassTile // 7f 8f
+                    | x, y -> grassTile
+        }
+        |> PersistentVector.ofSeq // /* createTimerOnGrass (Vector2(float32 x, float32 y)) */ |]
 
     { Tiles = blocks
       Player = initPlayer 0 0 playerConfig charSprite time
@@ -235,9 +239,9 @@ type Message =
     | PlaceEntity
     | PhysicsTick of time: int64 * slow: bool
 
-let updateWorldReactive (tiles: Tile[]) : Tile[] =
+let updateWorldReactive (tiles: PersistentVector<Tile>) : PersistentVector<Tile> =
     tiles
-    |> Array.map (fun tile ->
+    |> PersistentVector.map (fun tile ->
         let maybeEntity =
             option {
                 let! entity = tile.Entity
@@ -246,9 +250,9 @@ let updateWorldReactive (tiles: Tile[]) : Tile[] =
                     match entity.Type with
                     | Subject subject -> Subject(subject.Action subject)
                     | Observable({ Type = oType
-                                   Observing = Some observing } as observable) ->
+                                   Observing = Some observingIndex } as observable) ->
                         // get what is being is observed if anything
-                        let observedTile = Array.item observing tiles
+                        let observedTile = PersistentVector.nth observingIndex tiles
 
                         match observedTile.Entity with
                         | Some observedEntity -> Observable(observable.Action observable observedEntity.Type)
@@ -260,9 +264,9 @@ let updateWorldReactive (tiles: Tile[]) : Tile[] =
 
         { tile with Entity = maybeEntity })
 
-let updateWorldSprites (totalTime: int64) (tiles: Tile[]) : Tile[] =
+let updateWorldSprites (totalTime: int64) (tiles: PersistentVector<Tile>) : PersistentVector<Tile> =
     tiles
-    |> Array.map (fun tile ->
+    |> PersistentVector.map (fun tile ->
         let entityy =
             option {
                 let! entity = tile.Entity
@@ -341,10 +345,15 @@ let update (message: Message) (model: Model) : Model * Cmd<Message> =
             option {
                 let! (tile, i) = model.PlayerTarget
 
-                model.Tiles[i] <- { tile with Entity = None }
+                let tiles = model.Tiles |> PersistentVector.update i { tile with Entity = None }
 
                 let! entity = tile.Entity
-                return { model with Player = { player with Carrying = entity :: player.Carrying } }, Cmd.none
+
+                return
+                    { model with
+                        Tiles = tiles
+                        Player = { player with Carrying = entity :: player.Carrying } },
+                    Cmd.none
             }
             |> Option.defaultValue (model, Cmd.none)
         | _ -> model, Cmd.none
@@ -360,28 +369,32 @@ let update (message: Message) (model: Model) : Model * Cmd<Message> =
                     //make a targeting function
                     let roundedPos = posRounded player.Target worldConfig
                     let (x, y) = posToCoords roundedPos
-                    
+
                     let xface, yface = round player.Facing.X, round player.Facing.Y
                     let at = (x + xface, y + yface)
 
-                    let facing = 
+                    let facing =
                         match xface, yface with
-                        | (-1,0) -> Entity.FacingLeft
-                        | (1,0) -> Entity.FacingRight
-                        | (0,-1) -> Entity.FacingUp
-                        | (0,1) -> Entity.FacingDown
-                        | (_,-1) -> Entity.FacingUp
-                        | (_,1) -> Entity.FacingDown
+                        | (-1, 0) -> Entity.FacingLeft
+                        | (1, 0) -> Entity.FacingRight
+                        | (0, -1) -> Entity.FacingUp
+                        | (0, 1) -> Entity.FacingDown
+                        | (_, -1) -> Entity.FacingUp
+                        | (_, 1) -> Entity.FacingDown
                         | _ -> Entity.FacingRight
 
                     let entityType = withTarget entity.Type (coordsToIndex at)
                     let entity = Entity.init entityType roundedPos model.TimeElapsed facing
-                    let sprite, ev = Sprite.update Sprite.StartAnimation entity.Sprite 
+                    let sprite, ev = Sprite.update Sprite.StartAnimation entity.Sprite
                     let entity = { entity with Sprite = sprite }
 
-                    model.Tiles[i] <- { tile with Entity = Some(entity) } //TODO: no mutation
+                    let tiles =
+                        model.Tiles |> PersistentVector.update i { tile with Entity = Some(entity) }
 
-                    { model with Player = { player with Carrying = rest } }, Cmd.none
+                    { model with
+                        Tiles = tiles
+                        Player = { player with Carrying = rest } },
+                    Cmd.none
                 | _ -> model, Cmd.none
             | _ -> model, Cmd.none
         | _ -> model, Cmd.none
@@ -437,6 +450,58 @@ let viewEmitting (entityType: EntityType) (ticksSinceLast: int) pos =
         }
     else
         Seq.empty
+
+
+let viewWorld2 (model: Model) (worldConfig: WorldConfig) =
+    let blockWidth = worldConfig.TileWidth
+    let empty = "tile"
+    let grass = "grass"
+
+    let sourceRect = rect 0 0 blockWidth blockWidth
+    let cameraOffset = -(halfScreenOffset model.CameraPos)
+
+    OnDraw(fun loadedAssets inputs (spriteBatch: SpriteBatch) ->
+        seq { 0 .. (model.Tiles.Length - 1) }
+        |> Seq.iter (fun i ->
+            let tile = model.Tiles[i]
+
+            let texture =
+                match tile.FloorType with
+                | FloorType.Grass -> grass
+                | FloorType.Empty -> empty
+
+            let startX = 0
+            let startY = 0
+
+            let xBlockOffSet = (i % worldConfig.WorldTileLength) * blockWidth
+            let yBlockOffSet = (i / worldConfig.WorldTileLength) * blockWidth
+
+            let actualX = startX + xBlockOffSet + int (cameraOffset.X)
+            let actualY = startY + yBlockOffSet + int (cameraOffset.Y)
+
+            let color =
+                option {
+                    let! (tile, ind) = model.PlayerTarget
+                    let! target = if i = ind then Some tile else None
+                    let illegal = Option.isSome target.Collider || Option.isSome target.Entity
+                    return if illegal then Color.Orange else Color.Green
+                }
+                |> Option.defaultValue Color.White
+
+            //floor
+            spriteBatch.Draw(
+                loadedAssets.textures[texture],
+                Rectangle(actualX, actualY, sourceRect.Width, sourceRect.Height),
+                color
+            )
+
+        //let entity =
+        //    tile.Entity
+        //    |> Option.map (fun (entity: Entity.Model) -> Sprite.view entity.Sprite -cameraOffset (fun f -> ()))
+
+        ))
+
+
 
 let viewWorld (model: Model) (worldConfig: WorldConfig) =
     let blockWidth = worldConfig.TileWidth
@@ -501,10 +566,9 @@ let viewWorld (model: Model) (worldConfig: WorldConfig) =
             //            (int (b.Pos.X - b.Half.X + cameraOffset.X), int (b.Pos.Y - b.Half.Y + cameraOffset.Y)))
             //    |> Option.toList
 
-            // lololol
             let emitting =
                 match tile.Entity with
-                | Some({ Type = EmittingedObservable (s, t) }) -> viewEmitting s t (actualX, actualY)
+                | Some({ Type = EmittingedObservable(s, t) }) -> viewEmitting s t (actualX, actualY)
                 | _ -> Seq.empty
 
             match entity with
@@ -521,7 +585,7 @@ let viewPlayer model (cameraPos: Vector2) (dispatch: PlayerMessage -> unit) =
     seq {
         //input
         yield directions Keys.Up Keys.Down Keys.Left Keys.Right (fun f -> dispatch (Input f))
-       // yield directions Keys.W Keys.S Keys.A Keys.D (fun f -> dispatch (Input f))
+        // yield directions Keys.W Keys.S Keys.A Keys.D (fun f -> dispatch (Input f))
         yield onkeydown Keys.Space (fun _ -> dispatch (TransformCharacter))
         yield onkeydown Keys.LeftControl (fun _ -> dispatch (Hold true))
         yield onkeyup Keys.LeftControl (fun _ -> dispatch (Hold false))
@@ -544,16 +608,16 @@ let view model (dispatch: Message -> unit) =
         yield onkeydown Keys.Z (fun _ -> dispatch (PickUpEntity))
         yield onkeydown Keys.X (fun _ -> dispatch (PlaceEntity))
 
-        yield onupdate (fun input -> 
-            let mousePos = input.mouseState.Position
-            ()
-            )
+        yield
+            onupdate (fun input ->
+                let mousePos = input.mouseState.Position
+                ())
 
         // physics
         yield onupdate (fun input -> dispatch (PhysicsTick(input.totalGameTime, input.gameTime.IsRunningSlowly)))
 
         //render
-        yield! viewWorld model worldConfig
+        yield viewWorld2 model worldConfig
         yield! viewPlayer model.Player (halfScreenOffset model.CameraPos) (PlayerMessage >> dispatch)
 
         //debug

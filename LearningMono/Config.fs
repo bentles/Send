@@ -10,7 +10,7 @@ let AcceptableError = 0.001f
 type WorldConfig =
     { TileWidth: int; WorldTileLength: int }
 
-let worldConfig = { TileWidth = 50; WorldTileLength = 10 }
+let worldConfig = { TileWidth = 50; WorldTileLength = 20 }
 
 // player config
 type AABBConfig = { Half: Vector2; Offset: Vector2 }
