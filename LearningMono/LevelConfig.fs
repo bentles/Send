@@ -25,108 +25,6 @@ type LevelConfig =
     { PlayerStartPos: Vector2
       LevelBuilder: unit -> Tile[] }
 
-let buildRepeatListEmittingEvery (list: EntityType list) (every: int) =
-    let length = list.Length
-
-    fun (subject: SubjectData) ->
-        if subject.TicksSinceEmit > every then
-            let index = subject.GenerationNumber % length
-            let itemToEmit = List.item index list
-
-            { subject with
-                TicksSinceEmit = 0
-                GenerationNumber = subject.GenerationNumber + 1
-                ToEmit = WillEmit itemToEmit }
-        else
-            { subject with
-                TicksSinceEmit = subject.TicksSinceEmit + 1
-                ToEmit =
-                    match subject.ToEmit with
-                    | WillEmit t -> Emitting t
-                    | Emitting t -> Emitted t
-                    | other -> other }
-
-let buildRepeatItemEmitEvery (every: int) (item: EntityType) =
-    buildRepeatListEmittingEvery [ item ] every
-
-let buildTimer (every: int) (entity:EntityType) =
-    Subject
-        { Type = Timer
-          ToEmit = Nothing
-          TicksSinceEmit = 0
-          GenerationNumber = 0
-          Action = buildRepeatItemEmitEvery every entity }
-
-let rockTimer: EntityType = buildTimer 30 Rock
-
-let buildObserverObserving
-    (observerFunc: EntityType -> Emit)
-    (oType: ObservableType)
-    (target: int option)
-    : EntityType =
-    let observerFunc (observable: ObservableData) (observing: Entity.EntityType) =
-        //if you have your own stuffs do that
-        let toEmit =
-            match observable.ToEmit with
-            | WillEmit t -> Emitting t
-            | Emitting t -> Emitted t
-            | other -> other
-
-        //otherwise check in on the thing you are observing
-        let toEmit =
-            match toEmit with
-            | Nothing
-            | Emitted _ as cur ->
-                match observing with
-                | EmittingObservable (s, _) -> observerFunc s
-                | _ -> cur
-            | _ -> toEmit
-
-        let ticks =
-            match toEmit with
-            | Emitting t -> 0
-            | _ -> observable.TicksSinceEmit + 1
-
-        { observable with
-            ToEmit = toEmit
-            TicksSinceEmit = ticks }
-
-    Observable(
-        { Type = oType
-          ToEmit = Nothing
-          Action = observerFunc
-          TicksSinceEmit = 0
-          Observing = target }
-    )
-
-let buildObserver (observerFunc: EntityType -> Emit) (oType: ObservableType) =
-    buildObserverObserving observerFunc oType None
-
-let idObservable = buildObserverObserving (fun e -> Emitting e) Id
-
-let mapToTimer = buildObserverObserving (fun e -> Emitting rockTimer) Map
-
-let onlyRockFilter =
-    buildObserverObserving
-        (fun e ->
-            match e with
-            | Rock ->
-                WillEmit e
-            | _ -> Nothing)
-        Filter
-
-let onlyTimerFilter =
-    buildObserverObserving
-        (fun e ->
-            match e with
-            | Subject { Type = Timer } ->
-                WillEmit e
-            | _ -> Nothing)
-        Filter
-
-let tileHalf = float32 (worldConfig.TileWidth / 2)
-let half = Vector2(tileHalf)
-
 let createCollidableTile t xx yy =
     { defaultTile with
         FloorType = t
@@ -136,15 +34,13 @@ let createNonCollidableTile t = { defaultTile with FloorType = t }
 
 let createTimerOnGrass (coords: Vector2) time =
     let pos = coordsToPos coords.X coords.Y half
-    let listEmitter = buildRepeatListEmittingEvery [ Rock; rockTimer; (onlyRockFilter None) ] 60
 
     let subject =
         Entity.Subject
-            { Type = Entity.Timer
+            { Type = Entity.Timer ([Rock; buildObserver Id; buildObserver (Map Rock)], 60)
               TicksSinceEmit = 0
               GenerationNumber = 0
-              ToEmit = Nothing
-              Action = listEmitter }
+              ToEmit = Nothing }
 
     { defaultTile with
         FloorType = FloorType.Grass

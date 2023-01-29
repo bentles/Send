@@ -212,10 +212,7 @@ let init (worldConfig: WorldConfig) time =
                     match xx, yy with
                     | 0, 0 -> createNonCollidableTile FloorType.Grass
                     | 2, 2 -> createTimerOnGrass (Vector2(2f)) time
-                    | 3, 3 -> createObserverOnGrass (Vector2(3f)) time (onlyRockFilter subj)
                     | 5, 5 -> createCollidableTile FloorType.Empty 5f 5f
-                    | 5, 6 -> createObserverOnGrass (Vector2(5f, 6f)) time (idObservable subj)
-                    | 7, 9 -> createObserverOnGrass (Vector2(7f, 9f)) time (mapToTimer (Some 33))
                     | 8, 9 -> grassTile // 8f 9f
                     | 6, 9 -> grassTile // 6f 9f
                     | 7, 8 -> grassTile // 7f 8f
@@ -248,15 +245,28 @@ let updateWorldReactive (tiles: PersistentVector<Tile>) : PersistentVector<Tile>
 
                 let newEntityType =
                     match entity.Type with
-                    | Subject subject -> Subject(subject.Action subject)
+                    | Subject subject -> Subject((getSubjectFunc subject.Type) subject)
                     | Observable({ Type = oType
-                                   Observing = Some observingIndex } as observable) ->
+                                   Observing = ob1
+                                   Observing2 = ob2 } as oData ) as observable ->
                         // get what is being is observed if anything
-                        let observedTile = PersistentVector.nth observingIndex tiles
+                        let eType1 =                            
+                            option {
+                                let! i = ob1
+                                let tile = PersistentVector.nth i tiles
+                                let! e = tile.Entity
+                                return e.Type
+                            }
 
-                        match observedTile.Entity with
-                        | Some observedEntity -> Observable(observable.Action observable observedEntity.Type)
-                        | None -> Observable observable
+                        let eType2 =
+                            option {
+                                let! i2 = ob2
+                                let tile2 = PersistentVector.nth i2 tiles
+                                let! e = tile2.Entity
+                                return e.Type                            
+                            }
+
+                        Observable((getObserverFunc oType) oData eType1 eType2)
                     | other -> other
 
                 return { entity with Type = newEntityType }
@@ -617,7 +627,7 @@ let view model (dispatch: Message -> unit) =
         yield onupdate (fun input -> dispatch (PhysicsTick(input.totalGameTime, input.gameTime.IsRunningSlowly)))
 
         //render
-        yield viewWorld2 model worldConfig
+        yield! viewWorld model worldConfig
         yield! viewPlayer model.Player (halfScreenOffset model.CameraPos) (PlayerMessage >> dispatch)
 
         //debug
