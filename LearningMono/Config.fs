@@ -23,7 +23,7 @@ type PlayerConfig =
       AABBConfig: AABBConfig }
 
 type ImageConfig =
-    { PixelSize: int * int
+    { SpriteSize: int * int
       Rows: int
       Columns: int
       Offset: Vector2
@@ -66,28 +66,28 @@ let playerConfig =
           Offset = Vector2(0f, 20f) } }
 
 let bigCharImage =
-    { PixelSize = (800, 728)
+    { SpriteSize = (100, 104)
       Rows = 7
       Columns = 8
       TextureName = "bigChar"
       Offset = Vector2.Zero }
 
 let smallCharImage =
-    { PixelSize = (416, 256)
+    { SpriteSize = (52, 64)
       Rows = 4
       Columns = 8
       TextureName = "smallChar"
       Offset = Vector2(0f, -18f) }
 
 let timerImage =
-    { PixelSize = (200, 50)
+    { SpriteSize = (50, 50)
       Rows = 1
       Columns = 4
       TextureName = "timer"
       Offset = Vector2(0f, 0f) }
 
 let idImage =
-    { PixelSize = (50, 150)
+    { SpriteSize = (50, 50)
       Rows = 3
       Columns = 1
       TextureName = "id"
@@ -97,7 +97,7 @@ let mapImage = { idImage with TextureName = "map" }
 let filterImage = { idImage with TextureName = "filter" }
 
 let rockImage =
-    { PixelSize = (50, 50)
+    { SpriteSize = (50, 50)
       Rows = 1
       Columns = 1
       TextureName = "rock"

@@ -427,8 +427,7 @@ let update (message: Message) (model: Model) : Model * Cmd<Message> =
 
 let viewEmitting (entityType: EntityType) (ticksSinceLast: int) pos =
     let imageInfo = getEmitImage entityType
-    let (imageWidth, imageHeight) = (imageInfo.PixelSize)
-    let width, height = (imageWidth / imageInfo.Columns, imageHeight / imageInfo.Rows)
+    let (width, height) = (imageInfo.SpriteSize)
 
     if ticksSinceLast < 20 then
         let alpha = int ((float32 (30 - ticksSinceLast) / 20f) * 220f)

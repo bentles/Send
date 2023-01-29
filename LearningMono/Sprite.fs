@@ -89,15 +89,13 @@ type Events =
     | AnimationLooped of int
 
 let spriteSourceRect (spriteInfo: ImageConfig) (aniState: AnimationState) pos =
-    let totalWidth, totalHeight = spriteInfo.PixelSize
+    let width, height = spriteInfo.SpriteSize
 
     let xPos, yPos =
         match aniState with
-        | Stopped(ani, x) -> x, pos
-        | Started(ani, x) -> x, pos
+        | Stopped(_, x) -> x, pos
+        | Started(_, x) -> x, pos
 
-    let height = totalHeight / spriteInfo.Rows
-    let width = totalWidth / spriteInfo.Columns
     let x, y = xPos * width, yPos * height
     rect x y width height
 
