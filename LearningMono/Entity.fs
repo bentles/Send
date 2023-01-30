@@ -10,7 +10,7 @@ type Facing =
     | FacingLeft
     | FacingRight
 
-
+[<Struct>]
 type SubjectType = Timer of BoxType * int
 
 and BoxType = EntityType list

@@ -100,37 +100,41 @@ let spriteSourceRect (spriteInfo: ImageConfig) (aniState: AnimationState) pos =
     rect x y width height
 
 
+let drawSpriteInner (model: Model) (cameraPos: Vector2) (texture: Graphics.Texture2D) (spriteBatch: SpriteBatch) =
+    //by convention the flipped sprite will be above the unflipped one
+    let flipV = if model.FlipV then -1 else 0
+
+    let sourceRect =
+        spriteSourceRect model.CurrentImage model.AnimationState (model.RelativeYPos + flipV)
+
+    let spriteCenter =
+        Vector2(float32 (sourceRect.Width / 2), float32 (sourceRect.Height / 2))
+
+    let cameraOffset = -cameraPos
+
+    let actualX = int (model.ScreenPos.X + cameraOffset.X)
+    let actualY = int (model.ScreenPos.Y + cameraOffset.Y)
+
+    spriteBatch.Draw(
+        texture,
+        Rectangle(actualX, actualY, sourceRect.Width, sourceRect.Height),
+        sourceRect,
+        model.Tint,
+        0f,
+        spriteCenter + model.CurrentImage.Offset,
+        (if model.FlipH then
+             Graphics.SpriteEffects.FlipHorizontally
+         else
+             Graphics.SpriteEffects.None),
+        0f
+    )
+
 let drawSprite (model: Model) (cameraPos: Vector2) : Viewable =
     OnDraw(fun loadedAssets _ (spriteBatch: SpriteBatch) ->
         let texture = loadedAssets.textures[model.CurrentImage.TextureName]
+        drawSpriteInner model cameraPos texture spriteBatch
+    )
 
-        //by convention the flipped sprite will be above the unflipped one
-        let flipV = if model.FlipV then -1 else 0
-
-        let sourceRect =
-            spriteSourceRect model.CurrentImage model.AnimationState (model.RelativeYPos + flipV)
-
-        let spriteCenter =
-            Vector2(float32 (sourceRect.Width / 2), float32 (sourceRect.Height / 2))
-
-        let cameraOffset = -cameraPos
-
-        let actualX = int (model.ScreenPos.X + cameraOffset.X)
-        let actualY = int (model.ScreenPos.Y + cameraOffset.Y)
-
-        spriteBatch.Draw(
-            texture,
-            Rectangle(actualX, actualY, sourceRect.Width, sourceRect.Height),
-            sourceRect,
-            model.Tint,
-            0f,
-            spriteCenter + model.CurrentImage.Offset,
-            (if model.FlipH then
-                 Graphics.SpriteEffects.FlipHorizontally
-             else
-                 Graphics.SpriteEffects.None),
-            0f
-        ))
 
 let animTick model time =
     let t = time - model.LastFrameTime
@@ -148,11 +152,13 @@ let animTick model time =
 
             if ani.Looping then
                 let x = ((oldX + inc) % ani.Columns)
+
                 let event =
                     if x = 0 then
                         Events.AnimationLooped ani.Index
                     else
                         Events.None
+
                 Started(ani, x), event
             else
                 let lastFrame = ani.Columns - 1

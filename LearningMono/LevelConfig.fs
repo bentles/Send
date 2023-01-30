@@ -11,7 +11,8 @@ type FloorType =
     | Empty
     | Grass
 
-and Tile =
+[<Struct>]
+type Tile =
     { FloorType: FloorType
       Collider: AABB option
       Entity: Entity.Model option }

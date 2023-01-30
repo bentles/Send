@@ -212,10 +212,10 @@ let init (worldConfig: WorldConfig) time =
                     match xx, yy with
                     | 0, 0 -> createNonCollidableTile FloorType.Grass
                     | 2, 2 -> createTimerOnGrass (Vector2(2f)) time
-                    | 5, 5 -> createCollidableTile FloorType.Empty 5f 5f
-                    | 8, 9 -> grassTile // 8f 9f
-                    | 6, 9 -> grassTile // 6f 9f
-                    | 7, 8 -> grassTile // 7f 8f
+                    //| 5, 5 -> createCollidableTile FloorType.Empty 5f 5f
+                    //| 8, 9 -> grassTile // 8f 9f
+                    //| 6, 9 -> grassTile // 6f 9f
+                    //| 7, 8 -> grassTile // 7f 8f
                     | x, y -> grassTile
         }
         |> PersistentVector.ofSeq // /* createTimerOnGrass (Vector2(float32 x, float32 y)) */ |]
@@ -248,9 +248,9 @@ let updateWorldReactive (tiles: PersistentVector<Tile>) : PersistentVector<Tile>
                     | Subject subject -> Subject((getSubjectFunc subject.Type) subject)
                     | Observable({ Type = oType
                                    Observing = ob1
-                                   Observing2 = ob2 } as oData ) as observable ->
+                                   Observing2 = ob2 } as oData) as observable ->
                         // get what is being is observed if anything
-                        let eType1 =                            
+                        let eType1 =
                             option {
                                 let! i = ob1
                                 let tile = PersistentVector.nth i tiles
@@ -263,7 +263,7 @@ let updateWorldReactive (tiles: PersistentVector<Tile>) : PersistentVector<Tile>
                                 let! i2 = ob2
                                 let tile2 = PersistentVector.nth i2 tiles
                                 let! e = tile2.Entity
-                                return e.Type                            
+                                return e.Type
                             }
 
                         Observable((getObserverFunc oType) oData eType1 eType2)
@@ -440,29 +440,32 @@ let update (message: Message) (model: Model) : Model * Cmd<Message> =
 
 // VIEW
 
-let viewEmitting (entityType: EntityType) (ticksSinceLast: int) pos =
+let viewEmitting
+    (entityType: EntityType)
+    (ticksSinceLast: int)
+    pos
+    (spriteBatch: SpriteBatch)
+    (texture: Graphics.Texture2D)
+    =
     let imageInfo = getEmitImage entityType
     let (width, height) = (imageInfo.SpriteSize)
 
     if ticksSinceLast < 20 then
         let alpha = int ((float32 (30 - ticksSinceLast) / 20f) * 220f)
-        let destSize = (int ((float width) / 1.5), int ((float height) / 1.5))
+        let dwidth, dheight = (int ((float width) / 1.5), int ((float height) / 1.5))
         let x, y = pos
 
-        seq {
-            imageWithSource
-                imageInfo.TextureName
-                (Color.FromNonPremultiplied(255, 255, 255, alpha))
-                (width, height)
-                (0, 0)
-                destSize
-                (x + 20, y - 5)
-        }
+        spriteBatch.Draw(
+            texture,
+            Rectangle(x + 20, y - 5, dwidth, dheight),
+            Rectangle(0, 0, width, height),
+            (Color.FromNonPremultiplied(255, 255, 255, alpha))
+        )
     else
-        Seq.empty
+        ()
 
 
-let viewWorld2 (model: Model) (worldConfig: WorldConfig) =
+let viewWorld (model: Model) (worldConfig: WorldConfig) =
     let blockWidth = worldConfig.TileWidth
     let empty = "tile"
     let grass = "grass"
@@ -505,91 +508,26 @@ let viewWorld2 (model: Model) (worldConfig: WorldConfig) =
                 color
             )
 
+            tile.Entity
+            |> Option.iter (fun (entity: Entity.Model) ->
+                Sprite.drawSpriteInner
+                    entity.Sprite
+                    -cameraOffset
+                    loadedAssets.textures[entity.Sprite.CurrentImage.TextureName]
+                    spriteBatch)
+
+
+            match tile.Entity with
+            | Some({ Type = EmittingedObservable(etype, t) }) ->
+                viewEmitting etype t (actualX, actualY) spriteBatch
+                    loadedAssets.textures[(getEmitImage etype).TextureName]
+            | _ -> ()
+
         //let entity =
         //    tile.Entity
         //    |> Option.map (fun (entity: Entity.Model) -> Sprite.view entity.Sprite -cameraOffset (fun f -> ()))
 
         ))
-
-
-
-let viewWorld (model: Model) (worldConfig: WorldConfig) =
-    let blockWidth = worldConfig.TileWidth
-    let empty = "tile"
-    let grass = "grass"
-
-    let sourceRect = rect 0 0 blockWidth blockWidth
-    let cameraOffset = -(halfScreenOffset model.CameraPos)
-
-    seq {
-        for i in 0 .. (model.Tiles.Length - 1) do
-            let tile = model.Tiles[i]
-
-            let texture =
-                match tile.FloorType with
-                | FloorType.Grass -> grass
-                | FloorType.Empty -> empty
-
-            let startX = 0
-            let startY = 0
-
-            let xBlockOffSet = (i % worldConfig.WorldTileLength) * blockWidth
-            let yBlockOffSet = (i / worldConfig.WorldTileLength) * blockWidth
-
-            let actualX = startX + xBlockOffSet + int (cameraOffset.X)
-            let actualY = startY + yBlockOffSet + int (cameraOffset.Y)
-
-            let color =
-                option {
-                    let! (tile, ind) = model.PlayerTarget
-                    let! target = if i = ind then Some tile else None
-                    let illegal = Option.isSome target.Collider || Option.isSome target.Entity
-                    return if illegal then Color.Orange else Color.Green
-                }
-                |> Option.defaultValue Color.White
-
-            let floor =
-                image texture color (sourceRect.Width, sourceRect.Height) (actualX, actualY)
-
-            let entity =
-                tile.Entity
-                |> Option.map (fun (entity: Entity.Model) -> Sprite.view entity.Sprite -cameraOffset (fun f -> ()))
-
-            //let debug =
-            //    tile.Collider
-            //    |> Option.map (fun (b: AABB) ->
-            //        image
-            //            empty
-            //            Color.Red
-            //            (int (b.Half.X * 2f), int (b.Half.Y * 2f))
-            //            (int (b.Pos.X - b.Half.X + cameraOffset.X), int (b.Pos.Y - b.Half.Y + cameraOffset.Y)))
-            //    |> Option.toList
-
-            //let entityDebug =
-            //    tile.Entity
-            //    |> Option.bind (fun e -> e.Collider)
-            //    |> Option.map (fun (b: AABB) ->
-            //        image
-            //            empty
-            //            Color.Red
-            //            (int (b.Half.X * 2f), int (b.Half.Y * 2f))
-            //            (int (b.Pos.X - b.Half.X + cameraOffset.X), int (b.Pos.Y - b.Half.Y + cameraOffset.Y)))
-            //    |> Option.toList
-
-            let emitting =
-                match tile.Entity with
-                | Some({ Type = EmittingedObservable(s, t) }) -> viewEmitting s t (actualX, actualY)
-                | _ -> Seq.empty
-
-            match entity with
-            | Some s ->
-                yield floor
-                yield! s
-                yield! emitting
-            //yield! debug
-            //yield! entityDebug
-            | None -> yield floor
-    }
 
 let viewPlayer model (cameraPos: Vector2) (dispatch: PlayerMessage -> unit) =
     seq {
@@ -626,8 +564,8 @@ let view model (dispatch: Message -> unit) =
         // physics
         yield onupdate (fun input -> dispatch (PhysicsTick(input.totalGameTime, input.gameTime.IsRunningSlowly)))
 
-        //render
-        yield! viewWorld model worldConfig
+        //rende
+        yield viewWorld model worldConfig
         yield! viewPlayer model.Player (halfScreenOffset model.CameraPos) (PlayerMessage >> dispatch)
 
         //debug
