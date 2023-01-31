@@ -7,10 +7,12 @@ open Xelmish.Viewables
 open Config
 open Debug
 
+[<Struct>]
 type AnimationState =
-    | Stopped of AnimationConfig * int
-    | Started of AnimationConfig * int
+    | Stopped of stop:(AnimationConfig * int)
+    | Started of start:(AnimationConfig * int)
 
+[<Struct>]
 type Model =
     { Images: ImageConfig list
 
