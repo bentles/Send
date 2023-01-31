@@ -570,5 +570,5 @@ let view model (dispatch: Message -> unit) =
 
         //debug
         // ok this is a complete lie since the timestep is fixed
-        yield debugText $"running slow?:{model.Slow}" (40, 100)
+      //  yield debugText $"running slow?:{model.Slow}" (40, 100)
     }

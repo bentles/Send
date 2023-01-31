@@ -7,6 +7,7 @@ open Utility
 open Config
 
 // Level primitives
+[<Struct>]
 type FloorType =
     | Empty
     | Grass

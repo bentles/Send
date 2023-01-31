@@ -4,6 +4,7 @@ open Collision
 open Config
 open Microsoft.Xna.Framework
 
+[<Struct>]
 type Facing =
     | FacingUp
     | FacingDown
@@ -46,6 +47,7 @@ and Emit =
     | Emitted of EntityType
     | Nothing
 
+[<Struct>]
 type Model =
     { Sprite: Sprite.Model
       Collider: AABB option
