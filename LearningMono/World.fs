@@ -14,6 +14,7 @@ open Utility
 open LevelConfig
 open Entity
 open FSharpx.Collections
+open Microsoft.Xna.Framework.Graphics
 
 
 type Model =
@@ -298,6 +299,8 @@ let updatePlayer (message: PlayerMessage) (worldModel: Model) =
         let newModel = updatePlayerPhysics model info
         let aniCommands = updatePlayerAnimations newModel model
         newModel, aniCommands
+    | RotatePlacement clock -> 
+        { model with PlacementFacing = rotateFacing model.PlacementFacing clock }, Cmd.none
     | SpriteMessage sm ->
         let (newSprite, event) = Sprite.update sm model.SpriteInfo
 
@@ -379,19 +382,10 @@ let update (message: Message) (model: Model) : Model * Cmd<Message> =
                     //make a targeting function
                     let roundedPos = posRounded player.Target worldConfig
                     let (x, y) = posToCoords roundedPos
-
-                    let xface, yface = round player.Facing.X, round player.Facing.Y
+                    let xface, yface = facingToCoords player.PlacementFacing
                     let at = (x + xface, y + yface)
 
-                    let facing =
-                        match xface, yface with
-                        | (-1, 0) -> Entity.FacingLeft
-                        | (1, 0) -> Entity.FacingRight
-                        | (0, -1) -> Entity.FacingUp
-                        | (0, 1) -> Entity.FacingDown
-                        | (_, -1) -> Entity.FacingUp
-                        | (_, 1) -> Entity.FacingDown
-                        | _ -> Entity.FacingRight
+                    let facing = player.PlacementFacing
 
                     let entityType = withTarget entity.Type (coordsToIndex at)
                     let entity = Entity.init entityType roundedPos model.TimeElapsed facing
@@ -492,21 +486,42 @@ let viewWorld (model: Model) (worldConfig: WorldConfig) =
             let actualX = startX + xBlockOffSet + int (cameraOffset.X)
             let actualY = startY + yBlockOffSet + int (cameraOffset.Y)
 
-            let color =
+            //floor
+            spriteBatch.Draw(
+                loadedAssets.textures[texture],
+                Rectangle(actualX, actualY, sourceRect.Width, sourceRect.Height),
+                Color.White
+            )
+
+            //target
+            let maybeTargetColor =
                 option {
                     let! (tile, ind) = model.PlayerTarget
                     let! target = if i = ind then Some tile else None
                     let illegal = Option.isSome target.Collider || Option.isSome target.Entity
                     return if illegal then Color.Orange else Color.Green
                 }
-                |> Option.defaultValue Color.White
 
-            //floor
-            spriteBatch.Draw(
-                loadedAssets.textures[texture],
-                Rectangle(actualX, actualY, sourceRect.Width, sourceRect.Height),
-                color
+            let texture, effect =
+                match model.Player.PlacementFacing with
+                | FacingUp -> "facingUp", SpriteEffects.None
+                | FacingRight -> "facingRight", SpriteEffects.None
+                | FacingDown -> "facingUp", SpriteEffects.FlipVertically
+                | FacingLeft -> "facingRight", SpriteEffects.FlipHorizontally
+
+            maybeTargetColor |> Option.iter (fun color -> 
+                spriteBatch.Draw(
+                    loadedAssets.textures[texture],
+                    Rectangle(actualX, actualY, sourceRect.Width, sourceRect.Height),
+                    System.Nullable<Rectangle>(),
+                    color,
+                    0f,
+                    Vector2.Zero,
+                    effect,
+                    0f
+                )            
             )
+
 
             tile.Entity
             |> Option.iter (fun (entity: Entity.Model) ->
@@ -522,11 +537,6 @@ let viewWorld (model: Model) (worldConfig: WorldConfig) =
                 viewEmitting etype t (actualX, actualY) spriteBatch
                     loadedAssets.textures[(getEmitImage etype).TextureName]
             | _ -> ()
-
-        //let entity =
-        //    tile.Entity
-        //    |> Option.map (fun (entity: Entity.Model) -> Sprite.view entity.Sprite -cameraOffset (fun f -> ()))
-
         ))
 
 let viewPlayer model (cameraPos: Vector2) (dispatch: PlayerMessage -> unit) =
@@ -537,6 +547,10 @@ let viewPlayer model (cameraPos: Vector2) (dispatch: PlayerMessage -> unit) =
         yield onkeydown Keys.Space (fun _ -> dispatch (TransformCharacter))
         yield onkeydown Keys.LeftControl (fun _ -> dispatch (Hold true))
         yield onkeyup Keys.LeftControl (fun _ -> dispatch (Hold false))
+
+
+        yield onkeydown Keys.A (fun _ -> dispatch (RotatePlacement false))
+        yield onkeydown Keys.S (fun _ -> dispatch (RotatePlacement true))
 
         //render
         yield! Sprite.view model.SpriteInfo cameraPos (SpriteMessage >> dispatch)

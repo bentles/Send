@@ -24,6 +24,7 @@ type PlayerModel =
 
       Carrying: Entity.Model list
       Target: Vector2
+      PlacementFacing: Facing
 
       //physics
       Facing: Vector2
@@ -44,6 +45,7 @@ let initPlayer x y (playerConfig: PlayerConfig) (spriteConfig: SpriteConfig) tim
       Input = Vector2.Zero
       XInputTimeAndDir = -1000, 1f
       YInputTimeAndDir = 0, 0f
+      PlacementFacing = FacingRight
 
       Holding = false
 
@@ -87,6 +89,7 @@ type PlayerMessage =
     | Input of dir: Vector2
     | TransformCharacter
     | Hold of bool
+    | RotatePlacement of clockwise: bool
     | PlayerPhysicsTick of info: PhysicsInfo
     | SpriteMessage of Sprite.Message
     | CarryingMessage of Sprite.Message

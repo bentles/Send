@@ -54,6 +54,24 @@ type Model =
       Facing: Facing
       Type: EntityType }
 
+let rotateFacing (facing: Facing) (clock: bool) =
+    match facing, clock with
+    | FacingLeft, true
+    | FacingRight, false -> FacingUp
+    | FacingUp, true
+    | FacingDown, false -> FacingRight
+    | FacingRight, true
+    | FacingLeft, false -> FacingDown
+    | FacingDown, true
+    | FacingUp, false -> FacingLeft
+
+let facingToCoords (facing: Facing) : int * int =
+    match facing with
+    | FacingLeft -> (-1, 0)
+    | FacingRight -> (1, 0)
+    | FacingUp -> (0, -1)
+    | FacingDown -> (0, 1)
+
 let getSpriteConfig (eType: EntityType) : SpriteConfig =
     match eType with
     | Rock -> rockSpriteConfig
@@ -119,7 +137,7 @@ let (|EmittingObservable|_|) (emit: EntityType) =
 
 
 let getObserverFunc (obs: ObservableType) =
-    let behaviorFunc (a:EntityType option) (b:EntityType option) =
+    let behaviorFunc (a: EntityType option) (b: EntityType option) =
         match obs with
         | Id ->
             match a with
@@ -153,12 +171,13 @@ let getObserverFunc (obs: ObservableType) =
             | Emitted _ as cur ->
                 let observed =
                     match observing with
-                        | Some(EmittingObservable(s, _)) -> Some s
-                        | _ -> None
+                    | Some(EmittingObservable(s, _)) -> Some s
+                    | _ -> None
+
                 let observed2 =
                     match observing with
-                        | Some(EmittingObservable(s, _)) -> Some s
-                        | _ -> None
+                    | Some(EmittingObservable(s, _)) -> Some s
+                    | _ -> None
 
                 let emit = behaviorFunc observed observed2
 

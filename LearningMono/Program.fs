@@ -60,6 +60,9 @@ let main _ =
             [
               //tiles
               PipelineTexture("tile", "./content/sprites/tile/Tile")
+              PipelineTexture("facingUp", "./content/sprites/tile/FacingUp")
+              PipelineTexture("facingRight", "./content/sprites/tile/FacingRight")
+              PipelineTexture("tile", "./content/sprites/tile/Tile")
               PipelineTexture("grass", "./content/sprites/tile/Grass")
 
               //entities
