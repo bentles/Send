@@ -8,8 +8,8 @@ open GameConfig
 
 [<Struct>]
 type AnimationState =
-    | Stopped of stop:(AnimationConfig * int)
-    | Started of start:(AnimationConfig * int)
+    | Stopped of stop: (AnimationConfig * int)
+    | Started of start: (AnimationConfig * int)
 
 [<Struct>]
 type Model =
@@ -82,7 +82,8 @@ type Message =
     | StartAnimation
     | AnimTick of int64
     | SetPos of Vector2
-    | SetDirection of bool * bool
+    | SetDirectionX of bool
+    | SetDirectionY of bool
 
 type Events =
     | None
@@ -133,8 +134,7 @@ let drawSpriteInner (model: Model) (cameraPos: Vector2) (texture: Graphics.Textu
 let drawSprite (model: Model) (cameraPos: Vector2) : Viewable =
     OnDraw(fun loadedAssets _ (spriteBatch: SpriteBatch) ->
         let texture = loadedAssets.textures[model.CurrentImage.TextureName]
-        drawSpriteInner model cameraPos texture spriteBatch
-    )
+        drawSpriteInner model cameraPos texture spriteBatch)
 
 
 let animTick model time =
@@ -200,11 +200,8 @@ let update message model =
         , Events.None
     | AnimTick dt -> animTick model dt
     | SetPos p -> { model with ScreenPos = p }, Events.None
-    | SetDirection(flipH, flipV) ->
-        { model with
-            FlipH = flipH
-            FlipV = flipV },
-        Events.None
+    | SetDirectionX(flipH) -> { model with FlipH = flipH }, Events.None
+    | SetDirectionY(flipV) -> { model with FlipV = flipV }, Events.None
 
 
 let view model (cameraPos: Vector2) (dispatch: Message -> unit) =

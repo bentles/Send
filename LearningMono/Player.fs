@@ -8,7 +8,6 @@ open Entity
 open GameConfig
 open PlayerConfig
 
-
 type CharacterState =
     | Small of bool
     | Growing

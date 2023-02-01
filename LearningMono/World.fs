@@ -53,19 +53,7 @@ let updateCarryingPositions (pos: Vector2) =
 
 let updatePlayerPhysics model (info: PhysicsInfo) =
     let dt = info.Dt
-
-    // record when last x and y were pressed
-    let xinputTime, lastXDir =
-        if model.Input.X <> 0f then
-            info.Time, model.Input.X
-        else
-            model.XInputTimeAndDir
-
-    let yinputTime, lastYDir =
-        if model.Input.Y <> 0f then
-            info.Time, model.Input.Y
-        else
-            model.YInputTimeAndDir
+    let currentTime = info.Time
 
     let acc =
         match (model.Input, model.Vel) with
@@ -87,22 +75,36 @@ let updatePlayerPhysics model (info: PhysicsInfo) =
     let pos =
         collide preCollisionPos model.Pos model.CollisionInfo info.PossibleObstacles
 
-    let dx = (float32 (info.Time - xinputTime)) / 1000f
-    let dy = (float32 (info.Time - yinputTime)) / 1000f
+    // record when last x and y were pressed
+    let xinputTime, lastXDir =
+        if model.Input.X <> 0f then
+            currentTime, model.Input.X
+        else
+            model.XInputTimeAndDir
 
+    let yinputTime, lastYDir =
+        if model.Input.Y <> 0f then
+            currentTime, model.Input.Y
+        else
+            model.YInputTimeAndDir
+
+    let milisSinceX = (float32 (currentTime - xinputTime)) / 1000f
+    let milisSinceY = (float32 (currentTime - yinputTime)) / 1000f
+
+    // if both keys are released within minTime of each other we are facing diagonally
     let minTime = 0.08f
-    let diagonal = abs (dx - dy) < minTime
+    let diagonal = abs (milisSinceX - milisSinceY) < minTime
 
     let facing =
         match (model.Input.X, model.Input.Y) with
         | (0f, 0f) when diagonal -> Vector2(lastXDir, lastYDir)
-        | (0f, 0f) when dx < dy -> Vector2(lastXDir, 0f)
-        | (0f, 0f) when dy <= dx -> Vector2(0f, lastYDir)
+        | (0f, 0f) when milisSinceX < milisSinceY -> Vector2(lastXDir, 0f)
+        | (0f, 0f) when milisSinceY <= milisSinceX -> Vector2(0f, lastYDir)
 
-        | (0f, 1f) when dx < minTime -> Vector2(lastXDir, 1f)
-        | (1f, 0f) when dy < minTime -> Vector2(1f, lastYDir)
-        | (0f, -1f) when dx < minTime -> Vector2(lastXDir, -1f)
-        | (-1f, 0f) when dy < minTime -> Vector2(-1f, lastYDir)
+        | (0f, 1f) when milisSinceX < minTime -> Vector2(lastXDir, 1f)
+        | (1f, 0f) when milisSinceY < minTime -> Vector2(1f, lastYDir)
+        | (0f, -1f) when milisSinceX < minTime -> Vector2(lastXDir, -1f)
+        | (-1f, 0f) when milisSinceY < minTime -> Vector2(-1f, lastYDir)
         | _ -> model.Input
 
     let facing = Vector2.Normalize(facing)
@@ -125,10 +127,11 @@ let updatePlayerPhysics model (info: PhysicsInfo) =
 
 let updatePlayerAnimations (newModel: PlayerModel) (oldModel: PlayerModel) =
     let directionCommands =
-        if newModel.Facing.X <> oldModel.Facing.X || newModel.Facing.Y <> oldModel.Facing.Y then
-            [ Cmd.ofMsg (SpriteMessage(Sprite.SetDirection(newModel.Facing.X < 0f, newModel.Facing.Y < 0f))) ]
-        else
-            []
+
+        [ if newModel.Facing.X <> 0f && newModel.Facing.X <> oldModel.Facing.X then
+              Cmd.ofMsg (SpriteMessage(Sprite.SetDirectionX(newModel.Facing.X < 0f)))
+          if newModel.Facing.Y <> 0f && newModel.Facing.Y <> oldModel.Facing.Y then
+              Cmd.ofMsg (SpriteMessage(Sprite.SetDirectionY(newModel.Facing.Y < 0f))) ]
 
     let animationCommands =
         match (oldModel.IsMoving, newModel.IsMoving, oldModel.CharacterState) with
@@ -260,8 +263,8 @@ let updateWorldReactive (tiles: PersistentVector<Tile>) : PersistentVector<Tile>
                                 return e.Type
                             }
 
-                        let eType1 = getObserved ob1 
-                        let eType2 = getObserved ob2 
+                        let eType1 = getObserved ob1
+                        let eType2 = getObserved ob2
 
                         Observable((getObserverFunc oType) oData eType1 eType2)
                     | other -> other
@@ -295,8 +298,7 @@ let updatePlayer (message: PlayerMessage) (worldModel: Model) =
         let newModel = updatePlayerPhysics model info
         let aniCommands = updatePlayerAnimations newModel model
         newModel, aniCommands
-    | RotatePlacement clock -> 
-        { model with PlacementFacing = rotateFacing model.PlacementFacing clock }, Cmd.none
+    | RotatePlacement clock -> { model with PlacementFacing = rotateFacing model.PlacementFacing clock }, Cmd.none
     | SpriteMessage sm ->
         let (newSprite, event) = Sprite.update sm model.SpriteInfo
 
@@ -505,7 +507,8 @@ let viewWorld (model: Model) (worldConfig: WorldConfig) =
                 | FacingDown -> "facingUp", SpriteEffects.FlipVertically
                 | FacingLeft -> "facingRight", SpriteEffects.FlipHorizontally
 
-            maybeTargetColor |> Option.iter (fun color -> 
+            maybeTargetColor
+            |> Option.iter (fun color ->
                 spriteBatch.Draw(
                     loadedAssets.textures[texture],
                     Rectangle(actualX, actualY, sourceRect.Width, sourceRect.Height),
@@ -515,9 +518,7 @@ let viewWorld (model: Model) (worldConfig: WorldConfig) =
                     Vector2.Zero,
                     effect,
                     0f
-                )            
-            )
-
+                ))
 
             tile.Entity
             |> Option.iter (fun (entity: Entity.Model) ->
@@ -530,10 +531,13 @@ let viewWorld (model: Model) (worldConfig: WorldConfig) =
 
             match tile.Entity with
             | Some({ Type = EmittingedObservable(etype, t) }) ->
-                viewEmitting etype t (actualX, actualY) spriteBatch
+                viewEmitting
+                    etype
+                    t
+                    (actualX, actualY)
+                    spriteBatch
                     loadedAssets.textures[(getEmitImage etype).TextureName]
-            | _ -> ()
-        ))
+            | _ -> ()))
 
 let viewPlayer model (cameraPos: Vector2) (dispatch: PlayerMessage -> unit) =
     seq {
@@ -543,7 +547,6 @@ let viewPlayer model (cameraPos: Vector2) (dispatch: PlayerMessage -> unit) =
         yield onkeydown Keys.Space (fun _ -> dispatch (TransformCharacter))
         yield onkeydown Keys.LeftControl (fun _ -> dispatch (Hold true))
         yield onkeyup Keys.LeftControl (fun _ -> dispatch (Hold false))
-
 
         yield onkeydown Keys.A (fun _ -> dispatch (RotatePlacement false))
         yield onkeydown Keys.S (fun _ -> dispatch (RotatePlacement true))
@@ -578,7 +581,7 @@ let view model (dispatch: Message -> unit) =
         yield viewWorld model worldConfig
         yield! viewPlayer model.Player (halfScreenOffset model.CameraPos) (PlayerMessage >> dispatch)
 
-        //debug
-        // ok this is a complete lie since the timestep is fixed
-      //  yield debugText $"running slow?:{model.Slow}" (40, 100)
+    //debug
+    // ok this is a complete lie since the timestep is fixed
+    //  yield debugText $"running slow?:{model.Slow}" (40, 100)
     }
