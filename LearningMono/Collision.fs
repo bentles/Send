@@ -205,7 +205,7 @@ let collide pos oldPos colInfo obstacles =
                 let sweep2 = sweepIntoWithOffset (sweep1.Pos + deltaParallel) sweep1.Pos obstacles
 
                 match sweep2.Hit with
-                | Some hit2 -> sweep2.Pos
+                | Some _ -> sweep2.Pos
                 | None -> sweep1.Pos + deltaParallel
 
         | None -> pos

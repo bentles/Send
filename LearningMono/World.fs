@@ -6,8 +6,6 @@ open Microsoft.Xna.Framework
 open Config
 open Elmish
 open Collision
-open Debug
-open Input
 open FsToolkit.ErrorHandling
 open Player
 open Utility
@@ -217,7 +215,7 @@ let init (worldConfig: WorldConfig) time =
                     //| 8, 9 -> grassTile // 8f 9f
                     //| 6, 9 -> grassTile // 6f 9f
                     //| 7, 8 -> grassTile // 7f 8f
-                    | x, y -> grassTile
+                    | _ -> grassTile
         }
         |> PersistentVector.ofSeq // /* createTimerOnGrass (Vector2(float32 x, float32 y)) */ |]
 
@@ -249,23 +247,19 @@ let updateWorldReactive (tiles: PersistentVector<Tile>) : PersistentVector<Tile>
                     | Subject subject -> Subject((getSubjectFunc subject.Type) subject)
                     | Observable({ Type = oType
                                    Observing = ob1
-                                   Observing2 = ob2 } as oData) as observable ->
+                                   Observing2 = ob2 } as oData) ->
+
                         // get what is being is observed if anything
-                        let eType1 =
+                        let getObserved (ob: int option) =
                             option {
-                                let! i = ob1
+                                let! i = ob
                                 let tile = PersistentVector.nth i tiles
                                 let! e = tile.Entity
                                 return e.Type
                             }
 
-                        let eType2 =
-                            option {
-                                let! i2 = ob2
-                                let tile2 = PersistentVector.nth i2 tiles
-                                let! e = tile2.Entity
-                                return e.Type
-                            }
+                        let eType1 = getObserved ob1 
+                        let eType2 = getObserved ob2 
 
                         Observable((getObserverFunc oType) oData eType1 eType2)
                     | other -> other
@@ -281,7 +275,7 @@ let updateWorldSprites (totalTime: int64) (tiles: PersistentVector<Tile>) : Pers
         let entityy =
             option {
                 let! entity = tile.Entity
-                let (sprite, ev) = (Sprite.update (Sprite.AnimTick totalTime) entity.Sprite)
+                let (sprite, _) = (Sprite.update (Sprite.AnimTick totalTime) entity.Sprite)
                 let r = ({ entity with Sprite = sprite })
                 return r
             }
@@ -328,7 +322,7 @@ let updatePlayer (message: PlayerMessage) (worldModel: Model) =
     | CarryingMessage sm ->
         let newCarrying =
             model.Carrying
-            |> List.mapi (fun i carry ->
+            |> List.map (fun carry ->
                 let (newSprite, _) = Sprite.update sm carry.Sprite
                 { carry with Sprite = newSprite })
 
@@ -389,7 +383,7 @@ let update (message: Message) (model: Model) : Model * Cmd<Message> =
 
                     let entityType = withTarget entity.Type (coordsToIndex at)
                     let entity = Entity.init entityType roundedPos model.TimeElapsed facing
-                    let sprite, ev = Sprite.update Sprite.StartAnimation entity.Sprite
+                    let sprite, _ = Sprite.update Sprite.StartAnimation entity.Sprite
                     let entity = { entity with Sprite = sprite }
 
                     let tiles =
@@ -467,7 +461,7 @@ let viewWorld (model: Model) (worldConfig: WorldConfig) =
     let sourceRect = rect 0 0 blockWidth blockWidth
     let cameraOffset = -(halfScreenOffset model.CameraPos)
 
-    OnDraw(fun loadedAssets inputs (spriteBatch: SpriteBatch) ->
+    OnDraw(fun loadedAssets _ (spriteBatch: SpriteBatch) ->
         seq { 0 .. (model.Tiles.Length - 1) }
         |> Seq.iter (fun i ->
             let tile = model.Tiles[i]

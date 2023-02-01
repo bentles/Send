@@ -145,7 +145,7 @@ let getObserverFunc (obs: ObservableType) =
             | _ -> Nothing
         | Map e ->
             match a with
-            | (Some e1) -> WillEmit e
+            | (Some _) -> WillEmit e
             | _ -> Nothing
         | Filter e ->
             match a with
@@ -188,7 +188,7 @@ let getObserverFunc (obs: ObservableType) =
 
         let ticks =
             match toEmit with
-            | Emitting t -> 0
+            | Emitting _ -> 0
             | _ -> observable.TicksSinceEmit + 1
 
         { observable with

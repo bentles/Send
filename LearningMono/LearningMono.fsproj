@@ -10,6 +10,12 @@
     <ApplicationManifest>app.manifest</ApplicationManifest>
     <ApplicationIcon>Icon.ico</ApplicationIcon>
   </PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|AnyCPU'">
+    <OtherFlags>--warnon:1182</OtherFlags>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|AnyCPU'">
+    <OtherFlags>--warnon:1182</OtherFlags>
+  </PropertyGroup>
   <ItemGroup>
     <None Remove="Icon.ico" />
     <None Remove="Icon.bmp" />
@@ -21,8 +27,6 @@
     <Compile Include="Collision.fs" />
     <Compile Include="Utility.fs" />
     <Compile Include="Assert.fs" />
-    <Compile Include="Debug.fs" />
-    <Compile Include="Input.fs" />
     <Compile Include="Sprite.fs" />
     <Compile Include="Entity.fs" />
     <Compile Include="LevelConfig.fs" />

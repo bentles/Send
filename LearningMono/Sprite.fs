@@ -5,7 +5,6 @@ open Xelmish.Model
 open Elmish
 open Xelmish.Viewables
 open Config
-open Debug
 
 [<Struct>]
 type AnimationState =

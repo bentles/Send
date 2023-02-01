@@ -48,7 +48,7 @@ let view (model: Model) (dispatch: Message -> unit) =
       yield onupdate (fun input -> dispatch (Tick input.totalGameTime))
 
       //input
-      yield onkeydown Keys.N (fun input -> dispatch (NextLevel))
+      yield onkeydown Keys.N (fun _ -> dispatch (NextLevel))
       yield onkeydown Keys.Escape exit } |> Seq.toList
 
 [<EntryPoint>]
