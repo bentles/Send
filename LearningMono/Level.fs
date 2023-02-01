@@ -1,4 +1,4 @@
-﻿module LevelConfig
+﻿module Level
 
 open Microsoft.Xna.Framework
 open Collision

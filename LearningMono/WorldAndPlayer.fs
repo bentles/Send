@@ -8,9 +8,8 @@ open PlayerConfig
 open Elmish
 open Collision
 open FsToolkit.ErrorHandling
-open Player
 open Utility
-open LevelConfig
+open Level
 open Entity
 open FSharpx.Collections
 open Microsoft.Xna.Framework.Graphics
@@ -25,7 +24,7 @@ type Model =
       TimeElapsed: int64
 
       //player and camera
-      Player: PlayerModel
+      Player: Player.Model
       PlayerTarget: (Tile * int) option
       CameraPos: Vector2 }
 
@@ -48,10 +47,9 @@ let calcVelocity modelVel modelMaxVel (acc: Vector2) (dt: float32) =
     vel, velLength
 
 let updateCarryingPositions (pos: Vector2) =
-    Cmd.ofMsg (CarryingMessage(Sprite.Message.SetPos pos))
+    Cmd.ofMsg (Player.CarryingMessage(Sprite.Message.SetPos pos))
 
-
-let updatePlayerPhysics model (info: PhysicsInfo) =
+let updatePlayerPhysics (model: Player.Model) (info: PhysicsInfo) =
     let dt = info.Dt
     let currentTime = info.Time
 
@@ -111,65 +109,67 @@ let updatePlayerPhysics model (info: PhysicsInfo) =
     let target = pos + (60f * facing) + Vector2(0f, 20f)
 
     let (vel, pos, isMoving) =
-        if model.Holding then
+        if model.MovementFrozen then
             (Vector2.Zero, model.Pos, false)
         else
             (vel, pos, velLength > 0f)
 
+    let placementFacing = vectorToFacing model.Input |> Option.defaultValue model.PlacementFacing
+
     { model with
-        Target = target
+        Target = if model.ArrowsControlPlacement then model.Target else target
         XInputTimeAndDir = xinputTime, lastXDir
         YInputTimeAndDir = yinputTime, lastYDir
-        Facing = facing
+        Facing = if model.ArrowsControlPlacement then model.Facing else facing
+        PlacementFacing = if model.ArrowsControlPlacement then placementFacing else model.PlacementFacing
         Vel = vel
         Pos = pos
         IsMoving = isMoving }
 
-let updatePlayerAnimations (newModel: PlayerModel) (oldModel: PlayerModel) =
+let updatePlayerAnimations (newModel: Player.Model) (oldModel: Player.Model) =
     let directionCommands =
-
         [ if newModel.Facing.X <> 0f && newModel.Facing.X <> oldModel.Facing.X then
-              Cmd.ofMsg (SpriteMessage(Sprite.SetDirectionX(newModel.Facing.X < 0f)))
+              Cmd.ofMsg (Player.SpriteMessage(Sprite.SetDirectionX(newModel.Facing.X < 0f)))
           if newModel.Facing.Y <> 0f && newModel.Facing.Y <> oldModel.Facing.Y then
-              Cmd.ofMsg (SpriteMessage(Sprite.SetDirectionY(newModel.Facing.Y < 0f))) ]
+              Cmd.ofMsg (Player.SpriteMessage(Sprite.SetDirectionY(newModel.Facing.Y < 0f))) ]
 
     let animationCommands =
         match (oldModel.IsMoving, newModel.IsMoving, oldModel.CharacterState) with
-        | (false, true, Small isSmall) ->
+        | (false, true, Player.Small isSmall) ->
             let walkAnimation, speed =
                 match isSmall with
                 | true -> CharAnimations.SmallWalk, CharConfig.BigFrames
                 | false -> CharAnimations.BigWalk, CharConfig.SmallFrames
 
-            [ (Cmd.ofMsg << SpriteMessage << Sprite.SwitchAnimation) (walkAnimation, speed, true) ]
-        | (true, false, Small _) -> [ (Cmd.ofMsg << SpriteMessage) Sprite.Stop ]
+            [ (Cmd.ofMsg << Player.SpriteMessage << Sprite.SwitchAnimation) (walkAnimation, speed, true) ]
+        | (true, false, Player.Small _) -> [ (Cmd.ofMsg << Player.SpriteMessage) Sprite.Stop ]
         | _ -> []
 
-    let setPosMsg = Cmd.ofMsg (SpriteMessage(Sprite.SetPos newModel.Pos))
+    let setPosMsg = Cmd.ofMsg (Player.SpriteMessage(Sprite.SetPos newModel.Pos))
 
     let carryCommand = updateCarryingPositions newModel.Pos
 
     Cmd.batch [ setPosMsg; carryCommand; yield! animationCommands; yield! directionCommands ]
 
-let transformStart (characterState: CharacterState) =
+let transformStart (characterState: Player.State) =
     match characterState with
-    | Shrinking -> Growing, CharAnimations.SmallToBig
-    | Small true -> Growing, CharAnimations.SmallToBig
-    | Growing -> Shrinking, CharAnimations.BigToSmall
-    | Small false -> Shrinking, CharAnimations.BigToSmall
+    | Player.Shrinking -> Player.Growing, CharAnimations.SmallToBig
+    | Player.Small true -> Player.Growing, CharAnimations.SmallToBig
+    | Player.Growing -> Player.Shrinking, CharAnimations.BigToSmall
+    | Player.Small false -> Player.Shrinking, CharAnimations.BigToSmall
 
-let transformComplete (characterState: CharacterState) =
+let transformComplete (characterState: Player.State) =
     match characterState with
-    | Shrinking -> Small true, CharAnimations.SmallWalk
-    | Growing -> Small false, CharAnimations.BigWalk
-    | Small true -> Small true, CharAnimations.SmallWalk
-    | Small false -> Small false, CharAnimations.BigWalk
+    | Player.Shrinking -> Player.Small true, CharAnimations.SmallWalk
+    | Player.Growing -> Player.Small false, CharAnimations.BigWalk
+    | Player.Small true -> Player.Small true, CharAnimations.SmallWalk
+    | Player.Small false -> Player.Small false, CharAnimations.BigWalk
 
-let viewPlayerCarrying (carrying: Entity.Model list) (cameraPos: Vector2) (charState: CharacterState) =
+let viewPlayerCarrying (carrying: Entity.Model list) (cameraPos: Vector2) (charState: Player.State) =
     let offsetStart =
         match charState with
-        | Small true -> Vector2(0f, 40f)
-        | Small false -> Vector2(0f, 70f)
+        | Player.Small true -> Vector2(0f, 40f)
+        | Player.Small false -> Vector2(0f, 70f)
         | _ -> Vector2(0f, 55f)
 
     carrying
@@ -225,7 +225,7 @@ let init (worldConfig: WorldConfig) time =
         |> PersistentVector.ofSeq // /* createTimerOnGrass (Vector2(float32 x, float32 y)) */ |]
 
     { Tiles = blocks
-      Player = initPlayer 0 0 playerConfig charSprite time
+      Player = Player.init 0 0 playerConfig charSprite time
       Slow = false
       Dt = 0f
       PlayerTarget = None
@@ -235,7 +235,7 @@ let init (worldConfig: WorldConfig) time =
 
 // UPDATE
 type Message =
-    | PlayerMessage of PlayerMessage
+    | PlayerMessage of Player.Message
     | PickUpEntity
     | PlaceEntity
     | PhysicsTick of time: int64 * slow: bool
@@ -289,17 +289,18 @@ let updateWorldSprites (totalTime: int64) (tiles: PersistentVector<Tile>) : Pers
         | Some(entity) -> { tile with Entity = Some entity }
         | None -> { tile with Entity = None })
 
-let updatePlayer (message: PlayerMessage) (worldModel: Model) =
+let updatePlayer (message: Player.Message) (worldModel: Model) =
     let model = worldModel.Player
 
     match message with
-    | Input direction -> { model with Input = direction }, Cmd.none
-    | PlayerPhysicsTick info ->
+    | Player.Input direction -> { model with Input = direction }, Cmd.none
+    | Player.PlayerPhysicsTick info ->
         let newModel = updatePlayerPhysics model info
         let aniCommands = updatePlayerAnimations newModel model
         newModel, aniCommands
-    | RotatePlacement clock -> { model with PlacementFacing = rotateFacing model.PlacementFacing clock }, Cmd.none
-    | SpriteMessage sm ->
+    | Player.RotatePlacement clock ->
+        { model with PlacementFacing = rotateFacing model.PlacementFacing clock }, Cmd.none
+    | Player.SpriteMessage sm ->
         let (newSprite, event) = Sprite.update sm model.SpriteInfo
 
         let model, cmd =
@@ -309,8 +310,8 @@ let updatePlayer (message: PlayerMessage) (worldModel: Model) =
 
                 let maxVelocity =
                     match newState with
-                    | Small s when s -> playerConfig.SmallMaxVelocity
-                    | Small s when not s -> playerConfig.BigMaxVelocity
+                    | Player.Small s when s -> playerConfig.SmallMaxVelocity
+                    | Player.Small s when not s -> playerConfig.BigMaxVelocity
                     | _ -> model.MaxVelocity
 
                 let modl =
@@ -318,25 +319,25 @@ let updatePlayer (message: PlayerMessage) (worldModel: Model) =
                         CharacterState = newState
                         MaxVelocity = maxVelocity }
 
-                modl, (Cmd.ofMsg << SpriteMessage << Sprite.SwitchAnimation) (walkAni, walkAni.Speed, modl.IsMoving)
+                modl,
+                (Cmd.ofMsg << Player.SpriteMessage << Sprite.SwitchAnimation) (walkAni, walkAni.Speed, modl.IsMoving)
             | Sprite.AnimationLooped _
             | Sprite.None -> model, Cmd.none
 
         { model with SpriteInfo = newSprite }, cmd
-    | CarryingMessage sm ->
+    | Player.CarryingMessage sm ->
         let newCarrying =
             model.Carrying
             |> List.map (fun carry ->
                 let (newSprite, _) = Sprite.update sm carry.Sprite
                 { carry with Sprite = newSprite })
-
         { model with Carrying = newCarrying }, Cmd.none
-    | TransformCharacter ->
+    | Player.TransformCharacter ->
         let (newState, transformAnimation) = transformStart model.CharacterState
-
-        { model with CharacterState = newState },
-        (Cmd.ofMsg << SpriteMessage << Sprite.SwitchAnimation) (transformAnimation, 100, true)
-    | Hold holding -> { model with Holding = holding }, Cmd.none
+        { model with CharacterState = newState },        
+        (Cmd.ofMsg << Player.SpriteMessage << Sprite.SwitchAnimation) (transformAnimation, 100, true)
+    | Player.FreezeMovement holding -> { model with MovementFrozen = holding }, Cmd.none
+    | Player.ArrowsControlPlacement theyDo -> { model with MovementFrozen = theyDo; ArrowsControlPlacement = theyDo }, Cmd.none
 
 
 let mutable lastTick = 0L // we use a mutable tick counter here in order to ensure precision
@@ -349,10 +350,10 @@ let update (message: Message) (model: Model) : Model * Cmd<Message> =
         let (newPlayerModel, playerCommand) = updatePlayer playerMsg model
         { model with Player = newPlayerModel }, Cmd.map PlayerMessage playerCommand
     | PickUpEntity ->
-        let playerLimit = getPlayerPickupLimit player.CharacterState
+        let playerLimit = Player.getPlayerPickupLimit player.CharacterState
 
         match player.CharacterState with
-        | Small _ when player.Carrying.Length + 1 <= playerLimit ->
+        | Player.Small _ when player.Carrying.Length + 1 <= playerLimit ->
             option {
                 let! (tile, i) = model.PlayerTarget
 
@@ -370,7 +371,7 @@ let update (message: Message) (model: Model) : Model * Cmd<Message> =
         | _ -> model, Cmd.none
     | PlaceEntity ->
         match player.CharacterState with
-        | Small _ ->
+        | Player.Small _ ->
             let tileAndIndex = model.PlayerTarget
 
             match tileAndIndex with
@@ -410,7 +411,7 @@ let update (message: Message) (model: Model) : Model * Cmd<Message> =
               Dt = dt
               PossibleObstacles = getCollidables model.Tiles }
 
-        let player, playerMsg = updatePlayer (PlayerPhysicsTick info) model
+        let player, playerMsg = updatePlayer (Player.PlayerPhysicsTick info) model
         let tileAndIndex = getTileAtPos player.Target model.Tiles
 
         let tiles = updateWorldReactive model.Tiles
@@ -539,20 +540,23 @@ let viewWorld (model: Model) (worldConfig: WorldConfig) =
                     loadedAssets.textures[(getEmitImage etype).TextureName]
             | _ -> ()))
 
-let viewPlayer model (cameraPos: Vector2) (dispatch: PlayerMessage -> unit) =
+let viewPlayer (model: Player.Model) (cameraPos: Vector2) (dispatch: Player.Message -> unit) =
     seq {
         //input
-        yield directions Keys.Up Keys.Down Keys.Left Keys.Right (fun f -> dispatch (Input f))
+        yield directions Keys.Up Keys.Down Keys.Left Keys.Right (fun f -> dispatch (Player.Input f))
         // yield directions Keys.W Keys.S Keys.A Keys.D (fun f -> dispatch (Input f))
-        yield onkeydown Keys.Space (fun _ -> dispatch (TransformCharacter))
-        yield onkeydown Keys.LeftControl (fun _ -> dispatch (Hold true))
-        yield onkeyup Keys.LeftControl (fun _ -> dispatch (Hold false))
+        yield onkeydown Keys.Space (fun _ -> dispatch (Player.TransformCharacter))
+        yield onkeydown Keys.LeftControl (fun _ -> dispatch (Player.FreezeMovement true))
+        yield onkeyup Keys.LeftControl (fun _ -> dispatch (Player.FreezeMovement false))
 
-        yield onkeydown Keys.A (fun _ -> dispatch (RotatePlacement false))
-        yield onkeydown Keys.S (fun _ -> dispatch (RotatePlacement true))
+        yield onkeydown Keys.LeftAlt (fun _ -> dispatch (Player.ArrowsControlPlacement true))
+        yield onkeyup Keys.LeftAlt (fun _ -> dispatch (Player.ArrowsControlPlacement false))
+
+        yield onkeydown Keys.A (fun _ -> dispatch (Player.RotatePlacement false))
+        yield onkeydown Keys.S (fun _ -> dispatch (Player.RotatePlacement true))
 
         //render
-        yield! Sprite.view model.SpriteInfo cameraPos (SpriteMessage >> dispatch)
+        yield! Sprite.view model.SpriteInfo cameraPos (Player.SpriteMessage >> dispatch)
         yield! viewPlayerCarrying model.Carrying cameraPos model.CharacterState
 
     //debug

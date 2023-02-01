@@ -1,27 +1,29 @@
-﻿module Player
+﻿[<RequireQualifiedAccess>]
+module Player
 
 open Microsoft.Xna.Framework
 open Prelude
 open Collision
-open LevelConfig
+open Level
 open Entity
 open GameConfig
 open PlayerConfig
 
-type CharacterState =
+type State =
     | Small of bool
     | Growing
     | Shrinking
 
-type PlayerModel =
+type Model =
     { SpriteInfo: Sprite.Model
-      CharacterState: CharacterState
+      CharacterState: State
 
       Input: Vector2
       XInputTimeAndDir: int64 * float32
       YInputTimeAndDir: int64 * float32
       
-      Holding: bool
+      MovementFrozen: bool
+      ArrowsControlPlacement: bool
 
       Carrying: Entity.Model list
       Target: Vector2
@@ -38,7 +40,7 @@ type PlayerModel =
 
       CollisionInfo: CollisionInfo }
 
-let initPlayer x y (playerConfig: PlayerConfig) (spriteConfig: SpriteConfig) time =
+let init x y (playerConfig: PlayerConfig) (spriteConfig: SpriteConfig) time =
     let p = Vector2(float32 x, float32 y)
 
     { SpriteInfo = Sprite.init p time spriteConfig None None
@@ -48,7 +50,8 @@ let initPlayer x y (playerConfig: PlayerConfig) (spriteConfig: SpriteConfig) tim
       YInputTimeAndDir = 0, 0f
       PlacementFacing = FacingRight
 
-      Holding = false
+      MovementFrozen = false
+      ArrowsControlPlacement = false
 
       Carrying =
           [ Entity.initNoCollider (buildObserver Id) p time FacingRight
@@ -75,21 +78,18 @@ let initPlayer x y (playerConfig: PlayerConfig) (spriteConfig: SpriteConfig) tim
           Offset = playerConfig.AABBConfig.Pos } }
 
 
-let getPlayerPickupLimit (characterState:CharacterState) =
+let getPlayerPickupLimit (characterState: State) =
     match characterState with
     | Small true -> 15
     | Small false -> 15
     | _ -> 0
 
-type PhysicsInfo =
-    { Time: int64
-      PossibleObstacles: AABB seq
-      Dt: float32 }
 
-type PlayerMessage =
+type Message =
     | Input of dir: Vector2
     | TransformCharacter
-    | Hold of bool
+    | FreezeMovement of bool
+    | ArrowsControlPlacement of bool
     | RotatePlacement of clockwise: bool
     | PlayerPhysicsTick of info: PhysicsInfo
     | SpriteMessage of Sprite.Message

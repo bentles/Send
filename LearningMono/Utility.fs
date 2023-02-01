@@ -108,3 +108,11 @@ let facingToCoords (facing: Facing) : int * int =
     | FacingRight -> (1, 0)
     | FacingUp -> (0, -1)
     | FacingDown -> (0, 1)
+
+let vectorToFacing (vec:Vector2) : Facing option =
+    match vec.X, vec.Y with
+    | 1f, 0f -> Some FacingRight
+    | -1f, 0f -> Some FacingLeft
+    | 0f, -1f -> Some FacingUp
+    | 0f, 1f -> Some FacingDown
+    | _ -> None

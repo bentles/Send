@@ -11,3 +11,8 @@ type Facing =
 
 
 type AABB = { Pos: Vector2; Half: Vector2 }
+
+type PhysicsInfo =
+    { Time: int64
+      PossibleObstacles: AABB seq
+      Dt: float32 }
