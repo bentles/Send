@@ -3,7 +3,8 @@
 open Xelmish.Model
 open Xelmish.Viewables
 open Microsoft.Xna.Framework
-open Config
+open GameConfig
+open PlayerConfig
 open Elmish
 open Collision
 open FsToolkit.ErrorHandling
@@ -13,6 +14,7 @@ open LevelConfig
 open Entity
 open FSharpx.Collections
 open Microsoft.Xna.Framework.Graphics
+open Prelude
 
 
 type Model =

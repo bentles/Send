@@ -2,8 +2,9 @@
 
 open Microsoft.Xna.Framework
 open System
-open Config
 open Xelmish.Viewables
+open Prelude
+open GameConfig
 
 let EPSILON = 1e-8f
 
@@ -11,8 +12,6 @@ let clamp value min max =
     if value < min then min
     elif value > max then max
     else value
-
-type AABB = { Pos: Vector2; Half: Vector2 }
 
 type CollisionInfo =
     {

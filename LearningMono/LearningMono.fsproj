@@ -21,9 +21,10 @@
     <None Remove="Icon.bmp" />
   </ItemGroup>
   <ItemGroup>
-    <None Include="Ideas.md" />
-    <None Include="TODO.md" />
-    <Compile Include="Config.fs" />
+    <Compile Include="Prelude.fs" />
+    <Compile Include="Config\GameConfig.fs" />
+    <Compile Include="Config\PlayerConfig.fs" />
+    <Compile Include="Config\EntityConfig.fs" />
     <Compile Include="Collision.fs" />
     <Compile Include="Utility.fs" />
     <Compile Include="Assert.fs" />

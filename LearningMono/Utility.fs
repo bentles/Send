@@ -1,10 +1,10 @@
 ﻿module Utility
 
 open Microsoft.Xna.Framework
-open Config
-open Collision
 open Xelmish.Model
 open Xelmish.Viewables
+open Prelude
+open GameConfig
 
 let coordsToPos (xx: float32) (yy: float32) (half: Vector2) =
     let startX = 0f
@@ -90,3 +90,21 @@ let directions up down left right event =
         let x = if inputs.keyboardState.IsKeyDown left then -1 else 0
         let x = x + if inputs.keyboardState.IsKeyDown right then 1 else 0
         event (Vector2(float32 x, float32 y)))
+
+let rotateFacing (facing: Facing) (clock: bool) =
+    match facing, clock with
+    | FacingLeft, true
+    | FacingRight, false -> FacingUp
+    | FacingUp, true
+    | FacingDown, false -> FacingRight
+    | FacingRight, true
+    | FacingLeft, false -> FacingDown
+    | FacingDown, true
+    | FacingUp, false -> FacingLeft
+
+let facingToCoords (facing: Facing) : int * int =
+    match facing with
+    | FacingLeft -> (-1, 0)
+    | FacingRight -> (1, 0)
+    | FacingUp -> (0, -1)
+    | FacingDown -> (0, 1)

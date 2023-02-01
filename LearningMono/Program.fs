@@ -2,7 +2,7 @@
 open Xelmish.Model // required for config types used when using program.run
 open Xelmish.Viewables // required to get access to helpers like 'colour'
 open Microsoft.Xna.Framework
-open Config
+open GameConfig
 open System
 
 

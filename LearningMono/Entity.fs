@@ -1,15 +1,19 @@
 ﻿module Entity
 
 open Collision
-open Config
+open GameConfig
 open Microsoft.Xna.Framework
+open Prelude
+open EntityConfig
+
+
 
 [<Struct>]
-type Facing =
-    | FacingUp
-    | FacingDown
-    | FacingLeft
-    | FacingRight
+type Emit<'a> =
+    | WillEmit of will: 'a
+    | Emitting of emitting: 'a
+    | Emitted of emitted: 'a
+    | Nothing
 
 [<Struct>]
 type SubjectType = Timer of BoxType * int
@@ -30,22 +34,16 @@ and EntityType =
 
 and ObservableData =
     { Type: ObservableType
-      ToEmit: Emit
+      ToEmit: Emit<EntityType>
       TicksSinceEmit: int
       Observing: int option
       Observing2: int option }
 
 and SubjectData =
     { Type: SubjectType
-      ToEmit: Emit
+      ToEmit: Emit<EntityType>
       TicksSinceEmit: int
       GenerationNumber: int }
-
-and Emit =
-    | WillEmit of EntityType
-    | Emitting of EntityType
-    | Emitted of EntityType
-    | Nothing
 
 [<Struct>]
 type Model =
@@ -53,24 +51,6 @@ type Model =
       Collider: AABB option
       Facing: Facing
       Type: EntityType }
-
-let rotateFacing (facing: Facing) (clock: bool) =
-    match facing, clock with
-    | FacingLeft, true
-    | FacingRight, false -> FacingUp
-    | FacingUp, true
-    | FacingDown, false -> FacingRight
-    | FacingRight, true
-    | FacingLeft, false -> FacingDown
-    | FacingDown, true
-    | FacingUp, false -> FacingLeft
-
-let facingToCoords (facing: Facing) : int * int =
-    match facing with
-    | FacingLeft -> (-1, 0)
-    | FacingRight -> (1, 0)
-    | FacingUp -> (0, -1)
-    | FacingDown -> (0, 1)
 
 let getSpriteConfig (eType: EntityType) : SpriteConfig =
     match eType with
@@ -113,7 +93,7 @@ let getCollider (eType: EntityType) (pos: Vector2) : AABB =
     | Box _
     | Observable _ -> { Pos = pos; Half = Vector2(10f, 10f) }
 
-let (|Emittinged|_|) (emit: Emit) =
+let (|Emittinged|_|) (emit: Emit<'a>) =
     match emit with
     | Emitting e
     | Emitted e -> Some(e)

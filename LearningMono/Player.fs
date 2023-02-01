@@ -1,10 +1,12 @@
 ﻿module Player
 
 open Microsoft.Xna.Framework
-open Config
+open Prelude
 open Collision
 open LevelConfig
 open Entity
+open GameConfig
+open PlayerConfig
 
 
 type CharacterState =
@@ -50,17 +52,17 @@ let initPlayer x y (playerConfig: PlayerConfig) (spriteConfig: SpriteConfig) tim
       Holding = false
 
       Carrying =
-          [ Entity.initNoCollider (buildObserver Id) p time Entity.FacingRight
-            Entity.initNoCollider (buildObserver Id) p time Entity.FacingRight
-            Entity.initNoCollider (buildObserver Id) p time Entity.FacingRight
-            Entity.initNoCollider (buildObserver Id) p time Entity.FacingRight
-            Entity.initNoCollider (buildObserver Id) p time Entity.FacingRight
-            Entity.initNoCollider (buildObserver Id) p time Entity.FacingRight
-            Entity.initNoCollider (buildObserver Id) p time Entity.FacingRight
-            Entity.initNoCollider (buildObserver Id) p time Entity.FacingRight
-            Entity.initNoCollider (buildObserver (Filter Rock)) p time Entity.FacingRight
-            Entity.initNoCollider (buildObserver Id) p time Entity.FacingRight
-            Entity.initNoCollider (buildObserver Id) p time Entity.FacingRight ]
+          [ Entity.initNoCollider (buildObserver Id) p time FacingRight
+            Entity.initNoCollider (buildObserver Id) p time FacingRight
+            Entity.initNoCollider (buildObserver Id) p time FacingRight
+            Entity.initNoCollider (buildObserver Id) p time FacingRight
+            Entity.initNoCollider (buildObserver Id) p time FacingRight
+            Entity.initNoCollider (buildObserver Id) p time FacingRight
+            Entity.initNoCollider (buildObserver Id) p time FacingRight
+            Entity.initNoCollider (buildObserver Id) p time FacingRight
+            Entity.initNoCollider (buildObserver (Filter Rock)) p time FacingRight
+            Entity.initNoCollider (buildObserver Id) p time FacingRight
+            Entity.initNoCollider (buildObserver Id) p time FacingRight ]
       Facing = Vector2(1f, 0f)
       Target = p + 60f * Vector2(1f, 0f)
       Pos = p
@@ -71,7 +73,7 @@ let initPlayer x y (playerConfig: PlayerConfig) (spriteConfig: SpriteConfig) tim
       IsMoving = false
       CollisionInfo =
         { Half = playerConfig.AABBConfig.Half
-          Offset = playerConfig.AABBConfig.Offset } }
+          Offset = playerConfig.AABBConfig.Pos } }
 
 
 let getPlayerPickupLimit (characterState:CharacterState) =

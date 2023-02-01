@@ -4,7 +4,7 @@ open Microsoft.Xna.Framework
 open Xelmish.Model
 open Elmish
 open Xelmish.Viewables
-open Config
+open GameConfig
 
 [<Struct>]
 type AnimationState =
