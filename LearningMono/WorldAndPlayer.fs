@@ -114,14 +114,27 @@ let updatePlayerPhysics (model: Player.Model) (info: PhysicsInfo) =
         else
             (vel, pos, velLength > 0f)
 
-    let placementFacing = vectorToFacing model.Input |> Option.defaultValue model.PlacementFacing
+    let placementFacing =
+        vectorToFacing model.Input |> Option.defaultValue model.PlacementFacing
 
     { model with
-        Target = if model.ArrowsControlPlacement then model.Target else target
+        Target =
+            if model.ArrowsControlPlacement then
+                model.Target
+            else
+                target
         XInputTimeAndDir = xinputTime, lastXDir
         YInputTimeAndDir = yinputTime, lastYDir
-        Facing = if model.ArrowsControlPlacement then model.Facing else facing
-        PlacementFacing = if model.ArrowsControlPlacement then placementFacing else model.PlacementFacing
+        Facing =
+            if model.ArrowsControlPlacement then
+                model.Facing
+            else
+                facing
+        PlacementFacing =
+            if model.ArrowsControlPlacement then
+                placementFacing
+            else
+                model.PlacementFacing
         Vel = vel
         Pos = pos
         IsMoving = isMoving }
@@ -331,13 +344,19 @@ let updatePlayer (message: Player.Message) (worldModel: Model) =
             |> List.map (fun carry ->
                 let (newSprite, _) = Sprite.update sm carry.Sprite
                 { carry with Sprite = newSprite })
+
         { model with Carrying = newCarrying }, Cmd.none
     | Player.TransformCharacter ->
         let (newState, transformAnimation) = transformStart model.CharacterState
-        { model with CharacterState = newState },        
+
+        { model with CharacterState = newState },
         (Cmd.ofMsg << Player.SpriteMessage << Sprite.SwitchAnimation) (transformAnimation, 100, true)
     | Player.FreezeMovement holding -> { model with MovementFrozen = holding }, Cmd.none
-    | Player.ArrowsControlPlacement theyDo -> { model with MovementFrozen = theyDo; ArrowsControlPlacement = theyDo }, Cmd.none
+    | Player.ArrowsControlPlacement theyDo ->
+        { model with
+            MovementFrozen = theyDo
+            ArrowsControlPlacement = theyDo },
+        Cmd.none
 
 
 let mutable lastTick = 0L // we use a mutable tick counter here in order to ensure precision
@@ -492,13 +511,19 @@ let viewWorld (model: Model) (worldConfig: WorldConfig) =
                 Color.White
             )
 
+            let alpha = 0.5f
             //target
             let maybeTargetColor =
                 option {
                     let! (tile, ind) = model.PlayerTarget
                     let! target = if i = ind then Some tile else None
                     let illegal = Option.isSome target.Collider || Option.isSome target.Entity
-                    return if illegal then Color.Orange else Color.Green
+
+                    return
+                        if illegal then
+                            (Color.Orange * alpha)
+                        else
+                            (Color.Green * alpha)
                 }
 
             let texture, effect =
