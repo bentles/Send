@@ -23,7 +23,7 @@ type Model =
       Input: Vector2
       XInputTimeAndDir: int64 * float32
       YInputTimeAndDir: int64 * float32
-      
+
       MovementFrozen: bool
       ArrowsControlPlacement: bool
 
@@ -112,15 +112,41 @@ let calcVelocity modelVel modelMaxVel (acc: Vector2) (dt: float32) =
             Vector2.Normalize(vel) * modelMaxVel
         else
             vel
+
     vel, velLength
 
 let updateCarryingPositions (pos: Vector2) =
     Cmd.ofMsg (CarryingMessage(Sprite.Message.SetPos pos))
 
+
+
 let updatePhysics (model: Model) (info: PhysicsInfo) =
     let dt = info.Dt
     let currentTime = info.Time
 
+    let updateIfNotZero (value: float32) (prev: int64 * float32) =
+        if value <> 0f then currentTime, value else prev
+
+    let calcFacing (milisSinceX, lastXDir) (milisSinceY, lastYDir) =
+        // if both keys are released within minTime of each other we are facing diagonally
+        let diagonal = abs (milisSinceX - milisSinceY) < diagonalReleaseDelay
+
+        let facing =
+            match (model.Input.X, model.Input.Y) with
+            | (0f, 0f) when diagonal -> Vector2(lastXDir, lastYDir)
+            | (0f, 0f) when milisSinceX < milisSinceY -> Vector2(lastXDir, 0f)
+            | (0f, 0f) when milisSinceY <= milisSinceX -> Vector2(0f, lastYDir)
+
+            | (0f, y) when milisSinceX < diagonalReleaseDelay -> Vector2(lastXDir, y)
+            | (x, 0f) when milisSinceY < diagonalReleaseDelay -> Vector2(x, lastYDir)
+            | _ -> model.Input
+
+        Vector2.Normalize(facing)
+
+    let millisSince eventTime =
+        (float32 (currentTime - eventTime)) / 1000f
+
+    // acceleration and velocity
     let acc =
         match (model.Input, model.Vel) with
         | (i, v) when i = Vector2.Zero && v = Vector2.Zero -> Vector2.Zero
@@ -132,48 +158,23 @@ let updatePhysics (model: Model) (info: PhysicsInfo) =
 
     assert (Assert.inputAffectsVelocityAssertions model.Input model.Vel vel)
 
-    //BlockWidth pixels is 1m
+    // TileWidth pixels is 1m
     let pixelsPerMeter = float32 worldConfig.TileWidth
 
     let preCollisionPos = model.Pos + (vel * dt) * pixelsPerMeter
 
-    //collide with walls
+    // collide with walls
     let pos =
         collide preCollisionPos model.Pos model.CollisionInfo info.PossibleObstacles
 
     // record when last x and y were pressed
-    let xinputTime, lastXDir =
-        if model.Input.X <> 0f then
-            currentTime, model.Input.X
-        else
-            model.XInputTimeAndDir
+    let xinputTime, lastXDir = updateIfNotZero model.Input.X model.XInputTimeAndDir
+    let yinputTime, lastYDir = updateIfNotZero model.Input.Y model.YInputTimeAndDir
+    let milisSinceX = millisSince xinputTime
+    let milisSinceY = millisSince yinputTime
 
-    let yinputTime, lastYDir =
-        if model.Input.Y <> 0f then
-            currentTime, model.Input.Y
-        else
-            model.YInputTimeAndDir
+    let facing = calcFacing (milisSinceX, lastXDir) (milisSinceY, lastYDir)
 
-    let milisSinceX = (float32 (currentTime - xinputTime)) / 1000f
-    let milisSinceY = (float32 (currentTime - yinputTime)) / 1000f
-
-    // if both keys are released within minTime of each other we are facing diagonally
-    let minTime = 0.08f
-    let diagonal = abs (milisSinceX - milisSinceY) < minTime
-
-    let facing =
-        match (model.Input.X, model.Input.Y) with
-        | (0f, 0f) when diagonal -> Vector2(lastXDir, lastYDir)
-        | (0f, 0f) when milisSinceX < milisSinceY -> Vector2(lastXDir, 0f)
-        | (0f, 0f) when milisSinceY <= milisSinceX -> Vector2(0f, lastYDir)
-
-        | (0f, 1f) when milisSinceX < minTime -> Vector2(lastXDir, 1f)
-        | (1f, 0f) when milisSinceY < minTime -> Vector2(1f, lastYDir)
-        | (0f, -1f) when milisSinceX < minTime -> Vector2(lastXDir, -1f)
-        | (-1f, 0f) when milisSinceY < minTime -> Vector2(-1f, lastYDir)
-        | _ -> model.Input
-
-    let facing = Vector2.Normalize(facing)
     let target = pos + (60f * facing) + Vector2(0f, 20f)
 
     let (vel, pos, isMoving) =
@@ -258,4 +259,3 @@ let viewCarrying (carrying: Entity.Model list) (cameraPos: Vector2) (charState: 
     |> Seq.collect (fun (i, c) ->
         let offSetPos = cameraPos + offsetStart + (Vector2(0f, 25f) * (float32 i))
         Sprite.view c.Sprite offSetPos ignore)
-
