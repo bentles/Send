@@ -28,178 +28,6 @@ type Model =
       PlayerTarget: (Tile * int) option
       CameraPos: Vector2 }
 
-let calcVelocity modelVel modelMaxVel (acc: Vector2) (dt: float32) =
-    let vel = modelVel + acc * dt
-
-    //no osciallating weirdness if you stop you stop
-    let stopped = Vector2.Dot(vel, modelVel) < 0f
-    let vel = if stopped then Vector2.Zero else vel
-    let velLength = vel.Length()
-
-    let velTooBig = velLength > modelMaxVel
-
-    let vel =
-        if velTooBig then
-            Vector2.Normalize(vel) * modelMaxVel
-        else
-            vel
-
-    vel, velLength
-
-let updateCarryingPositions (pos: Vector2) =
-    Cmd.ofMsg (Player.CarryingMessage(Sprite.Message.SetPos pos))
-
-let updatePlayerPhysics (model: Player.Model) (info: PhysicsInfo) =
-    let dt = info.Dt
-    let currentTime = info.Time
-
-    let acc =
-        match (model.Input, model.Vel) with
-        | (i, v) when i = Vector2.Zero && v = Vector2.Zero -> Vector2.Zero
-        | (i, v) when i = Vector2.Zero -> //slow down against current velocity
-            Vector2.Normalize(v) * -(model.Friction)
-        | (i, _) -> i * float32 (model.Acc)
-
-    let (vel, velLength) = calcVelocity model.Vel model.MaxVelocity acc dt
-
-    assert (Assert.inputAffectsVelocityAssertions model.Input model.Vel vel)
-
-    //BlockWidth pixels is 1m
-    let pixelsPerMeter = float32 worldConfig.TileWidth
-
-    let preCollisionPos = model.Pos + (vel * dt) * pixelsPerMeter
-
-    //collide with walls
-    let pos =
-        collide preCollisionPos model.Pos model.CollisionInfo info.PossibleObstacles
-
-    // record when last x and y were pressed
-    let xinputTime, lastXDir =
-        if model.Input.X <> 0f then
-            currentTime, model.Input.X
-        else
-            model.XInputTimeAndDir
-
-    let yinputTime, lastYDir =
-        if model.Input.Y <> 0f then
-            currentTime, model.Input.Y
-        else
-            model.YInputTimeAndDir
-
-    let milisSinceX = (float32 (currentTime - xinputTime)) / 1000f
-    let milisSinceY = (float32 (currentTime - yinputTime)) / 1000f
-
-    // if both keys are released within minTime of each other we are facing diagonally
-    let minTime = 0.08f
-    let diagonal = abs (milisSinceX - milisSinceY) < minTime
-
-    let facing =
-        match (model.Input.X, model.Input.Y) with
-        | (0f, 0f) when diagonal -> Vector2(lastXDir, lastYDir)
-        | (0f, 0f) when milisSinceX < milisSinceY -> Vector2(lastXDir, 0f)
-        | (0f, 0f) when milisSinceY <= milisSinceX -> Vector2(0f, lastYDir)
-
-        | (0f, 1f) when milisSinceX < minTime -> Vector2(lastXDir, 1f)
-        | (1f, 0f) when milisSinceY < minTime -> Vector2(1f, lastYDir)
-        | (0f, -1f) when milisSinceX < minTime -> Vector2(lastXDir, -1f)
-        | (-1f, 0f) when milisSinceY < minTime -> Vector2(-1f, lastYDir)
-        | _ -> model.Input
-
-    let facing = Vector2.Normalize(facing)
-    let target = pos + (60f * facing) + Vector2(0f, 20f)
-
-    let (vel, pos, isMoving) =
-        if model.MovementFrozen then
-            (Vector2.Zero, model.Pos, false)
-        else
-            (vel, pos, velLength > 0f)
-
-    let placementFacing =
-        vectorToFacing model.Input |> Option.defaultValue model.PlacementFacing
-
-    { model with
-        Target =
-            if model.ArrowsControlPlacement then
-                model.Target
-            else
-                target
-        XInputTimeAndDir = xinputTime, lastXDir
-        YInputTimeAndDir = yinputTime, lastYDir
-        Facing =
-            if model.ArrowsControlPlacement then
-                model.Facing
-            else
-                facing
-        PlacementFacing =
-            if model.ArrowsControlPlacement then
-                placementFacing
-            else
-                model.PlacementFacing
-        Vel = vel
-        Pos = pos
-        IsMoving = isMoving }
-
-let updatePlayerAnimations (newModel: Player.Model) (oldModel: Player.Model) =
-    let directionCommands =
-        [ if newModel.Facing.X <> 0f && newModel.Facing.X <> oldModel.Facing.X then
-              Cmd.ofMsg (Player.SpriteMessage(Sprite.SetDirectionX(newModel.Facing.X < 0f)))
-          if newModel.Facing.Y <> 0f && newModel.Facing.Y <> oldModel.Facing.Y then
-              Cmd.ofMsg (Player.SpriteMessage(Sprite.SetDirectionY(newModel.Facing.Y < 0f))) ]
-
-    let animationCommands =
-        match (oldModel.IsMoving, newModel.IsMoving, oldModel.CharacterState) with
-        | (false, true, Player.Small isSmall) ->
-            let walkAnimation, speed =
-                match isSmall with
-                | true -> CharAnimations.SmallWalk, CharConfig.BigFrames
-                | false -> CharAnimations.BigWalk, CharConfig.SmallFrames
-
-            [ (Cmd.ofMsg << Player.SpriteMessage << Sprite.SwitchAnimation) (walkAnimation, speed, true) ]
-        | (true, false, Player.Small _) -> [ (Cmd.ofMsg << Player.SpriteMessage) Sprite.Stop ]
-        | _ -> []
-
-    let setPosMsg = Cmd.ofMsg (Player.SpriteMessage(Sprite.SetPos newModel.Pos))
-
-    let carryCommand = updateCarryingPositions newModel.Pos
-
-    Cmd.batch [ setPosMsg; carryCommand; yield! animationCommands; yield! directionCommands ]
-
-let transformStart (characterState: Player.State) =
-    match characterState with
-    | Player.Shrinking -> Player.Growing, CharAnimations.SmallToBig
-    | Player.Small true -> Player.Growing, CharAnimations.SmallToBig
-    | Player.Growing -> Player.Shrinking, CharAnimations.BigToSmall
-    | Player.Small false -> Player.Shrinking, CharAnimations.BigToSmall
-
-let transformComplete (characterState: Player.State) =
-    match characterState with
-    | Player.Shrinking -> Player.Small true, CharAnimations.SmallWalk
-    | Player.Growing -> Player.Small false, CharAnimations.BigWalk
-    | Player.Small true -> Player.Small true, CharAnimations.SmallWalk
-    | Player.Small false -> Player.Small false, CharAnimations.BigWalk
-
-let viewPlayerCarrying (carrying: Entity.Model list) (cameraPos: Vector2) (charState: Player.State) =
-    let offsetStart =
-        match charState with
-        | Player.Small true -> Vector2(0f, 40f)
-        | Player.Small false -> Vector2(0f, 70f)
-        | _ -> Vector2(0f, 55f)
-
-    carrying
-    |> Seq.indexed
-    |> Seq.collect (fun (i, c) ->
-        let offSetPos = cameraPos + offsetStart + (Vector2(0f, 25f) * (float32 i))
-        Sprite.view c.Sprite offSetPos ignore)
-
-let updateCameraPos (playerPos: Vector2) (oldCamPos: Vector2) : Vector2 =
-    let diff = Vector2.Subtract(playerPos, oldCamPos)
-    let halfDiff = Vector2.Multiply(diff, 0.25f)
-
-    if halfDiff.LengthSquared() < 0.5f then
-        playerPos
-    else
-        oldCamPos + halfDiff
-
 let halfScreenOffset (camPos: Vector2) : Vector2 =
     Vector2.Subtract(camPos, Vector2(800f, 450f))
 
@@ -302,14 +130,23 @@ let updateWorldSprites (totalTime: int64) (tiles: PersistentVector<Tile>) : Pers
         | Some(entity) -> { tile with Entity = Some entity }
         | None -> { tile with Entity = None })
 
+let updateCameraPos (playerPos: Vector2) (oldCamPos: Vector2) : Vector2 =
+    let diff = Vector2.Subtract(playerPos, oldCamPos)
+    let halfDiff = Vector2.Multiply(diff, 0.25f)
+
+    if halfDiff.LengthSquared() < 0.5f then
+        playerPos
+    else
+        oldCamPos + halfDiff
+
 let updatePlayer (message: Player.Message) (worldModel: Model) =
     let model = worldModel.Player
 
     match message with
     | Player.Input direction -> { model with Input = direction }, Cmd.none
     | Player.PlayerPhysicsTick info ->
-        let newModel = updatePlayerPhysics model info
-        let aniCommands = updatePlayerAnimations newModel model
+        let newModel = Player.updatePhysics model info
+        let aniCommands = Player.updateAnimations newModel model
         newModel, aniCommands
     | Player.RotatePlacement clock ->
         { model with PlacementFacing = rotateFacing model.PlacementFacing clock }, Cmd.none
@@ -319,7 +156,7 @@ let updatePlayer (message: Player.Message) (worldModel: Model) =
         let model, cmd =
             match event with
             | Sprite.AnimationComplete _ ->
-                let (newState, walkAni) = transformComplete model.CharacterState
+                let (newState, walkAni) = Player.transformComplete model.CharacterState
 
                 let maxVelocity =
                     match newState with
@@ -347,7 +184,7 @@ let updatePlayer (message: Player.Message) (worldModel: Model) =
 
         { model with Carrying = newCarrying }, Cmd.none
     | Player.TransformCharacter ->
-        let (newState, transformAnimation) = transformStart model.CharacterState
+        let (newState, transformAnimation) = Player.transformStart model.CharacterState
 
         { model with CharacterState = newState },
         (Cmd.ofMsg << Player.SpriteMessage << Sprite.SwitchAnimation) (transformAnimation, 100, true)
@@ -582,7 +419,7 @@ let viewPlayer (model: Player.Model) (cameraPos: Vector2) (dispatch: Player.Mess
 
         //render
         yield! Sprite.view model.SpriteInfo cameraPos (Player.SpriteMessage >> dispatch)
-        yield! viewPlayerCarrying model.Carrying cameraPos model.CharacterState
+        yield! Player.viewCarrying model.Carrying cameraPos model.CharacterState
 
     //debug
     //yield
