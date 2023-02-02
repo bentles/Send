@@ -52,15 +52,9 @@ let init (worldConfig: WorldConfig) time =
             for yy in 0 .. (worldConfig.WorldTileLength - 1) do
                 for xx in 0 .. (worldConfig.WorldTileLength - 1) do
                     let grassTile = createNonCollidableTile FloorType.Grass
-                    let subj = Some 22
-
                     match xx, yy with
                     | 0, 0 -> createNonCollidableTile FloorType.Grass
                     | 2, 2 -> createTimerOnGrass (Vector2(2f)) time
-                    //| 5, 5 -> createCollidableTile FloorType.Empty 5f 5f
-                    //| 8, 9 -> grassTile // 8f 9f
-                    //| 6, 9 -> grassTile // 6f 9f
-                    //| 7, 8 -> grassTile // 7f 8f
                     | _ -> grassTile
         }
         |> PersistentVector.ofSeq // /* createTimerOnGrass (Vector2(float32 x, float32 y)) */ |]

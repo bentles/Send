@@ -56,15 +56,15 @@ let init x y (playerConfig: PlayerConfig) (spriteConfig: SpriteConfig) time =
       ArrowsControlPlacement = false
 
       Carrying =
-          [ Entity.initNoCollider (buildObserver Id) p time FacingRight
-            Entity.initNoCollider (buildObserver Id) p time FacingRight
-            Entity.initNoCollider (buildObserver Id) p time FacingRight
-            Entity.initNoCollider (buildObserver Id) p time FacingRight
-            Entity.initNoCollider (buildObserver Id) p time FacingRight
-            Entity.initNoCollider (buildObserver Id) p time FacingRight
-            Entity.initNoCollider (buildObserver Id) p time FacingRight
-            Entity.initNoCollider (buildObserver Id) p time FacingRight
+          [ Entity.initNoCollider (buildObserver (Filter(rockTimer))) p time FacingRight
+            Entity.initNoCollider (buildObserver (Map(rockTimer))) p time FacingRight
             Entity.initNoCollider (buildObserver (Filter Rock)) p time FacingRight
+            Entity.initNoCollider (buildObserver Id) p time FacingRight
+            Entity.initNoCollider (buildObserver Id) p time FacingRight
+            Entity.initNoCollider (buildObserver Id) p time FacingRight
+            Entity.initNoCollider (buildObserver Id) p time FacingRight
+            Entity.initNoCollider (buildObserver Id) p time FacingRight
+            Entity.initNoCollider (buildObserver Id) p time FacingRight
             Entity.initNoCollider (buildObserver Id) p time FacingRight
             Entity.initNoCollider (buildObserver Id) p time FacingRight ]
       Facing = Vector2(1f, 0f)
@@ -115,10 +115,9 @@ let calcVelocity modelVel modelMaxVel (acc: Vector2) (dt: float32) =
 
     vel, velLength
 
+
 let updateCarryingPositions (pos: Vector2) =
     Cmd.ofMsg (CarryingMessage(Sprite.Message.SetPos pos))
-
-
 
 let updatePhysics (model: Model) (info: PhysicsInfo) =
     let dt = info.Dt

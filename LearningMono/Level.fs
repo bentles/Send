@@ -39,7 +39,7 @@ let createTimerOnGrass (coords: Vector2) time =
 
     let subject =
         Entity.Subject
-            { Type = Entity.Timer ([Rock; buildObserver Id; buildObserver (Map Rock)], 60)
+            { Type = Entity.Timer ([Rock; buildObserver Id; buildObserver (Map Rock); rockTimer], 60)
               TicksSinceEmit = 0
               GenerationNumber = 0
               ToEmit = Nothing }
