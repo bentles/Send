@@ -1,12 +1,9 @@
 ﻿module Entity
 
-open Collision
 open GameConfig
 open Microsoft.Xna.Framework
 open Prelude
 open EntityConfig
-
-
 
 [<Struct>]
 type Emit<'a> =

@@ -1,7 +1,6 @@
 ﻿module Level
 
 open Microsoft.Xna.Framework
-open Collision
 open Entity
 open Utility
 open Prelude
@@ -24,7 +23,8 @@ let defaultTile =
       Entity = None }
 
 type LevelConfig =
-    { PlayerStartPos: Vector2
+    { PlayerStartsAtPos: Vector2
+      PlayerStartsCarrying: Entity.Model list
       LevelBuilder: unit -> Tile[] }
 
 let createCollidableTile t xx yy =

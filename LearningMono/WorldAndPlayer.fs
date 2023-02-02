@@ -52,6 +52,7 @@ let init (worldConfig: WorldConfig) time =
             for yy in 0 .. (worldConfig.WorldTileLength - 1) do
                 for xx in 0 .. (worldConfig.WorldTileLength - 1) do
                     let grassTile = createNonCollidableTile FloorType.Grass
+                    
                     match xx, yy with
                     | 0, 0 -> createNonCollidableTile FloorType.Grass
                     | 2, 2 -> createTimerOnGrass (Vector2(2f)) time
