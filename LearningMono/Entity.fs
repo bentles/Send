@@ -243,7 +243,6 @@ let buildRockTimer =
 let rockTimer: EntityType = buildRockTimer
 
 let buildObserverObserving (oType: ObservableType) (target: int option) (target2: int option) : EntityType =
-
     Observable(
         { Type = oType
           ToEmit = Nothing

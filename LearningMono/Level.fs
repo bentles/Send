@@ -27,8 +27,7 @@ type Level =
     { PlayerStartsAtPos: Vector2
       PlayerStartsCarrying: Entity.Model list
       Tiles: PersistentVector<Tile>
-      Size: (int * int)
-      }
+      Size: (int * int) }
 
 type LevelBuilder = int64 -> Level
 
@@ -45,7 +44,7 @@ let createTimerOnGrass (coords: Vector2) time =
 
     let subject =
         Entity.Subject
-            { Type = Entity.Timer ([Rock; buildObserver Id; buildObserver (Map Rock); rockTimer], 60)
+            { Type = Entity.Timer([ Rock; buildObserver Id; buildObserver (Map Rock); rockTimer ], 60)
               TicksSinceEmit = 0
               GenerationNumber = 0
               ToEmit = Nothing }
@@ -61,50 +60,48 @@ let createObserverOnGrass (coords: Vector2) time observer : Tile =
         FloorType = FloorType.Grass
         Entity = Some(Entity.init observer pos time FacingRight) }
 
-let level1: LevelBuilder = 
+let iterWorld (width: int, height: int) (func: (int * int) -> Tile) : PersistentVector<Tile> =
+    seq {
+        for y in 0 .. (height - 1) do
+            for x in 0 .. (width - 1) do
+                func (x, y)
+    }
+    |> PersistentVector.ofSeq
+
+let level1: LevelBuilder =
     fun time ->
         let width = 20
         let height = 10
 
-        let tiles =
-            seq {
-                for yy in 0 .. (width - 1) do
-                    for xx in 0 .. (height - 1) do
-                        let grassTile = createNonCollidableTile FloorType.Grass
-                    
-                        match xx, yy with
-                        | 0, 0 -> createNonCollidableTile FloorType.Grass
-                        | 2, 2 -> createTimerOnGrass (Vector2(2f)) time
-                        | _ -> grassTile
-            }
-            |> PersistentVector.ofSeq
-        {
-            PlayerStartsAtPos = Vector2(2f, 2f)
-            PlayerStartsCarrying = []
-            Tiles = tiles
-            Size = (width, height)
-        }
+        let grassTile = createNonCollidableTile FloorType.Grass
 
-let level2: LevelBuilder = 
+        let tiles =
+            iterWorld (width, height) (fun (x, y) ->
+                match x, y with
+                | 0, 0 -> createNonCollidableTile FloorType.Grass
+                | 2, 2 -> createTimerOnGrass (Vector2(2f, 2f)) time
+                | _ -> grassTile)
+
+        { PlayerStartsAtPos = Vector2(2f, 2f)
+          PlayerStartsCarrying = []
+          Tiles = tiles
+          Size = (width, height) }
+
+let level2: LevelBuilder =
     fun time ->
-        let width = 20
-        let height = 10
+        let width = 10
+        let height = 20
+
+        let grassTile = createNonCollidableTile FloorType.Grass
 
         let tiles =
-            seq {
-                for yy in 0 .. (width - 1) do
-                    for xx in 0 .. (height - 1) do
-                        let grassTile = createNonCollidableTile FloorType.Grass
-                    
-                        match xx, yy with
-                        | 0, 0 -> createNonCollidableTile FloorType.Grass
-                        | 2, 2 -> createTimerOnGrass (Vector2(2f)) time
-                        | _ -> grassTile
-            }
-            |> PersistentVector.ofSeq
-        {
-            PlayerStartsAtPos = Vector2(2f, 2f)
-            PlayerStartsCarrying = []
-            Tiles = tiles
-            Size = (width, height)
-        }
+            iterWorld (width, height) (fun (x, y) ->
+                match x, y with
+                | 0, 0 -> createNonCollidableTile FloorType.Grass
+                | 2, 2 -> createTimerOnGrass (Vector2(2f, 2f)) time
+                | _ -> grassTile)
+
+        { PlayerStartsAtPos = Vector2(2f, 2f)
+          PlayerStartsCarrying = []
+          Tiles = tiles
+          Size = (width, height) }

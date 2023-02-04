@@ -6,6 +6,7 @@ TODO:
 - use the stopped animation
 - simplify all the things
 - prevent transform if carrying limits exceeded
+- make it easier to create entities for carrying
 
 DOING:
 - levels and switching between them
