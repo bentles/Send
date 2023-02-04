@@ -4,12 +4,13 @@ module Player
 open Microsoft.Xna.Framework
 open Prelude
 open Collision
-open Level
 open Entity
 open GameConfig
 open PlayerConfig
 open Elmish
 open Utility
+open Microsoft.Xna.Framework.Input
+open Xelmish.Viewables
 
 type State =
     | Small of bool
@@ -301,3 +302,23 @@ let viewCarrying (carrying: Entity.Model list) (cameraPos: Vector2) (charState: 
     |> Seq.collect (fun (i, c) ->
         let offSetPos = cameraPos + offsetStart + (Vector2(0f, 25f) * (float32 i))
         Sprite.view c.Sprite offSetPos ignore)
+
+let view (model: Model) (cameraPos: Vector2) (dispatch: Message -> unit) =
+    seq {
+        //input
+        yield directions Keys.Up Keys.Down Keys.Left Keys.Right (fun f -> dispatch (Input f))
+        // yield directions Keys.W Keys.S Keys.A Keys.D (fun f -> dispatch (Input f))
+        yield onkeydown Keys.Space (fun _ -> dispatch (TransformCharacter))
+        yield onkeydown Keys.LeftControl (fun _ -> dispatch (FreezeMovement true))
+        yield onkeyup Keys.LeftControl (fun _ -> dispatch (FreezeMovement false))
+
+        yield onkeydown Keys.LeftAlt (fun _ -> dispatch (ArrowsControlPlacement true))
+        yield onkeyup Keys.LeftAlt (fun _ -> dispatch (ArrowsControlPlacement false))
+
+        yield onkeydown Keys.A (fun _ -> dispatch (RotatePlacement false))
+        yield onkeydown Keys.S (fun _ -> dispatch (RotatePlacement true))
+
+        //render
+        yield! Sprite.view model.SpriteInfo cameraPos (SpriteMessage >> dispatch)
+        yield! viewCarrying model.Carrying cameraPos model.CharacterState
+    }

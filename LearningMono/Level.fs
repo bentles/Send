@@ -44,6 +44,13 @@ let createCollidableTile t x y =
 
 let createNonCollidableTile t = { defaultTile with FloorType = t }
 
+let createRockOnGrass (coords: Vector2) time =
+    let pos = coordsToVector coords.X coords.Y half
+
+    { defaultTile with
+        FloorType = FloorType.Grass
+        Entity = Some(Entity.init Rock pos time FacingRight) }
+
 let createTimerOnGrass (coords: Vector2) time =
     let pos = coordsToVector coords.X coords.Y half
 
@@ -57,6 +64,7 @@ let createTimerOnGrass (coords: Vector2) time =
     { defaultTile with
         FloorType = FloorType.Grass
         Entity = Some(Entity.init subject pos time FacingRight) }
+
 
 let createObserverOnGrass (coords: Vector2) time observer : Tile =
     let pos = coordsToVector coords.X coords.Y half
@@ -94,7 +102,8 @@ let level1: LevelBuilder =
                 | x, y when x = 0 -> createCollidableTile LeftWall (float32 x) (float32 y)
                 | x, y when x = right -> createCollidableTile RightWall (float32 x) (float32 y)
 
-                | 2, 2 -> createTimerOnGrass (Vector2(2f, 2f)) time
+//                | 2, 2 -> createTimerOnGrass (Vector2(2f, 2f)) time
+                //some kind of goal
                 | _ -> grassTile)
 
         { PlayerStartsAtPos = Vector2(150f, 150f)
@@ -123,6 +132,9 @@ let level2: LevelBuilder =
                 | x, y when y = 0 -> createCollidableTile TopWall (float32 x) (float32 y)
                 | x, y when x = 0 -> createCollidableTile LeftWall (float32 x) (float32 y)
                 | x, y when x = right -> createCollidableTile RightWall (float32 x) (float32 y)
+
+                | 2, 2 -> createRockOnGrass (Vector2(2f,2f)) time
+
                 | _ -> grassTile)
 
         { PlayerStartsAtPos = Vector2(200f, 100f)

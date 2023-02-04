@@ -65,6 +65,7 @@ type Message =
     | PlayerMessage of Player.Message
     | PickUpEntity
     | PlaceEntity
+    | Interact
     | PhysicsTick of time: int64 * slow: bool
     | ChangeLevel of levelBuilder: LevelBuilder
 
@@ -144,9 +145,7 @@ let update (message: Message) (model: Model) : Model * Cmd<Message> =
         | Player.Small _ when player.Carrying.Length + 1 <= playerLimit ->
             option {
                 let! (tile, i) = model.PlayerTarget
-
                 let tiles = model.Tiles |> PersistentVector.update i { tile with Entity = None }
-
                 let! entity = tile.Entity
 
                 return
@@ -157,6 +156,15 @@ let update (message: Message) (model: Model) : Model * Cmd<Message> =
             }
             |> Option.defaultValue (model, Cmd.none)
         | _ -> model, Cmd.none
+    | Interact ->
+        let entity = 
+            option {
+                    let! (tile, _) = model.PlayerTarget
+                    return! tile.Entity
+            }
+
+        // todo interact with entity here pls
+        model, Cmd.none
     | PlaceEntity ->
         match player.CharacterState with
         | Player.Small _ ->
@@ -349,40 +357,14 @@ let viewWorld (model: Model) (worldConfig: WorldConfig) =
                     (actualX, actualY)
                     spriteBatch
                     loadedAssets.textures[(getEmitImage etype).TextureName]
-            | _ -> ()))
-
-let viewPlayer (model: Player.Model) (cameraPos: Vector2) (dispatch: Player.Message -> unit) =
-    seq {
-        //input
-        yield directions Keys.Up Keys.Down Keys.Left Keys.Right (fun f -> dispatch (Player.Input f))
-        // yield directions Keys.W Keys.S Keys.A Keys.D (fun f -> dispatch (Input f))
-        yield onkeydown Keys.Space (fun _ -> dispatch (Player.TransformCharacter))
-        yield onkeydown Keys.LeftControl (fun _ -> dispatch (Player.FreezeMovement true))
-        yield onkeyup Keys.LeftControl (fun _ -> dispatch (Player.FreezeMovement false))
-
-        yield onkeydown Keys.LeftAlt (fun _ -> dispatch (Player.ArrowsControlPlacement true))
-        yield onkeyup Keys.LeftAlt (fun _ -> dispatch (Player.ArrowsControlPlacement false))
-
-        yield onkeydown Keys.A (fun _ -> dispatch (Player.RotatePlacement false))
-        yield onkeydown Keys.S (fun _ -> dispatch (Player.RotatePlacement true))
-
-        //render
-        yield! Sprite.view model.SpriteInfo cameraPos (Player.SpriteMessage >> dispatch)
-        yield! Player.viewCarrying model.Carrying cameraPos model.CharacterState
-
-    //debug
-    //yield
-    //    debugText
-    //        $"pos:{model.Pos.X}  {model.Pos.Y}\ninput:{model.Input.X}  {model.Input.Y} \nfacing:{model.Facing.X}  {model.Facing.Y}"
-    //        (40, 300)
-    //yield renderAABB (collider model.Pos model.CollisionInfo) cameraPos
-    }
+            | _ -> ()))    
 
 let view model (dispatch: Message -> unit) =
     seq {
         // input
         yield onkeydown Keys.Z (fun _ -> dispatch (PickUpEntity))
         yield onkeydown Keys.X (fun _ -> dispatch (PlaceEntity))
+        yield onkeydown Keys.C (fun _ -> dispatch (Interact))
 
         yield onkeydown Keys.OemPeriod (fun _ -> dispatch (ChangeLevel level2))
 
@@ -396,7 +378,7 @@ let view model (dispatch: Message -> unit) =
 
         //rende
         yield viewWorld model worldConfig
-        yield! viewPlayer model.Player (halfScreenOffset model.CameraPos) (PlayerMessage >> dispatch)
+        yield! Player.view model.Player (halfScreenOffset model.CameraPos) (PlayerMessage >> dispatch)
 
     //debug
     //  yield debugText $"running slow?:{model.Slow}" (40, 100)
