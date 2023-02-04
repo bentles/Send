@@ -4,6 +4,7 @@ open Microsoft.Xna.Framework
 open Entity
 open Utility
 open Prelude
+open FSharpx.Collections
 
 // Level primitives
 [<Struct>]
@@ -22,11 +23,16 @@ let defaultTile =
       Collider = None
       Entity = None }
 
-type LevelConfig =
+type Level =
     { PlayerStartsAtPos: Vector2
       PlayerStartsCarrying: Entity.Model list
-      LevelBuilder: unit -> Tile[] }
+      Tiles: PersistentVector<Tile>
+      Size: (int * int)
+      }
 
+type LevelBuilder = int64 -> Level
+
+// helpers
 let createCollidableTile t xx yy =
     { defaultTile with
         FloorType = t
@@ -54,3 +60,51 @@ let createObserverOnGrass (coords: Vector2) time observer : Tile =
     { defaultTile with
         FloorType = FloorType.Grass
         Entity = Some(Entity.init observer pos time FacingRight) }
+
+let level1: LevelBuilder = 
+    fun time ->
+        let width = 10
+        let height = 10
+
+        let tiles =
+            seq {
+                for yy in 0 .. (width) do
+                    for xx in 0 .. (height) do
+                        let grassTile = createNonCollidableTile FloorType.Grass
+                    
+                        match xx, yy with
+                        | 0, 0 -> createNonCollidableTile FloorType.Grass
+                        | 2, 2 -> createTimerOnGrass (Vector2(2f)) time
+                        | _ -> grassTile
+            }
+            |> PersistentVector.ofSeq
+        {
+            PlayerStartsAtPos = Vector2(2f, 2f)
+            PlayerStartsCarrying = []
+            Tiles = tiles
+            Size = (width, height)
+        }
+
+let level2: LevelBuilder = 
+    fun time ->
+        let width = 20
+        let height = 10
+
+        let tiles =
+            seq {
+                for yy in 0 .. (width) do
+                    for xx in 0 .. (height) do
+                        let grassTile = createNonCollidableTile FloorType.Grass
+                    
+                        match xx, yy with
+                        | 0, 0 -> createNonCollidableTile FloorType.Grass
+                        | 2, 2 -> createTimerOnGrass (Vector2(2f)) time
+                        | _ -> grassTile
+            }
+            |> PersistentVector.ofSeq
+        {
+            PlayerStartsAtPos = Vector2(2f, 2f)
+            PlayerStartsCarrying = []
+            Tiles = tiles
+            Size = (width, height)
+        }

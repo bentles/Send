@@ -32,21 +32,24 @@ let posRounded (pos: Vector2) (worldConfig: WorldConfig) =
 
     Vector2(x, y) + Vector2(float32 (worldConfig.TileWidth / 2))
 
-let posToIndex (pos: Vector2) : int =
-    let x, y = posToCoords pos
-    y * worldConfig.WorldTileLength + x
+let toIndex (x: int, y: int) (width: int) = 
+    y * width + x
 
-let coordsOutOfBounds (x: int, y: int) : bool =
-    x >= worldConfig.WorldTileLength
+let posToIndex (pos: Vector2) (width:int) : int =
+    let coords = posToCoords pos
+    toIndex coords width
+
+let coordsOutOfBounds (x: int, y: int)  (width:int, height:int) : bool =
+    x >= width
     || x < 0
-    || y >= worldConfig.WorldTileLength
+    || y >= height
     || y < 0
 
-let coordsToIndex (x: int, y: int) : int option =
-    if coordsOutOfBounds (x, y) then
+let coordsToIndex (x: int, y: int) (width:int, height:int) : int option =
+    if coordsOutOfBounds (x, y) (width, height) then
         None
     else
-        Some(y * worldConfig.WorldTileLength + x)
+        Some(toIndex (x, y) width)
 
 let createColliderFromCoords (xx: float32) (yy: float32) (half: Vector2) =
     { Pos = coordsToPos xx yy half

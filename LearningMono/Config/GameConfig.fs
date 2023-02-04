@@ -7,9 +7,9 @@ let window = Windowed(1600, 900)
 let AcceptableError = 0.001f
 
 type WorldConfig =
-    { TileWidth: int; WorldTileLength: int }
+    { TileWidth: int }
 
-let worldConfig = { TileWidth = 50; WorldTileLength = 50 }
+let worldConfig = { TileWidth = 50 }
 
 type ImageConfig =
     { SpriteSize: int * int

@@ -8,10 +8,11 @@ TODO:
 - prevent transform if carrying limits exceeded
 
 DOING:
-- create a sink of some kind
+- levels and switching between them
 	
 
 DONE:
+- create a sink of some kind
 - entity and reactive are linked but not in the model
 - fix pick up and put down logic
 - finally add the carrying limits for big/small

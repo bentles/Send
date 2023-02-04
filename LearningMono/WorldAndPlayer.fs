@@ -19,6 +19,8 @@ open Prelude
 type Model =
     { Tiles: PersistentVector<Tile>
 
+      Size: int * int
+
       Dt: float32
       Slow: bool
       TimeElapsed: int64
@@ -41,27 +43,17 @@ let getCollidables (tiles: Tile seq) : AABB seq =
             | Some { Collider = collider } -> collider
             | _ -> None)
 
-let getTileAtPos (pos: Vector2) (tiles: PersistentVector<Tile>) : (Tile * int) option =
+let getTileAtPos (pos: Vector2) (size: int * int) (tiles: PersistentVector<Tile>) : (Tile * int) option =
     let coords = posToCoords pos
-    let index = coordsToIndex coords
+    let index = coordsToIndex coords size
     index |> Option.map (fun index -> PersistentVector.nth index tiles, index)
 
 let init (worldConfig: WorldConfig) time =
-    let blocks =
-        seq {
-            for yy in 0 .. (worldConfig.WorldTileLength - 1) do
-                for xx in 0 .. (worldConfig.WorldTileLength - 1) do
-                    let grassTile = createNonCollidableTile FloorType.Grass
-                    
-                    match xx, yy with
-                    | 0, 0 -> createNonCollidableTile FloorType.Grass
-                    | 2, 2 -> createTimerOnGrass (Vector2(2f)) time
-                    | _ -> grassTile
-        }
-        |> PersistentVector.ofSeq // /* createTimerOnGrass (Vector2(float32 x, float32 y)) */ |]
+    let level = level1 time
 
-    { Tiles = blocks
-      Player = Player.init 0 0 playerConfig charSprite time
+    { Tiles = level.Tiles
+      Size = level.Size
+      Player = Player.init level.PlayerStartsAtPos level.PlayerStartsCarrying playerConfig charSprite time
       Slow = false
       Dt = 0f
       PlayerTarget = None
@@ -237,7 +229,7 @@ let update (message: Message) (model: Model) : Model * Cmd<Message> =
 
                     let facing = player.PlacementFacing
 
-                    let entityType = withTarget entity.Type (coordsToIndex at)
+                    let entityType = withTarget entity.Type (coordsToIndex at model.Size)
                     let entity = Entity.init entityType roundedPos model.TimeElapsed facing
                     let sprite, _ = Sprite.update Sprite.StartAnimation entity.Sprite
                     let entity = { entity with Sprite = sprite }
@@ -263,7 +255,7 @@ let update (message: Message) (model: Model) : Model * Cmd<Message> =
               PossibleObstacles = getCollidables model.Tiles }
 
         let player, playerMsg = updatePlayer (Player.PlayerPhysicsTick info) model
-        let tileAndIndex = getTileAtPos player.Target model.Tiles
+        let tileAndIndex = getTileAtPos player.Target model.Size model.Tiles
 
         let tiles = updateWorldReactive model.Tiles
 
@@ -329,9 +321,10 @@ let viewWorld (model: Model) (worldConfig: WorldConfig) =
 
             let startX = 0
             let startY = 0
+            let width, height = model.Size
 
-            let xBlockOffSet = (i % worldConfig.WorldTileLength) * blockWidth
-            let yBlockOffSet = (i / worldConfig.WorldTileLength) * blockWidth
+            let xBlockOffSet = (i % width) * blockWidth
+            let yBlockOffSet = (i / height) * blockWidth
 
             let actualX = startX + xBlockOffSet + int (cameraOffset.X)
             let actualY = startY + yBlockOffSet + int (cameraOffset.Y)

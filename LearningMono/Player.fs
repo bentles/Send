@@ -42,10 +42,8 @@ type Model =
 
       CollisionInfo: CollisionInfo }
 
-let init x y (playerConfig: PlayerConfig) (spriteConfig: SpriteConfig) time =
-    let p = Vector2(float32 x, float32 y)
-
-    { SpriteInfo = Sprite.init p time spriteConfig None None
+let init (pos:Vector2) (carrying: Entity.Model list) (playerConfig: PlayerConfig) (spriteConfig: SpriteConfig) time =
+    { SpriteInfo = Sprite.init pos time spriteConfig None None
       CharacterState = Small true
       Input = Vector2.Zero
       XInputTimeAndDir = -1000, 1f
@@ -55,21 +53,10 @@ let init x y (playerConfig: PlayerConfig) (spriteConfig: SpriteConfig) time =
       MovementFrozen = false
       ArrowsControlPlacement = false
 
-      Carrying =
-          [ Entity.initNoCollider (buildObserver (Filter(rockTimer))) p time FacingRight
-            Entity.initNoCollider (buildObserver (Map(rockTimer))) p time FacingRight
-            Entity.initNoCollider (buildObserver (Filter Rock)) p time FacingRight
-            Entity.initNoCollider (buildObserver Id) p time FacingRight
-            Entity.initNoCollider (buildObserver Id) p time FacingRight
-            Entity.initNoCollider (buildObserver Id) p time FacingRight
-            Entity.initNoCollider (buildObserver Id) p time FacingRight
-            Entity.initNoCollider (buildObserver Id) p time FacingRight
-            Entity.initNoCollider (buildObserver Id) p time FacingRight
-            Entity.initNoCollider (buildObserver Id) p time FacingRight
-            Entity.initNoCollider (buildObserver Id) p time FacingRight ]
+      Carrying = carrying
       Facing = Vector2(1f, 0f)
-      Target = p + 60f * Vector2(1f, 0f)
-      Pos = p
+      Target = pos + 60f * Vector2(1f, 0f)
+      Pos = pos
       MaxVelocity = playerConfig.SmallMaxVelocity
       Acc = playerConfig.Acc
       Friction = playerConfig.Slow
