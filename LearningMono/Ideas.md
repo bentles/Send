@@ -45,3 +45,14 @@ Door:
 	- toggle
 	- single use
 
+
+Can I separate state out so that some changes every frame and some does not???
+
+Levels:
+	Does a world have levels inside it?
+		- easy to implement player switching levels
+	
+	Or does the world get created anew for each level so kind of like world = level??
+		- hard to implement switching levels without listening for level change event
+
+	
