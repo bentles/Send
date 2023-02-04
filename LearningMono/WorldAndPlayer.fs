@@ -48,7 +48,7 @@ let getTileAtPos (pos: Vector2) (size: int * int) (tiles: PersistentVector<Tile>
     let index = coordsToIndex coords size
     index |> Option.map (fun index -> PersistentVector.nth index tiles, index)
 
-let init (worldConfig: WorldConfig) time =
+let init time =
     let level = level1 time
 
     { Tiles = level.Tiles
@@ -66,6 +66,7 @@ type Message =
     | PickUpEntity
     | PlaceEntity
     | PhysicsTick of time: int64 * slow: bool
+    | ChangeLevel of levelBuilder: LevelBuilder
 
 let updateWorldReactive (tiles: PersistentVector<Tile>) : PersistentVector<Tile> =
     tiles
@@ -125,61 +126,6 @@ let updateCameraPos (playerPos: Vector2) (oldCamPos: Vector2) : Vector2 =
     else
         oldCamPos + halfDiff
 
-let updatePlayer (message: Player.Message) (worldModel: Model) =
-    let model = worldModel.Player
-
-    match message with
-    | Player.Input direction -> { model with Input = direction }, Cmd.none
-    | Player.PlayerPhysicsTick info ->
-        let newModel = Player.updatePhysics model info
-        let aniCommands = Player.updateAnimations newModel model
-        newModel, aniCommands
-    | Player.RotatePlacement clock ->
-        { model with PlacementFacing = rotateFacing model.PlacementFacing clock }, Cmd.none
-    | Player.SpriteMessage sm ->
-        let (newSprite, event) = Sprite.update sm model.SpriteInfo
-
-        let model, cmd =
-            match event with
-            | Sprite.AnimationComplete _ ->
-                let (newState, walkAni) = Player.transformComplete model.CharacterState
-
-                let maxVelocity =
-                    match newState with
-                    | Player.Small s when s -> playerConfig.SmallMaxVelocity
-                    | Player.Small s when not s -> playerConfig.BigMaxVelocity
-                    | _ -> model.MaxVelocity
-
-                let modl =
-                    { model with
-                        CharacterState = newState
-                        MaxVelocity = maxVelocity }
-
-                modl,
-                (Cmd.ofMsg << Player.SpriteMessage << Sprite.SwitchAnimation) (walkAni, walkAni.Speed, modl.IsMoving)
-            | Sprite.AnimationLooped _
-            | Sprite.None -> model, Cmd.none
-
-        { model with SpriteInfo = newSprite }, cmd
-    | Player.CarryingMessage sm ->
-        let newCarrying =
-            model.Carrying
-            |> List.map (fun carry ->
-                let (newSprite, _) = Sprite.update sm carry.Sprite
-                { carry with Sprite = newSprite })
-
-        { model with Carrying = newCarrying }, Cmd.none
-    | Player.TransformCharacter ->
-        let (newState, transformAnimation) = Player.transformStart model.CharacterState
-
-        { model with CharacterState = newState },
-        (Cmd.ofMsg << Player.SpriteMessage << Sprite.SwitchAnimation) (transformAnimation, 100, true)
-    | Player.FreezeMovement holding -> { model with MovementFrozen = holding }, Cmd.none
-    | Player.ArrowsControlPlacement theyDo ->
-        { model with
-            MovementFrozen = theyDo
-            ArrowsControlPlacement = theyDo },
-        Cmd.none
 
 
 let mutable lastTick = 0L // we use a mutable tick counter here in order to ensure precision
@@ -189,7 +135,7 @@ let update (message: Message) (model: Model) : Model * Cmd<Message> =
 
     match message with
     | PlayerMessage playerMsg ->
-        let (newPlayerModel, playerCommand) = updatePlayer playerMsg model
+        let (newPlayerModel, playerCommand) = Player.update playerMsg model.Player
         { model with Player = newPlayerModel }, Cmd.map PlayerMessage playerCommand
     | PickUpEntity ->
         let playerLimit = Player.getPlayerPickupLimit player.CharacterState
@@ -244,7 +190,6 @@ let update (message: Message) (model: Model) : Model * Cmd<Message> =
             | _ -> model, Cmd.none
         | _ -> model, Cmd.none
     | PhysicsTick(time, slow) ->
-        //TODO: get a list of things the player could interact with
         let dt = (float32 (time - lastTick)) / 1000f
         lastTick <- time
 
@@ -253,12 +198,12 @@ let update (message: Message) (model: Model) : Model * Cmd<Message> =
               Dt = dt
               PossibleObstacles = getCollidables model.Tiles }
 
-        let player, playerMsg = updatePlayer (Player.PlayerPhysicsTick info) model
+        let player, playerMsg = Player.update (Player.PlayerPhysicsTick info) model.Player
         let tileAndIndex = getTileAtPos player.Target model.Size model.Tiles
 
         let tiles = updateWorldReactive model.Tiles
 
-        //TODO: move this outside??
+        //TODO: move this outside if update ticks < 60ps
         let tiles = updateWorldSprites time tiles
 
         let newCameraPos = updateCameraPos player.Pos model.CameraPos
@@ -272,6 +217,13 @@ let update (message: Message) (model: Model) : Model * Cmd<Message> =
             Player = player
             PlayerTarget = tileAndIndex },
         Cmd.batch [ Cmd.map PlayerMessage playerMsg ]
+    | ChangeLevel levelBuilder ->
+        let newLevel = levelBuilder model.TimeElapsed
+        { model with
+            Size = newLevel.Size
+            Tiles = newLevel.Tiles
+            Player = { model.Player with Pos = newLevel.PlayerStartsAtPos; Carrying = newLevel.PlayerStartsCarrying }
+        }, Cmd.none
 
 // VIEW
 
@@ -435,6 +387,5 @@ let view model (dispatch: Message -> unit) =
         yield! viewPlayer model.Player (halfScreenOffset model.CameraPos) (PlayerMessage >> dispatch)
 
     //debug
-    // ok this is a complete lie since the timestep is fixed
     //  yield debugText $"running slow?:{model.Slow}" (40, 100)
     }

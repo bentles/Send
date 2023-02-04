@@ -8,7 +8,7 @@ type Model = { World: World.Model
     }
 
 let init () =
-    { World = (World.init worldConfig 0)
+    { World = (World.init 0)
       TimeElapsed = 0
     }, Cmd.none
 

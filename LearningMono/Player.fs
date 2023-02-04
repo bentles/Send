@@ -233,6 +233,62 @@ let transformComplete (characterState: State) =
     | Small true -> Small true, CharAnimations.SmallWalk
     | Small false -> Small false, CharAnimations.BigWalk
 
+
+let update (message: Message) (model: Model) =
+    match message with
+    | Input direction -> { model with Input = direction }, Cmd.none
+    | PlayerPhysicsTick info ->
+        let newModel = updatePhysics model info
+        let aniCommands = updateAnimations newModel model
+        newModel, aniCommands
+    | RotatePlacement clock ->
+        { model with PlacementFacing = rotateFacing model.PlacementFacing clock }, Cmd.none
+    | SpriteMessage sm ->
+        let (newSprite, event) = Sprite.update sm model.SpriteInfo
+
+        let model, cmd =
+            match event with
+            | Sprite.AnimationComplete _ ->
+                let (newState, walkAni) = transformComplete model.CharacterState
+
+                let maxVelocity =
+                    match newState with
+                    | Small s when s -> playerConfig.SmallMaxVelocity
+                    | Small s when not s -> playerConfig.BigMaxVelocity
+                    | _ -> model.MaxVelocity
+
+                let modl =
+                    { model with
+                        CharacterState = newState
+                        MaxVelocity = maxVelocity }
+
+                modl,
+                (Cmd.ofMsg << SpriteMessage << Sprite.SwitchAnimation) (walkAni, walkAni.Speed, modl.IsMoving)
+            | Sprite.AnimationLooped _
+            | Sprite.None -> model, Cmd.none
+
+        { model with SpriteInfo = newSprite }, cmd
+    | CarryingMessage sm ->
+        let newCarrying =
+            model.Carrying
+            |> List.map (fun carry ->
+                let (newSprite, _) = Sprite.update sm carry.Sprite
+                { carry with Sprite = newSprite })
+
+        { model with Carrying = newCarrying }, Cmd.none
+    | TransformCharacter ->
+        let (newState, transformAnimation) = transformStart model.CharacterState
+
+        { model with CharacterState = newState },
+        (Cmd.ofMsg << SpriteMessage << Sprite.SwitchAnimation) (transformAnimation, 100, true)
+    | FreezeMovement holding -> { model with MovementFrozen = holding }, Cmd.none
+    | ArrowsControlPlacement theyDo ->
+        { model with
+            MovementFrozen = theyDo
+            ArrowsControlPlacement = theyDo },
+        Cmd.none
+
+
 let viewCarrying (carrying: Entity.Model list) (cameraPos: Vector2) (charState: State) =
     let offsetStart =
         match charState with
