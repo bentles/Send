@@ -44,7 +44,7 @@ let getCollidables (tiles: Tile seq) : AABB seq =
             | _ -> None)
 
 let getTileAtPos (pos: Vector2) (size: int * int) (tiles: PersistentVector<Tile>) : (Tile * int) option =
-    let coords = posToCoords pos
+    let coords = vectorToCoords pos
     let index = coordsToIndex coords size
     index |> Option.map (fun index -> PersistentVector.nth index tiles, index)
 
@@ -59,7 +59,6 @@ let init (worldConfig: WorldConfig) time =
       PlayerTarget = None
       TimeElapsed = 0
       CameraPos = Vector2(0f, -0f) }
-
 
 // UPDATE
 type Message =
@@ -223,7 +222,7 @@ let update (message: Message) (model: Model) : Model * Cmd<Message> =
                 | entity :: rest ->
                     //make a targeting function
                     let roundedPos = posRounded player.Target worldConfig
-                    let (x, y) = posToCoords roundedPos
+                    let (x, y) = vectorToCoords roundedPos
                     let xface, yface = facingToCoords player.PlacementFacing
                     let at = (x + xface, y + yface)
 
@@ -321,10 +320,10 @@ let viewWorld (model: Model) (worldConfig: WorldConfig) =
 
             let startX = 0
             let startY = 0
-            let width, height = model.Size
+            let width, _ = model.Size
 
             let xBlockOffSet = (i % width) * blockWidth
-            let yBlockOffSet = (i / height) * blockWidth
+            let yBlockOffSet = (i / width) * blockWidth
 
             let actualX = startX + xBlockOffSet + int (cameraOffset.X)
             let actualY = startY + yBlockOffSet + int (cameraOffset.Y)

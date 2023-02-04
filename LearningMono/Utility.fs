@@ -6,19 +6,19 @@ open Xelmish.Viewables
 open Prelude
 open GameConfig
 
-let coordsToPos (xx: float32) (yy: float32) (half: Vector2) =
+let coordsToVector (x: float32) (y: float32) (half: Vector2) =
     let startX = 0f
     let startY = 0f
 
-    let xBlockOffSet = float32 (xx * float32 worldConfig.TileWidth)
-    let yBlockOffSet = float32 (yy * float32 worldConfig.TileWidth)
+    let xBlockOffSet = float32 (x * float32 worldConfig.TileWidth)
+    let yBlockOffSet = float32 (y * float32 worldConfig.TileWidth)
 
     let actualX = startX + xBlockOffSet + half.X
     let actualY = startY + yBlockOffSet + half.Y
 
     Vector2(actualX, actualY)
 
-let posToCoords (pos: Vector2) : (int * int) =
+let vectorToCoords (pos: Vector2) : (int * int) =
     let x = int (pos.X / float32 worldConfig.TileWidth)
     let y = int (pos.Y / float32 worldConfig.TileWidth)
     (x, y)
@@ -36,7 +36,7 @@ let toIndex (x: int, y: int) (width: int) =
     y * width + x
 
 let posToIndex (pos: Vector2) (width:int) : int =
-    let coords = posToCoords pos
+    let coords = vectorToCoords pos
     toIndex coords width
 
 let coordsOutOfBounds (x: int, y: int)  (width:int, height:int) : bool =
@@ -52,7 +52,7 @@ let coordsToIndex (x: int, y: int) (width:int, height:int) : int option =
         Some(toIndex (x, y) width)
 
 let createColliderFromCoords (xx: float32) (yy: float32) (half: Vector2) =
-    { Pos = coordsToPos xx yy half
+    { Pos = coordsToVector xx yy half
       Half = half }
 
 let imageWithSource

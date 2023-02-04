@@ -41,7 +41,7 @@ let createCollidableTile t xx yy =
 let createNonCollidableTile t = { defaultTile with FloorType = t }
 
 let createTimerOnGrass (coords: Vector2) time =
-    let pos = coordsToPos coords.X coords.Y half
+    let pos = coordsToVector coords.X coords.Y half
 
     let subject =
         Entity.Subject
@@ -55,7 +55,7 @@ let createTimerOnGrass (coords: Vector2) time =
         Entity = Some(Entity.init subject pos time FacingRight) }
 
 let createObserverOnGrass (coords: Vector2) time observer : Tile =
-    let pos = coordsToPos coords.X coords.Y half
+    let pos = coordsToVector coords.X coords.Y half
 
     { defaultTile with
         FloorType = FloorType.Grass
@@ -63,13 +63,13 @@ let createObserverOnGrass (coords: Vector2) time observer : Tile =
 
 let level1: LevelBuilder = 
     fun time ->
-        let width = 10
+        let width = 20
         let height = 10
 
         let tiles =
             seq {
-                for yy in 0 .. (width) do
-                    for xx in 0 .. (height) do
+                for yy in 0 .. (width - 1) do
+                    for xx in 0 .. (height - 1) do
                         let grassTile = createNonCollidableTile FloorType.Grass
                     
                         match xx, yy with
@@ -92,8 +92,8 @@ let level2: LevelBuilder =
 
         let tiles =
             seq {
-                for yy in 0 .. (width) do
-                    for xx in 0 .. (height) do
+                for yy in 0 .. (width - 1) do
+                    for xx in 0 .. (height - 1) do
                         let grassTile = createNonCollidableTile FloorType.Grass
                     
                         match xx, yy with
