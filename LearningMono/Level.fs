@@ -11,6 +11,11 @@ open FSharpx.Collections
 type FloorType =
     | Empty
     | Grass
+    | Wall
+    | TopWall
+    | BottomWall
+    | LeftWall
+    | RightWall
 
 [<Struct>]
 type Tile =
@@ -32,10 +37,10 @@ type Level =
 type LevelBuilder = int64 -> Level
 
 // helpers
-let createCollidableTile t xx yy =
+let createCollidableTile t x y =
     { defaultTile with
         FloorType = t
-        Collider = Some(createColliderFromCoords xx yy half) }
+        Collider = Some(createColliderFromCoords x y half) }
 
 let createNonCollidableTile t = { defaultTile with FloorType = t }
 
@@ -70,19 +75,29 @@ let iterWorld (width: int, height: int) (func: (int * int) -> Tile) : Persistent
 
 let level1: LevelBuilder =
     fun time ->
-        let width = 20
+        let width = 10
         let height = 10
 
         let grassTile = createNonCollidableTile FloorType.Grass
 
         let tiles =
             iterWorld (width, height) (fun (x, y) ->
+                let bottom = height - 1
+                let right = width - 1 
                 match x, y with
-                | 0, 0 -> createNonCollidableTile FloorType.Grass
+                | x, y when y = 0 && x = 0 -> createCollidableTile Wall (float32 x) (float32 y)
+                | x, y when y = bottom && x = right -> createCollidableTile Wall (float32 x) (float32 y)
+                | x, y when y = 0 && x = right -> createCollidableTile Wall (float32 x) (float32 y)
+                | x, y when y = bottom && x = 0 -> createCollidableTile Wall (float32 x) (float32 y)
+                | x, y when y = bottom -> createCollidableTile BottomWall (float32 x) (float32 y)
+                | x, y when y = 0 -> createCollidableTile TopWall (float32 x) (float32 y)
+                | x, y when x = 0 -> createCollidableTile LeftWall (float32 x) (float32 y)
+                | x, y when x = right -> createCollidableTile RightWall (float32 x) (float32 y)
+
                 | 2, 2 -> createTimerOnGrass (Vector2(2f, 2f)) time
                 | _ -> grassTile)
 
-        { PlayerStartsAtPos = Vector2(2f, 2f)
+        { PlayerStartsAtPos = Vector2(150f, 150f)
           PlayerStartsCarrying = []
           Tiles = tiles
           Size = (width, height) }
@@ -90,18 +105,27 @@ let level1: LevelBuilder =
 let level2: LevelBuilder =
     fun time ->
         let width = 10
-        let height = 20
+        let height = 10
 
         let grassTile = createNonCollidableTile FloorType.Grass
 
         let tiles =
             iterWorld (width, height) (fun (x, y) ->
+                let bottom = height - 1
+                let right = width - 1 
+
                 match x, y with
-                | 0, 0 -> createNonCollidableTile FloorType.Grass
-                | 2, 2 -> createTimerOnGrass (Vector2(2f, 2f)) time
+                | x, y when y = 0 && x = 0 -> createCollidableTile Wall (float32 x) (float32 y)
+                | x, y when y = bottom && x = right -> createCollidableTile Wall (float32 x) (float32 y)
+                | x, y when y = 0 && x = right -> createCollidableTile Wall (float32 x) (float32 y)
+                | x, y when y = bottom && x = 0 -> createCollidableTile Wall (float32 x) (float32 y)
+                | x, y when y = bottom -> createCollidableTile BottomWall (float32 x) (float32 y)
+                | x, y when y = 0 -> createCollidableTile TopWall (float32 x) (float32 y)
+                | x, y when x = 0 -> createCollidableTile LeftWall (float32 x) (float32 y)
+                | x, y when x = right -> createCollidableTile RightWall (float32 x) (float32 y)
                 | _ -> grassTile)
 
-        { PlayerStartsAtPos = Vector2(2f, 2f)
+        { PlayerStartsAtPos = Vector2(200f, 100f)
           PlayerStartsCarrying = []
           Tiles = tiles
           Size = (width, height) }

@@ -256,6 +256,11 @@ let viewWorld (model: Model) (worldConfig: WorldConfig) =
     let blockWidth = worldConfig.TileWidth
     let empty = "tile"
     let grass = "grass"
+    let wall = "wall"
+    let leftWall = "leftWall"
+    let rightWall = "rightWall"
+    let topWall = "topWall"
+    let bottomWall = "bottomWall"
 
     let sourceRect = rect 0 0 blockWidth blockWidth
     let cameraOffset = -(halfScreenOffset model.CameraPos)
@@ -269,6 +274,11 @@ let viewWorld (model: Model) (worldConfig: WorldConfig) =
                 match tile.FloorType with
                 | FloorType.Grass -> grass
                 | FloorType.Empty -> empty
+                | FloorType.Wall -> wall
+                | FloorType.LeftWall -> leftWall
+                | FloorType.RightWall -> rightWall
+                | FloorType.TopWall -> topWall
+                | FloorType.BottomWall -> bottomWall
 
             let startX = 0
             let startY = 0
@@ -373,6 +383,8 @@ let view model (dispatch: Message -> unit) =
         // input
         yield onkeydown Keys.Z (fun _ -> dispatch (PickUpEntity))
         yield onkeydown Keys.X (fun _ -> dispatch (PlaceEntity))
+
+        yield onkeydown Keys.OemPeriod (fun _ -> dispatch (ChangeLevel level2))
 
         yield
             onupdate (fun input ->

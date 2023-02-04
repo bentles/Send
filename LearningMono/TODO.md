@@ -12,6 +12,7 @@ TODO:
 
 DOING:
 - levels and switching between them
+	- levels need borders
 	
 
 DONE:

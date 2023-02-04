@@ -46,6 +46,11 @@ let main _ =
               PipelineTexture("facingRight", "./content/sprites/tile/FacingRight")
               PipelineTexture("tile", "./content/sprites/tile/Tile")
               PipelineTexture("grass", "./content/sprites/tile/Grass")
+              PipelineTexture("wall", "./content/sprites/tile/Wall")
+              PipelineTexture("topWall", "./content/sprites/tile/TopWall")
+              PipelineTexture("leftWall", "./content/sprites/tile/leftWall")
+              PipelineTexture("rightWall", "./content/sprites/tile/rightWall")
+              PipelineTexture("bottomWall", "./content/sprites/tile/bottomWall")
 
               //entities
               PipelineTexture("bigChar", "./content/sprites/entity/BigChar")
