@@ -312,11 +312,8 @@ let view (model: Model) (cameraPos: Vector2) (dispatch: Message -> unit) =
         yield onkeydown Keys.LeftControl (fun _ -> dispatch (FreezeMovement true))
         yield onkeyup Keys.LeftControl (fun _ -> dispatch (FreezeMovement false))
 
-        yield onkeydown Keys.LeftAlt (fun _ -> dispatch (ArrowsControlPlacement true))
-        yield onkeyup Keys.LeftAlt (fun _ -> dispatch (ArrowsControlPlacement false))
-
-        yield onkeydown Keys.A (fun _ -> dispatch (RotatePlacement false))
-        yield onkeydown Keys.S (fun _ -> dispatch (RotatePlacement true))
+        yield onkeydown Keys.LeftShift (fun _ -> dispatch (ArrowsControlPlacement true))
+        yield onkeyup Keys.LeftShift (fun _ -> dispatch (ArrowsControlPlacement false))
 
         //render
         yield! Sprite.view model.SpriteInfo cameraPos (SpriteMessage >> dispatch)

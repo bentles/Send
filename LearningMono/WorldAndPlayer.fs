@@ -390,9 +390,9 @@ let viewWorld (model: Model) (worldConfig: WorldConfig) =
 let view model (dispatch: Message -> unit) =
     seq {
         // input
-        yield onkeydown Keys.Z (fun _ -> dispatch (PickUpEntity))
-        yield onkeydown Keys.X (fun _ -> dispatch (PlaceEntity))
-        yield onkeydown Keys.C (fun _ -> dispatch (Interact))
+        yield onkeydown Keys.X (fun _ -> dispatch (PickUpEntity))
+        yield onkeydown Keys.C (fun _ -> dispatch (PlaceEntity))
+        yield onkeydown Keys.Z (fun _ -> dispatch (Interact))
 
         yield onkeydown Keys.OemPeriod (fun _ -> dispatch (ChangeLevel level2))
 
