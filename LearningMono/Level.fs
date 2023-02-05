@@ -44,12 +44,12 @@ let createCollidableTile t x y =
 
 let createNonCollidableTile t = { defaultTile with FloorType = t }
 
-let createEntityOnGrass (entityType: EntityType) (coords: Vector2) time =
+let createEntityOnGrass (entityType: EntityType) (coords: Vector2) time (canBePickedUp: bool) =
     let pos = coordsToVector coords.X coords.Y half
 
     { defaultTile with
         FloorType = FloorType.Grass
-        Entity = Some(Entity.init entityType pos time FacingRight) }
+        Entity = Some(Entity.init entityType pos time FacingRight canBePickedUp) }
 
 let createRockOnGrass (coords: Vector2) time = createEntityOnGrass Rock coords time
 
@@ -68,7 +68,7 @@ let createObserverOnGrass (coords: Vector2) time observer : Tile =
 
     { defaultTile with
         FloorType = FloorType.Grass
-        Entity = Some(Entity.init observer pos time FacingRight) }
+        Entity = Some(Entity.init observer pos time FacingRight true) }
 
 let iterWorld (width: int, height: int) (func: (int * int) -> Tile) : PersistentVector<Tile> =
     seq {
@@ -100,7 +100,7 @@ let level1: LevelBuilder =
                 | x, y when x = 0 -> createCollidableTile LeftWall (float32 x) (float32 y)
                 | x, y when x = right -> createCollidableTile RightWall (float32 x) (float32 y)
 
-                | 8, 8 -> createEntityOnGrass (GoToLevelButton L2) (Vector2(8f, 8f)) time
+                | 8, 8 -> createEntityOnGrass (GoToLevelButton L2) (Vector2(8f, 8f)) time false
                 //some kind of goal
                 | _ -> grassTile)
 
@@ -131,7 +131,7 @@ let level2: LevelBuilder =
                 | x, y when x = 0 -> createCollidableTile LeftWall (float32 x) (float32 y)
                 | x, y when x = right -> createCollidableTile RightWall (float32 x) (float32 y)
 
-                | 2, 2 -> createRockOnGrass (Vector2(2f, 2f)) time
+                | 2, 2 -> createRockOnGrass (Vector2(2f, 2f)) time true
 
                 | _ -> grassTile)
 

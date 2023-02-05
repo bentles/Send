@@ -150,14 +150,16 @@ let update (message: Message) (model: Model) : Model * Cmd<Message> =
         | Player.Small _ when player.Carrying.Length + 1 <= playerLimit ->
             option {
                 let! (tile, i) = model.PlayerTarget
-                let tiles = model.Tiles |> PersistentVector.update i { tile with Entity = None }
                 let! entity = tile.Entity
-
-                return
-                    { model with
-                        Tiles = tiles
-                        Player = { player with Carrying = entity :: player.Carrying } },
-                    Cmd.none
+                if entity.CanBePickedUp then
+                    let tiles = model.Tiles |> PersistentVector.update i { tile with Entity = None }
+                    return
+                        { model with
+                            Tiles = tiles
+                            Player = { player with Carrying = entity :: player.Carrying } },
+                        Cmd.none
+                else
+                    return! None
             }
             |> Option.defaultValue (model, Cmd.none)
         | _ -> model, Cmd.none
@@ -194,7 +196,7 @@ let update (message: Message) (model: Model) : Model * Cmd<Message> =
                     let facing = player.PlacementFacing
 
                     let entityType = withTarget entity.Type (coordsToIndex at model.Size)
-                    let entity = Entity.init entityType roundedPos model.TimeElapsed facing
+                    let entity = Entity.init entityType roundedPos model.TimeElapsed facing true
                     let sprite, _ = Sprite.update Sprite.StartAnimation entity.Sprite
                     let entity = { entity with Sprite = sprite }
 
@@ -285,9 +287,8 @@ let viewWorld (model: Model) (worldConfig: WorldConfig) =
     let cameraOffset = -(halfScreenOffset model.CameraPos)
 
     OnDraw(fun loadedAssets _ (spriteBatch: SpriteBatch) ->
-        seq { 0 .. (model.Tiles.Length - 1) }
-        |> Seq.iter (fun i ->
-            let tile = model.Tiles[i]
+        model.Tiles |> PersistentVector.toSeq
+        |> Seq.iteri (fun i tile ->
 
             let texture =
                 match tile.FloorType with

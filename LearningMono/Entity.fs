@@ -54,6 +54,7 @@ and SubjectData =
 type Model =
     { Sprite: Sprite.Model
       Collider: AABB option
+      CanBePickedUp: bool
       Facing: Facing
       Type: EntityType }
 
@@ -209,7 +210,7 @@ let getSubjectFunc (sub: SubjectType) =
     match sub with
     | Timer(box, time) -> buildRepeatListEmittingEvery box time
 
-let init (entityType: EntityType) (pos: Vector2) (time) (facing: Facing) =
+let init (entityType: EntityType) (pos: Vector2) (time) (facing: Facing) (canBePickedUp: bool) =
     let config = (getSpriteConfig entityType)
     let rowsLastIndex = (getTotalRows config) - 1
 
@@ -228,12 +229,14 @@ let init (entityType: EntityType) (pos: Vector2) (time) (facing: Facing) =
     { Type = entityType
       Sprite = sprite
       Facing = facing
+      CanBePickedUp = canBePickedUp
       Collider = collider }
 
-let initNoCollider (entityType: EntityType) (pos: Vector2) time (facing: Facing) =
+let initNoCollider (entityType: EntityType) (pos: Vector2) time (facing: Facing) (canBePickedUp: bool) =
     { Type = entityType
       Sprite = Sprite.init pos time (getSpriteConfig entityType) None None
       Facing = facing
+      CanBePickedUp = canBePickedUp
       Collider = None }
 
 let withTarget (entityType: EntityType) (target: int option) =
