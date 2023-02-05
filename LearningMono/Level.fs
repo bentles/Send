@@ -28,13 +28,13 @@ let defaultTile =
       Collider = None
       Entity = None }
 
-type Level =
+type LevelData =
     { PlayerStartsAtPos: Vector2
       PlayerStartsCarrying: Entity.Model list
       Tiles: PersistentVector<Tile>
       Size: (int * int) }
 
-type LevelBuilder = int64 -> Level
+type LevelBuilder = int64 -> LevelData
 
 // helpers
 let createCollidableTile t x y =
@@ -44,27 +44,24 @@ let createCollidableTile t x y =
 
 let createNonCollidableTile t = { defaultTile with FloorType = t }
 
-let createRockOnGrass (coords: Vector2) time =
+let createEntityOnGrass (entityType: EntityType) (coords: Vector2) time =
     let pos = coordsToVector coords.X coords.Y half
 
     { defaultTile with
         FloorType = FloorType.Grass
-        Entity = Some(Entity.init Rock pos time FacingRight) }
+        Entity = Some(Entity.init entityType pos time FacingRight) }
+
+let createRockOnGrass (coords: Vector2) time = createEntityOnGrass Rock coords time
 
 let createTimerOnGrass (coords: Vector2) time =
-    let pos = coordsToVector coords.X coords.Y half
-
-    let subject =
-        Entity.Subject
+    createEntityOnGrass
+        (Entity.Subject
             { Type = Entity.Timer([ Rock; buildObserver Id; buildObserver (Map Rock); rockTimer ], 60)
               TicksSinceEmit = 0
               GenerationNumber = 0
-              ToEmit = Nothing }
-
-    { defaultTile with
-        FloorType = FloorType.Grass
-        Entity = Some(Entity.init subject pos time FacingRight) }
-
+              ToEmit = Nothing })
+        coords
+        time
 
 let createObserverOnGrass (coords: Vector2) time observer : Tile =
     let pos = coordsToVector coords.X coords.Y half
@@ -91,7 +88,8 @@ let level1: LevelBuilder =
         let tiles =
             iterWorld (width, height) (fun (x, y) ->
                 let bottom = height - 1
-                let right = width - 1 
+                let right = width - 1
+
                 match x, y with
                 | x, y when y = 0 && x = 0 -> createCollidableTile Wall (float32 x) (float32 y)
                 | x, y when y = bottom && x = right -> createCollidableTile Wall (float32 x) (float32 y)
@@ -102,7 +100,7 @@ let level1: LevelBuilder =
                 | x, y when x = 0 -> createCollidableTile LeftWall (float32 x) (float32 y)
                 | x, y when x = right -> createCollidableTile RightWall (float32 x) (float32 y)
 
-//                | 2, 2 -> createTimerOnGrass (Vector2(2f, 2f)) time
+                | 8, 8 -> createEntityOnGrass (GoToLevelButton L2) (Vector2(8f, 8f)) time
                 //some kind of goal
                 | _ -> grassTile)
 
@@ -121,7 +119,7 @@ let level2: LevelBuilder =
         let tiles =
             iterWorld (width, height) (fun (x, y) ->
                 let bottom = height - 1
-                let right = width - 1 
+                let right = width - 1
 
                 match x, y with
                 | x, y when y = 0 && x = 0 -> createCollidableTile Wall (float32 x) (float32 y)
@@ -133,7 +131,7 @@ let level2: LevelBuilder =
                 | x, y when x = 0 -> createCollidableTile LeftWall (float32 x) (float32 y)
                 | x, y when x = right -> createCollidableTile RightWall (float32 x) (float32 y)
 
-                | 2, 2 -> createRockOnGrass (Vector2(2f,2f)) time
+                | 2, 2 -> createRockOnGrass (Vector2(2f, 2f)) time
 
                 | _ -> grassTile)
 
@@ -141,3 +139,9 @@ let level2: LevelBuilder =
           PlayerStartsCarrying = []
           Tiles = tiles
           Size = (width, height) }
+
+
+let levelLookup (level: Level) : LevelBuilder =
+    match level with
+    | L1 -> level1
+    | L2 -> level2

@@ -13,6 +13,13 @@ type Emit<'a> =
     | Nothing
 
 [<Struct>]
+type InteractionEvent =
+    | GoToLevel of Level
+    | NoEvent
+//  | Menu for to configure the things
+//  | Change the state of the thing
+
+[<Struct>]
 type SubjectType = Timer of BoxType * int
 
 and BoxType = EntityType list
@@ -25,6 +32,7 @@ and ObservableType =
 
 and EntityType =
     | Rock
+    | GoToLevelButton of Level
     | Box of BoxType
     | Subject of SubjectData
     | Observable of ObservableData
@@ -52,6 +60,7 @@ type Model =
 let getSpriteConfig (eType: EntityType) : SpriteConfig =
     match eType with
     | Rock -> rockSpriteConfig
+    | GoToLevelButton _ -> nextLevelSpriteConfig
     | Box _ -> rockSpriteConfig
     | Subject _ -> timerSpriteConfig
     | Observable { Type = ob } ->
@@ -64,6 +73,7 @@ let getSpriteConfig (eType: EntityType) : SpriteConfig =
 let getEmitImage (eType: EntityType) =
     match eType with
     | Rock -> rockImage
+    | GoToLevelButton _ -> nextLevelImage
     | Box _ -> rockImage
     | Subject _ -> timerImage
     | Observable { Type = ob } ->
@@ -83,12 +93,13 @@ let rec entityEq (e1: EntityType) (e2: EntityType) =
     | Subject { Type = Timer _ }, Subject { Type = Timer _ } -> true
     | _, _ -> false
 
-let getCollider (eType: EntityType) (pos: Vector2) : AABB =
+let getCollider (eType: EntityType) (pos: Vector2) : AABB option =
     match eType with
+    | GoToLevelButton _ -> None
     | Rock
     | Subject _
     | Box _
-    | Observable _ -> { Pos = pos; Half = Vector2(10f, 10f) }
+    | Observable _ -> Some { Pos = pos; Half = Vector2(10f, 10f) }
 
 let (|Emittinged|_|) (emit: Emit<'a>) =
     match emit with
@@ -217,7 +228,7 @@ let init (entityType: EntityType) (pos: Vector2) (time) (facing: Facing) =
     { Type = entityType
       Sprite = sprite
       Facing = facing
-      Collider = Some collider }
+      Collider = collider }
 
 let initNoCollider (entityType: EntityType) (pos: Vector2) time (facing: Facing) =
     { Type = entityType
@@ -255,3 +266,9 @@ let buildObserver (oType: ObservableType) = buildObserverObserving oType None No
 
 let tileHalf = float32 (worldConfig.TileWidth / 2)
 let half = Vector2(tileHalf)
+
+
+let interact (entity: Model): Model * InteractionEvent = 
+    match entity.Type with
+    | GoToLevelButton l -> entity, InteractionEvent.GoToLevel l
+    | _ -> entity, InteractionEvent.NoEvent

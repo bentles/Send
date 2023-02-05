@@ -127,7 +127,12 @@ let updateCameraPos (playerPos: Vector2) (oldCamPos: Vector2) : Vector2 =
     else
         oldCamPos + halfDiff
 
-
+let mapEntityEventToCommand (event:Entity.InteractionEvent): Cmd<Message> = 
+    match event with
+    | GoToLevel l -> 
+        let newLevel = levelLookup l
+        Cmd.ofMsg (ChangeLevel newLevel)
+    | NoEvent -> Cmd.none        
 
 let mutable lastTick = 0L // we use a mutable tick counter here in order to ensure precision
 
@@ -157,14 +162,20 @@ let update (message: Message) (model: Model) : Model * Cmd<Message> =
             |> Option.defaultValue (model, Cmd.none)
         | _ -> model, Cmd.none
     | Interact ->
-        let entity = 
+        let maybeUpdate = 
             option {
-                    let! (tile, _) = model.PlayerTarget
-                    return! tile.Entity
+                    let! (tile, i) = model.PlayerTarget
+                    let! entity = tile.Entity
+                    let newEntity, event = Entity.interact entity
+                    let cmd = mapEntityEventToCommand event
+                    let tiles = model.Tiles |> PersistentVector.update i { tile with Entity = Some newEntity }
+                    return tiles, cmd
             }
 
-        // todo interact with entity here pls
-        model, Cmd.none
+        match maybeUpdate with
+        | None -> model, Cmd.none
+        | Some (tiles, cmd) -> 
+            { model with Tiles = tiles }, cmd        
     | PlaceEntity ->
         match player.CharacterState with
         | Player.Small _ ->

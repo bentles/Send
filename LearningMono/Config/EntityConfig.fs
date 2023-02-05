@@ -28,6 +28,11 @@ let rockImage =
       TextureName = "rock"
       Offset = Vector2(0f, 0f) }
 
+let nextLevelImage = 
+    { rockImage 
+      with TextureName = "nextLevel"
+    }
+
 //entities
 let timerSpriteConfig =
     AnimatedSpriteConfig
@@ -54,4 +59,10 @@ let rockSpriteConfig =
     SingleSpriteConfig
         { Image = rockImage
           Tint = Color.White
+          FrameLength = 300L }
+
+let nextLevelSpriteConfig =
+    SingleSpriteConfig
+        { Image = nextLevelImage
+          Tint = Color.LawnGreen
           FrameLength = 300L }

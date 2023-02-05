@@ -48,9 +48,9 @@ let main _ =
               PipelineTexture("grass", "./content/sprites/tile/Grass")
               PipelineTexture("wall", "./content/sprites/tile/Wall")
               PipelineTexture("topWall", "./content/sprites/tile/TopWall")
-              PipelineTexture("leftWall", "./content/sprites/tile/leftWall")
-              PipelineTexture("rightWall", "./content/sprites/tile/rightWall")
-              PipelineTexture("bottomWall", "./content/sprites/tile/bottomWall")
+              PipelineTexture("leftWall", "./content/sprites/tile/LeftWall")
+              PipelineTexture("rightWall", "./content/sprites/tile/RightWall")
+              PipelineTexture("bottomWall", "./content/sprites/tile/BottomWall")
 
               //entities
               PipelineTexture("bigChar", "./content/sprites/entity/BigChar")
@@ -60,6 +60,7 @@ let main _ =
               PipelineTexture("map", "./content/sprites/entity/Map")
               PipelineTexture("filter", "./content/sprites/entity/Filter")
               PipelineTexture("timer", "./content/sprites/entity/Timer")
+              PipelineTexture("nextLevel", "./content/sprites/entity/NextLevel")
 
               //fonts
               PipelineFont("defaultFont", "./content/SourceCodePro") ]

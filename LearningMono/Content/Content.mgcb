@@ -68,6 +68,18 @@
 /processorParam:TextureFormat=Color
 /build:sprites/entity/Map.png
 
+#begin sprites/entity/NextLevel.png
+/importer:TextureImporter
+/processor:TextureProcessor
+/processorParam:ColorKeyColor=255,0,255,255
+/processorParam:ColorKeyEnabled=True
+/processorParam:GenerateMipmaps=False
+/processorParam:PremultiplyAlpha=True
+/processorParam:ResizeToPowerOfTwo=False
+/processorParam:MakeSquare=False
+/processorParam:TextureFormat=Color
+/build:sprites/entity/NextLevel.png
+
 #begin sprites/entity/Rock.png
 /importer:TextureImporter
 /processor:TextureProcessor

@@ -16,3 +16,8 @@ type PhysicsInfo =
     { Time: int64
       PossibleObstacles: AABB seq
       Dt: float32 }
+
+[<Struct>]
+type Level =
+    | L1
+    | L2
