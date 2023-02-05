@@ -15,7 +15,6 @@ open FSharpx.Collections
 open Microsoft.Xna.Framework.Graphics
 open Prelude
 
-
 type Model =
     { Tiles: PersistentVector<Tile>
 
@@ -49,7 +48,7 @@ let getTileAtPos (pos: Vector2) (size: int * int) (tiles: PersistentVector<Tile>
     index |> Option.map (fun index -> PersistentVector.nth index tiles, index)
 
 let init time =
-    let level = level1 time
+    let level = level3 time
 
     { Tiles = level.Tiles
       Size = level.Size
@@ -97,16 +96,16 @@ let updateWorldReactive (tiles: PersistentVector<Tile>) : PersistentVector<Tile>
 
                         Observable((getObserverFunc oType) oData eType1 eType2)
                     | other -> other
-                
+
                 // if emitting and has an onEmit fun then apply that
-                return
+                let onEmit =
                     match newEntityType with
                     | EmittingObservable _ ->
-                        let onEmit =
-                            getOnEmit newEntityType (coordsToVector tile.Coords.X tile.Coords.Y half)
+                        let pos = (coordsToVector tile.Coords.X tile.Coords.Y half)
+                        getOnEmit newEntityType pos
+                    | _ -> id
 
-                        { (onEmit entity) with Type = newEntityType }
-                    | _ -> { entity with Type = newEntityType }
+                return onEmit { entity with Type = newEntityType }
             }
 
         { tile with Entity = maybeEntity })

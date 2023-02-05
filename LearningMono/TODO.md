@@ -7,15 +7,16 @@ TODO:
 - simplify all the things
 - prevent transform if carrying limits exceeded
 - make it easier to create entities for carrying
-
-
+- just use facing to determine observable target
+- button press should be on keypress not key down
 
 DOING:
-- levels and switching between them
-	- levels need borders
-	
+- create level 3
 
 DONE:
+- created toggle but not tested yet
+- levels and switching between them
+	- levels need borders
 - create a sink of some kind
 - entity and reactive are linked but not in the model
 - fix pick up and put down logic

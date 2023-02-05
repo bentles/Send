@@ -20,6 +20,8 @@ let idImage =
 
 let mapImage = { idImage with TextureName = "map" }
 let filterImage = { idImage with TextureName = "filter" }
+let toggleOnImage = { idImage with TextureName = "toggleOn" }
+let toggleOffImage = { idImage with TextureName = "toggleOff" }
 
 let rockImage =
     { SpriteSize = (50, 50)
@@ -31,6 +33,11 @@ let rockImage =
 let nextLevelImage = 
     { rockImage 
       with TextureName = "nextLevel"
+    }
+
+let buttonImage = 
+    { rockImage 
+      with TextureName = "button"
     }
 
 //entities
@@ -46,6 +53,12 @@ let timerSpriteConfig =
           Tint = Color.White
           FrameLength = 300L }
 
+let buttonSpriteConfig =
+    SingleSpriteConfig
+        { Image = buttonImage
+          Tint = Color.LawnGreen
+          FrameLength = 300L }
+
 let idConfig =
     { Image = idImage
       Tint = Color.White
@@ -54,6 +67,8 @@ let idConfig =
 let idSpriteConfig = SingleSpriteConfig idConfig
 let mapSpriteConfig = SingleSpriteConfig { idConfig with Image = mapImage }
 let filterSpriteConfig = SingleSpriteConfig { idConfig with Image = filterImage }
+let toggleOffSpriteConfig = SingleSpriteConfig { idConfig with Image = toggleOffImage }
+let toggleOnSpriteConfig = SingleSpriteConfig { idConfig with Image = toggleOnImage }
 
 let rockSpriteConfig =
     SingleSpriteConfig

@@ -20,13 +20,15 @@ type InteractionEvent =
 //  | Change the state of the thing
 
 [<Struct>]
-type SubjectType = Timer of BoxType * int
+type SubjectType =
+    | Timer of BoxType * int
+    | Button of EntityType
 
 and BoxType = EntityType list
 
 and ObservableType =
     | Id
-    | Toggle
+    | Toggle of bool
     | Map of EntityType
     | Filter of EntityType
     | Compare
@@ -64,10 +66,15 @@ let getSpriteConfig (eType: EntityType) : SpriteConfig =
     | Rock -> rockSpriteConfig
     | GoToLevelButton _ -> nextLevelSpriteConfig
     | Box _ -> rockSpriteConfig
-    | Subject _ -> timerSpriteConfig
+    | Subject { Type = sub } ->
+        match sub with
+        | Timer _ -> timerSpriteConfig
+        | Button _ -> buttonSpriteConfig
     | Observable { Type = ob } ->
         match ob with
         | Id -> idSpriteConfig
+        | Toggle true -> toggleOnSpriteConfig
+        | Toggle false -> toggleOffSpriteConfig
         | Map _ -> mapSpriteConfig
         | Filter _ -> filterSpriteConfig
         | Compare -> filterSpriteConfig
@@ -77,9 +84,13 @@ let getEmitImage (eType: EntityType) =
     | Rock -> rockImage
     | GoToLevelButton _ -> nextLevelImage
     | Box _ -> rockImage
-    | Subject _ -> timerImage
+    | Subject { Type = sub } ->
+        match sub with
+        | Timer _ -> timerImage
+        | Button _ -> buttonImage
     | Observable { Type = ob } ->
         match ob with
+        | Toggle _ -> toggleOnImage
         | Id -> idImage
         | Map _ -> mapImage
         | Filter _ -> filterImage
@@ -90,9 +101,11 @@ let rec entityEq (e1: EntityType) (e2: EntityType) =
     | Rock, Rock -> true
     | Box _, Box _ -> true // check contents ??
     | Observable { Type = Id }, Observable { Type = Id } -> true
+    | Observable { Type = Toggle _ }, Observable { Type = Toggle _ } -> true
     | Observable { Type = Map _ }, Observable { Type = Map _ } -> true
     | Observable { Type = Filter _ }, Observable { Type = Filter _ } -> true
     | Subject { Type = Timer _ }, Subject { Type = Timer _ } -> true
+    | Subject { Type = Button _ }, Subject { Type = Button _ } -> true
     | _, _ -> false
 
 let getCollider (eType: EntityType) (pos: Vector2) : AABB option =
@@ -130,7 +143,7 @@ let getObserverFunc (obs: ObservableType) =
     let behaviorFunc (a: EntityType option) (b: EntityType option) =
         match obs with
         | Id
-        | Toggle ->
+        | Toggle _ ->
             match a with
             | (Some e1) -> WillEmit e1
             | _ -> Nothing
@@ -188,14 +201,29 @@ let getObserverFunc (obs: ObservableType) =
 
 let getOnEmit (obs: EntityType) (pos: Vector2) =
     match obs with
-    | Observable { Type = Toggle } ->
+    | Observable({ Type = Toggle state } as obData) ->
+
         fun (entity: Model) ->
+            let newSprite =
+                (if not state then
+                     toggleOnSpriteConfig
+                 else
+                     toggleOffSpriteConfig)
             { entity with
-                Collider =
-                    match entity.Collider with
-                    | Some _ -> None
-                    | None -> getCollider entity.Type pos }
+                Type = Observable { obData with Type = (Toggle(not state)) }
+                Collider = if not state then getCollider entity.Type pos else None
+                Sprite = Sprite.reInit entity.Sprite newSprite }
     | _ -> (id)
+
+
+let subjectStep (subject: SubjectData) =
+    { subject with
+        TicksSinceEmit = subject.TicksSinceEmit + 1
+        ToEmit =
+            match subject.ToEmit with
+            | WillEmit t -> Emitting t
+            | Emitting t -> Emitted t
+            | other -> other }
 
 let buildRepeatListEmittingEvery list (every: int) =
     let length = List.length list
@@ -210,18 +238,13 @@ let buildRepeatListEmittingEvery list (every: int) =
                 GenerationNumber = subject.GenerationNumber + 1
                 ToEmit = WillEmit itemToEmit }
         else
-            { subject with
-                TicksSinceEmit = subject.TicksSinceEmit + 1
-                ToEmit =
-                    match subject.ToEmit with
-                    | WillEmit t -> Emitting t
-                    | Emitting t -> Emitted t
-                    | other -> other }
+            subjectStep subject
 
 
 let getSubjectFunc (sub: SubjectType) =
     match sub with
     | Timer(box, time) -> buildRepeatListEmittingEvery box time
+    | Button _ -> subjectStep
 
 let init (entityType: EntityType) (pos: Vector2) (time) (facing: Facing) (canBePickedUp: bool) =
     let config = (getSpriteConfig entityType)
@@ -269,7 +292,7 @@ let buildRockTimer =
 
 let rockTimer: EntityType = buildRockTimer
 
-let buildObserverObserving (oType: ObservableType) (target: int option) (target2: int option) : EntityType =
+let observing (oType: ObservableType) (target: int option) (target2: int option) : EntityType =
     Observable(
         { Type = oType
           ToEmit = Nothing
@@ -278,13 +301,21 @@ let buildObserverObserving (oType: ObservableType) (target: int option) (target2
           Observing2 = target2 }
     )
 
-let buildObserver (oType: ObservableType) = buildObserverObserving oType None None
+let buildObserver (oType: ObservableType) = observing oType None None
 
 let tileHalf = float32 (worldConfig.TileWidth / 2)
 let half = Vector2(tileHalf)
 
-
 let interact (entity: Model) : Model * InteractionEvent =
     match entity.Type with
     | GoToLevelButton l -> entity, InteractionEvent.GoToLevel l
+    | Subject({ Type = Button eType } as subData) ->
+        { entity with
+            Type =
+                Subject
+                    { subData with
+                        ToEmit = WillEmit eType
+                        TicksSinceEmit = 0
+                        GenerationNumber = subData.GenerationNumber + 1 } },
+        InteractionEvent.NoEvent
     | _ -> entity, InteractionEvent.NoEvent

@@ -61,6 +61,9 @@ let main _ =
               PipelineTexture("filter", "./content/sprites/entity/Filter")
               PipelineTexture("timer", "./content/sprites/entity/Timer")
               PipelineTexture("nextLevel", "./content/sprites/entity/NextLevel")
+              PipelineTexture("button", "./content/sprites/entity/Button")
+              PipelineTexture("toggleOff", "./content/sprites/entity/ToggleOff")
+              PipelineTexture("toggleOn", "./content/sprites/entity/ToggleOn")
 
               //fonts
               PipelineFont("defaultFont", "./content/SourceCodePro") ]

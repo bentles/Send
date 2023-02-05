@@ -76,6 +76,34 @@ let init pos time (config: SpriteConfig) (ypos: int option) (flipH: bool option)
           FrameLength = aniConfig.FrameLength
           ScreenPos = pos }
 
+//TODO: almost definitely wrong lol
+let reInit (sprite: Model) (config:SpriteConfig) =
+    match config with
+    | SingleSpriteConfig singleConfig ->
+        {
+           sprite with
+              Images = [ singleConfig.Image ]
+              CurrentImage = singleConfig.Image
+              Tint = singleConfig.Tint
+              AnimationState = Stopped(imageSpriteConfig, 0)
+              FrameLength = singleConfig.FrameLength
+        }
+
+    | AnimatedSpriteConfig aniConfig ->
+        let (img, yPos) =
+            currentImageConfigAndRelativePos aniConfig.Images aniConfig.InitAnimation None
+
+        { sprite with        
+              Images = aniConfig.Images
+              CurrentImage = img
+              Tint = aniConfig.Tint
+              RelativeYPos = yPos
+              AnimationState =
+                if aniConfig.Started then
+                    Started(aniConfig.InitAnimation, 0)
+                else
+                    Stopped(aniConfig.InitAnimation, 0) }
+
 type Message =
     | Stop
     | SwitchAnimation of AnimationConfig * int64 * bool
