@@ -26,6 +26,7 @@ and BoxType = EntityType list
 
 and ObservableType =
     | Id
+//    | Toggle
     | Map of EntityType
     | Filter of EntityType
     | Compare

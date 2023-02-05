@@ -95,12 +95,13 @@ let level1: LevelBuilder =
                 | x, y when y = bottom && x = right -> createCollidableTile Wall (float32 x) (float32 y)
                 | x, y when y = 0 && x = right -> createCollidableTile Wall (float32 x) (float32 y)
                 | x, y when y = bottom && x = 0 -> createCollidableTile Wall (float32 x) (float32 y)
+
                 | x, y when y = bottom -> createCollidableTile BottomWall (float32 x) (float32 y)
                 | x, y when y = 0 -> createCollidableTile TopWall (float32 x) (float32 y)
                 | x, y when x = 0 -> createCollidableTile LeftWall (float32 x) (float32 y)
                 | x, y when x = right -> createCollidableTile RightWall (float32 x) (float32 y)
 
-                | 8, 8 -> createEntityOnGrass (GoToLevelButton L2) (Vector2(8f, 8f)) time false
+                | 7, 7 -> createEntityOnGrass (GoToLevelButton L2) (Vector2(7f, 7f)) time false
                 //some kind of goal
                 | _ -> grassTile)
 
@@ -121,6 +122,11 @@ let level2: LevelBuilder =
                 let bottom = height - 1
                 let right = width - 1
 
+                let rocks =
+                    [ (2, 2); (5, 5); (7, 6); (6, 6); (6, 8);  (6, 6); (7, 8); (7, 7); (8, 7); (8, 6) ]
+
+                let observers = [ (3, 3); (3, 4); (6, 7);]
+
                 match x, y with
                 | x, y when y = 0 && x = 0 -> createCollidableTile Wall (float32 x) (float32 y)
                 | x, y when y = bottom && x = right -> createCollidableTile Wall (float32 x) (float32 y)
@@ -131,7 +137,48 @@ let level2: LevelBuilder =
                 | x, y when x = 0 -> createCollidableTile LeftWall (float32 x) (float32 y)
                 | x, y when x = right -> createCollidableTile RightWall (float32 x) (float32 y)
 
-                | 2, 2 -> createRockOnGrass (Vector2(2f, 2f)) time true
+                | x, y as xy when (List.contains xy rocks) ->
+                    createRockOnGrass (Vector2(float32 x, float32 y)) time true
+                | x, y as xy when (List.contains xy observers) ->
+                    createObserverOnGrass (Vector2(float32 x, float32 y)) time (buildObserver Id)
+                | 8, 8 -> createEntityOnGrass (GoToLevelButton L3) (Vector2(8f, 8f)) time false
+
+
+                | _ -> grassTile)
+
+        { PlayerStartsAtPos = Vector2(200f, 100f)
+          PlayerStartsCarrying = []
+          Tiles = tiles
+          Size = (width, height) }
+
+let level3: LevelBuilder =
+    fun time ->
+        let width = 10
+        let height = 10
+
+        let grassTile = createNonCollidableTile FloorType.Grass
+
+        let tiles =
+            iterWorld (width, height) (fun (x, y) ->
+                let bottom = height - 1
+                let right = width - 1
+
+                let rocks = [ (2, 2); (3, 3); (5, 5) ]
+
+                match x, y with
+                | x, y when y = 0 && x = 0 -> createCollidableTile Wall (float32 x) (float32 y)
+                | x, y when y = bottom && x = right -> createCollidableTile Wall (float32 x) (float32 y)
+                | x, y when y = 0 && x = right -> createCollidableTile Wall (float32 x) (float32 y)
+                | x, y when y = bottom && x = 0 -> createCollidableTile Wall (float32 x) (float32 y)
+                | x, y when y = bottom -> createCollidableTile BottomWall (float32 x) (float32 y)
+                | x, y when y = 0 -> createCollidableTile TopWall (float32 x) (float32 y)
+                | x, y when x = 0 -> createCollidableTile LeftWall (float32 x) (float32 y)
+                | x, y when x = right -> createCollidableTile RightWall (float32 x) (float32 y)
+
+                | x, y as xy when (List.contains xy rocks) ->
+                    createRockOnGrass (Vector2(float32 x, float32 y)) time true
+                | 8, 8 -> createEntityOnGrass (GoToLevelButton L3) (Vector2(8f, 8f)) time false
+
 
                 | _ -> grassTile)
 
@@ -145,3 +192,4 @@ let levelLookup (level: Level) : LevelBuilder =
     match level with
     | L1 -> level1
     | L2 -> level2
+    | L3 -> level3
