@@ -97,8 +97,16 @@ let updateWorldReactive (tiles: PersistentVector<Tile>) : PersistentVector<Tile>
 
                         Observable((getObserverFunc oType) oData eType1 eType2)
                     | other -> other
+                
+                // if emitting and has an onEmit fun then apply that
+                return
+                    match newEntityType with
+                    | EmittingObservable _ ->
+                        let onEmit =
+                            getOnEmit newEntityType (coordsToVector tile.Coords.X tile.Coords.Y half)
 
-                return { entity with Type = newEntityType }
+                        { (onEmit entity) with Type = newEntityType }
+                    | _ -> { entity with Type = newEntityType }
             }
 
         { tile with Entity = maybeEntity })
@@ -127,12 +135,12 @@ let updateCameraPos (playerPos: Vector2) (oldCamPos: Vector2) : Vector2 =
     else
         oldCamPos + halfDiff
 
-let mapEntityEventToCommand (event:Entity.InteractionEvent): Cmd<Message> = 
+let mapEntityEventToCommand (event: Entity.InteractionEvent) : Cmd<Message> =
     match event with
-    | GoToLevel l -> 
+    | GoToLevel l ->
         let newLevel = levelLookup l
         Cmd.ofMsg (ChangeLevel newLevel)
-    | NoEvent -> Cmd.none        
+    | NoEvent -> Cmd.none
 
 let mutable lastTick = 0L // we use a mutable tick counter here in order to ensure precision
 
@@ -151,8 +159,10 @@ let update (message: Message) (model: Model) : Model * Cmd<Message> =
             option {
                 let! (tile, i) = model.PlayerTarget
                 let! entity = tile.Entity
+
                 if entity.CanBePickedUp then
                     let tiles = model.Tiles |> PersistentVector.update i { tile with Entity = None }
+
                     return
                         { model with
                             Tiles = tiles
@@ -164,20 +174,22 @@ let update (message: Message) (model: Model) : Model * Cmd<Message> =
             |> Option.defaultValue (model, Cmd.none)
         | _ -> model, Cmd.none
     | Interact ->
-        let maybeUpdate = 
+        let maybeUpdate =
             option {
-                    let! (tile, i) = model.PlayerTarget
-                    let! entity = tile.Entity
-                    let newEntity, event = Entity.interact entity
-                    let cmd = mapEntityEventToCommand event
-                    let tiles = model.Tiles |> PersistentVector.update i { tile with Entity = Some newEntity }
-                    return tiles, cmd
+                let! (tile, i) = model.PlayerTarget
+                let! entity = tile.Entity
+                let newEntity, event = Entity.interact entity
+                let cmd = mapEntityEventToCommand event
+
+                let tiles =
+                    model.Tiles |> PersistentVector.update i { tile with Entity = Some newEntity }
+
+                return tiles, cmd
             }
 
         match maybeUpdate with
         | None -> model, Cmd.none
-        | Some (tiles, cmd) -> 
-            { model with Tiles = tiles }, cmd        
+        | Some(tiles, cmd) -> { model with Tiles = tiles }, cmd
     | PlaceEntity ->
         match player.CharacterState with
         | Player.Small _ ->
@@ -240,11 +252,15 @@ let update (message: Message) (model: Model) : Model * Cmd<Message> =
         Cmd.batch [ Cmd.map PlayerMessage playerMsg ]
     | ChangeLevel levelBuilder ->
         let newLevel = levelBuilder model.TimeElapsed
+
         { model with
             Size = newLevel.Size
             Tiles = newLevel.Tiles
-            Player = { model.Player with Pos = newLevel.PlayerStartsAtPos; Carrying = newLevel.PlayerStartsCarrying }
-        }, Cmd.none
+            Player =
+                { model.Player with
+                    Pos = newLevel.PlayerStartsAtPos
+                    Carrying = newLevel.PlayerStartsCarrying } },
+        Cmd.none
 
 // VIEW
 
@@ -287,7 +303,8 @@ let viewWorld (model: Model) (worldConfig: WorldConfig) =
     let cameraOffset = -(halfScreenOffset model.CameraPos)
 
     OnDraw(fun loadedAssets _ (spriteBatch: SpriteBatch) ->
-        model.Tiles |> PersistentVector.toSeq
+        model.Tiles
+        |> PersistentVector.toSeq
         |> Seq.iteri (fun i tile ->
 
             let texture =
@@ -369,7 +386,7 @@ let viewWorld (model: Model) (worldConfig: WorldConfig) =
                     (actualX, actualY)
                     spriteBatch
                     loadedAssets.textures[(getEmitImage etype).TextureName]
-            | _ -> ()))    
+            | _ -> ()))
 
 let view model (dispatch: Message -> unit) =
     seq {

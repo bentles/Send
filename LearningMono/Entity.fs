@@ -26,7 +26,7 @@ and BoxType = EntityType list
 
 and ObservableType =
     | Id
-//    | Toggle
+    | Toggle
     | Map of EntityType
     | Filter of EntityType
     | Compare
@@ -129,7 +129,8 @@ let (|EmittingObservable|_|) (emit: EntityType) =
 let getObserverFunc (obs: ObservableType) =
     let behaviorFunc (a: EntityType option) (b: EntityType option) =
         match obs with
-        | Id ->
+        | Id
+        | Toggle ->
             match a with
             | (Some e1) -> WillEmit e1
             | _ -> Nothing
@@ -184,6 +185,17 @@ let getObserverFunc (obs: ObservableType) =
         { observable with
             ToEmit = toEmit
             TicksSinceEmit = ticks }
+
+let getOnEmit (obs: EntityType) (pos: Vector2) =
+    match obs with
+    | Observable { Type = Toggle } ->
+        fun (entity: Model) ->
+            { entity with
+                Collider =
+                    match entity.Collider with
+                    | Some _ -> None
+                    | None -> getCollider entity.Type pos }
+    | _ -> (id)
 
 let buildRepeatListEmittingEvery list (every: int) =
     let length = List.length list
@@ -272,7 +284,7 @@ let tileHalf = float32 (worldConfig.TileWidth / 2)
 let half = Vector2(tileHalf)
 
 
-let interact (entity: Model): Model * InteractionEvent = 
+let interact (entity: Model) : Model * InteractionEvent =
     match entity.Type with
     | GoToLevelButton l -> entity, InteractionEvent.GoToLevel l
     | _ -> entity, InteractionEvent.NoEvent
