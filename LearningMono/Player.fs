@@ -11,6 +11,7 @@ open Elmish
 open Utility
 open Microsoft.Xna.Framework.Input
 open Xelmish.Viewables
+open Xelmish.Model
 
 type State =
     | Small of bool
@@ -43,7 +44,7 @@ type Model =
 
       CollisionInfo: CollisionInfo }
 
-let init (pos:Vector2) (carrying: Entity.Model list) (playerConfig: PlayerConfig) (spriteConfig: SpriteConfig) time =
+let init (pos: Vector2) (carrying: Entity.Model list) (playerConfig: PlayerConfig) (spriteConfig: SpriteConfig) time =
     { SpriteInfo = Sprite.init pos time spriteConfig None None
       CharacterState = Small true
       Input = Vector2.Zero
@@ -80,10 +81,7 @@ type Message =
     | TransformCharacter
     | FreezeMovement of bool
     | ArrowsControlPlacement of bool
-    | RotatePlacement of clockwise: bool
     | PlayerPhysicsTick of info: PhysicsInfo
-    | SpriteMessage of Sprite.Message
-    | CarryingMessage of Sprite.Message
 
 let calcVelocity modelVel modelMaxVel (acc: Vector2) (dt: float32) =
     let vel = modelVel + acc * dt
@@ -103,9 +101,6 @@ let calcVelocity modelVel modelMaxVel (acc: Vector2) (dt: float32) =
 
     vel, velLength
 
-
-let updateCarryingPositions (pos: Vector2) =
-    Cmd.ofMsg (CarryingMessage(Sprite.Message.SetPos pos))
 
 let updatePhysics (model: Model) (info: PhysicsInfo) =
     let dt = info.Dt
@@ -195,12 +190,21 @@ let updatePhysics (model: Model) (info: PhysicsInfo) =
         Pos = pos
         IsMoving = isMoving }
 
+let changeDir facing oldFacing =
+    if facing <> 0f && facing <> oldFacing then
+        Sprite.setDirectionX (facing < 0f)
+    else
+        id
+
+let carryingUpdate pos model =
+    model.Carrying
+    |> List.map (fun carry ->
+        let newSprite = Sprite.setPos pos carry.Sprite
+        { carry with Sprite = newSprite })
+
 let updateAnimations (newModel: Model) (oldModel: Model) =
-    let directionCommands =
-        [ if newModel.Facing.X <> 0f && newModel.Facing.X <> oldModel.Facing.X then
-              Cmd.ofMsg (SpriteMessage(Sprite.SetDirectionX(newModel.Facing.X < 0f)))
-          if newModel.Facing.Y <> 0f && newModel.Facing.Y <> oldModel.Facing.Y then
-              Cmd.ofMsg (SpriteMessage(Sprite.SetDirectionY(newModel.Facing.Y < 0f))) ]
+    let xChange = changeDir oldModel.Facing.X newModel.Facing.X
+    let yChange = changeDir oldModel.Facing.Y newModel.Facing.Y
 
     let animationCommands =
         match (oldModel.IsMoving, newModel.IsMoving, oldModel.CharacterState) with
@@ -210,15 +214,19 @@ let updateAnimations (newModel: Model) (oldModel: Model) =
                 | true -> CharAnimations.SmallWalk, CharConfig.BigFrames
                 | false -> CharAnimations.BigWalk, CharConfig.SmallFrames
 
-            [ (Cmd.ofMsg << SpriteMessage << Sprite.SwitchAnimation) (walkAnimation, speed, true) ]
-        | (true, false, Small _) -> [ (Cmd.ofMsg << SpriteMessage) Sprite.Stop ]
-        | _ -> []
+            Sprite.switchAnimation (walkAnimation, speed, true)
+        | (true, false, Small _) -> Sprite.stop
+        | _ -> id
 
-    let setPosMsg = Cmd.ofMsg (SpriteMessage(Sprite.SetPos newModel.Pos))
+    let setPos = Sprite.setPos newModel.Pos
 
-    let carryCommand = updateCarryingPositions newModel.Pos
+    let updateCarrying = carryingUpdate newModel.Pos
+    let updateSprite = (setPos >> animationCommands >> xChange >> yChange)
 
-    Cmd.batch [ setPosMsg; carryCommand; yield! animationCommands; yield! directionCommands ]
+    { newModel with
+        Carrying = (updateCarrying newModel)
+        SpriteInfo = (updateSprite newModel.SpriteInfo) }
+
 
 let transformStart (characterState: State) =
     match characterState with
@@ -234,54 +242,46 @@ let transformComplete (characterState: State) =
     | Small true -> Small true, CharAnimations.SmallWalk
     | Small false -> Small false, CharAnimations.BigWalk
 
+let tickAnimations model time =
+    let (newSprite, event) = Sprite.animTick time model.SpriteInfo
+
+    match event with
+    | Sprite.AnimationComplete _ ->
+        let (newState, walkAni) = transformComplete model.CharacterState
+
+        let maxVelocity =
+            match newState with
+            | Small s when s -> playerConfig.SmallMaxVelocity
+            | Small s when not s -> playerConfig.BigMaxVelocity
+            | _ -> model.MaxVelocity
+
+
+        { model with
+            CharacterState = newState
+            MaxVelocity = maxVelocity
+            SpriteInfo = Sprite.switchAnimation (walkAni, walkAni.Speed, model.IsMoving) newSprite
+            }
+            
+
+    | Sprite.AnimationLooped _
+    | Sprite.None -> model
 
 let update (message: Message) (model: Model) =
     match message with
     | Input direction -> { model with Input = direction }, Cmd.none
     | PlayerPhysicsTick info ->
         let newModel = updatePhysics model info
-        let aniCommands = updateAnimations newModel model
-        newModel, aniCommands
-    | RotatePlacement clock ->
-        { model with PlacementFacing = rotateFacing model.PlacementFacing clock }, Cmd.none
-    | SpriteMessage sm ->
-        let (newSprite, event) = Sprite.update sm model.SpriteInfo
-
-        let model, cmd =
-            match event with
-            | Sprite.AnimationComplete _ ->
-                let (newState, walkAni) = transformComplete model.CharacterState
-
-                let maxVelocity =
-                    match newState with
-                    | Small s when s -> playerConfig.SmallMaxVelocity
-                    | Small s when not s -> playerConfig.BigMaxVelocity
-                    | _ -> model.MaxVelocity
-
-                let modl =
-                    { model with
-                        CharacterState = newState
-                        MaxVelocity = maxVelocity }
-
-                modl,
-                (Cmd.ofMsg << SpriteMessage << Sprite.SwitchAnimation) (walkAni, walkAni.Speed, modl.IsMoving)
-            | Sprite.AnimationLooped _
-            | Sprite.None -> model, Cmd.none
-
-        { model with SpriteInfo = newSprite }, cmd
-    | CarryingMessage sm ->
-        let newCarrying =
-            model.Carrying
-            |> List.map (fun carry ->
-                let (newSprite, _) = Sprite.update sm carry.Sprite
-                { carry with Sprite = newSprite })
-
-        { model with Carrying = newCarrying }, Cmd.none
+        //possibly move animation stuff out of physics
+        let newModel = updateAnimations newModel model
+        let newModel = tickAnimations newModel info.Time
+        newModel, Cmd.none
     | TransformCharacter ->
         let (newState, transformAnimation) = transformStart model.CharacterState
 
-        { model with CharacterState = newState },
-        (Cmd.ofMsg << SpriteMessage << Sprite.SwitchAnimation) (transformAnimation, 100, true)
+        { model with CharacterState = newState 
+                     SpriteInfo = Sprite.switchAnimation (transformAnimation, 100, true) model.SpriteInfo },
+                     Cmd.none
+        
     | FreezeMovement holding -> { model with MovementFrozen = holding }, Cmd.none
     | ArrowsControlPlacement theyDo ->
         { model with
@@ -290,24 +290,29 @@ let update (message: Message) (model: Model) =
         Cmd.none
 
 
-let viewCarrying (carrying: Entity.Model list) (cameraPos: Vector2) (charState: State) =
-    let offsetStart =
-        match charState with
-        | Small true -> Vector2(0f, 40f)
-        | Small false -> Vector2(0f, 70f)
-        | _ -> Vector2(0f, 55f)
+let viewCarrying (carrying: Entity.Model list) (cameraPos: Vector2) (charState: State) (loadedAssets:LoadedAssets) (spriteBatch:Graphics.SpriteBatch) =
+   let offsetStart =
+       match charState with
+       | Small true -> Vector2(0f, 40f)
+       | Small false -> Vector2(0f, 70f)
+       | _ -> Vector2(0f, 55f)
 
-    carrying
-    |> Seq.indexed
-    |> Seq.collect (fun (i, c) ->
-        let offSetPos = cameraPos + offsetStart + (Vector2(0f, 25f) * (float32 i))
-        Sprite.view c.Sprite offSetPos ignore)
+   carrying
+   |> Seq.indexed
+   |> Seq.iter (fun (i, c) ->
+       let offSetPos = cameraPos + offsetStart + (Vector2(0f, 25f) * (float32 i))
+       Sprite.drawSprite c.Sprite offSetPos loadedAssets spriteBatch)
+
+let viewPlayer (model:Model) (cameraPos:Vector2) =
+    OnDraw(fun loadedAssets _ (spriteBatch: SpriteBatch) ->
+                Sprite.drawSprite model.SpriteInfo cameraPos loadedAssets spriteBatch |> ignore
+                viewCarrying model.Carrying cameraPos model.CharacterState loadedAssets spriteBatch
+    )
 
 let view (model: Model) (cameraPos: Vector2) (dispatch: Message -> unit) =
     seq {
         //input
         yield directions Keys.Up Keys.Down Keys.Left Keys.Right (fun f -> dispatch (Input f))
-        // yield directions Keys.W Keys.S Keys.A Keys.D (fun f -> dispatch (Input f))
         yield onkeydown Keys.Space (fun _ -> dispatch (TransformCharacter))
         yield onkeydown Keys.LeftControl (fun _ -> dispatch (FreezeMovement true))
         yield onkeyup Keys.LeftControl (fun _ -> dispatch (FreezeMovement false))
@@ -316,6 +321,6 @@ let view (model: Model) (cameraPos: Vector2) (dispatch: Message -> unit) =
         yield onkeyup Keys.LeftShift (fun _ -> dispatch (ArrowsControlPlacement false))
 
         //render
-        yield! Sprite.view model.SpriteInfo cameraPos (SpriteMessage >> dispatch)
-        yield! viewCarrying model.Carrying cameraPos model.CharacterState
+        yield viewPlayer model cameraPos
     }
+

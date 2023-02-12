@@ -1,4 +1,5 @@
-﻿module Sprite
+﻿[<RequireQualifiedAccess>]
+module Sprite
 
 open Microsoft.Xna.Framework
 open Xelmish.Model
@@ -104,15 +105,6 @@ let reInit (sprite: Model) (config:SpriteConfig) =
                 else
                     Stopped(aniConfig.InitAnimation, 0) }
 
-type Message =
-    | Stop
-    | SwitchAnimation of AnimationConfig * int64 * bool
-    | StartAnimation
-    | AnimTick of int64
-    | SetPos of Vector2
-    | SetDirectionX of bool
-    | SetDirectionY of bool
-
 type Events =
     | None
     | AnimationComplete of int
@@ -130,7 +122,9 @@ let spriteSourceRect (spriteInfo: ImageConfig) (aniState: AnimationState) pos =
     rect x y width height
 
 
-let drawSpriteInner (model: Model) (cameraPos: Vector2) (texture: Graphics.Texture2D) (spriteBatch: SpriteBatch) =
+let drawSprite (model: Model) (cameraPos: Vector2) (loadedAssets: LoadedAssets) (spriteBatch: SpriteBatch) =
+
+    let texture = loadedAssets.textures[model.CurrentImage.TextureName]
     //by convention the flipped sprite will be above the unflipped one
     let flipV = if model.FlipV then -1 else 0
 
@@ -159,13 +153,12 @@ let drawSpriteInner (model: Model) (cameraPos: Vector2) (texture: Graphics.Textu
         0f
     )
 
-let drawSprite (model: Model) (cameraPos: Vector2) : Viewable =
+let view (model: Model) (cameraPos: Vector2) : Viewable =
     OnDraw(fun loadedAssets _ (spriteBatch: SpriteBatch) ->
-        let texture = loadedAssets.textures[model.CurrentImage.TextureName]
-        drawSpriteInner model cameraPos texture spriteBatch)
+        drawSprite model cameraPos loadedAssets spriteBatch)
 
 
-let animTick model time =
+let animTick time model =
     let t = time - model.LastFrameTime
 
     let (t, inc) =
@@ -205,35 +198,33 @@ let animTick model time =
     event
 
 
-let update message model =
-    match message with
-    | Stop ->
-        match model.AnimationState with
-        | Stopped _ -> model
-        | Started(a, b) -> { model with AnimationState = Stopped(a, b) }
-        , Events.None
-    | SwitchAnimation(newAni, increment, start) ->
-        let (img, yPos) = currentImageConfigAndRelativePos model.Images newAni Option.None
 
-        { model with
-            AnimationState = if start then Started(newAni, 0) else Stopped(newAni, 0)
-            CurrentImage = img
-            RelativeYPos = yPos
-            FrameLength = increment },
-        Events.None
-    | StartAnimation ->
-        match model.AnimationState with
-        | Started _ -> model
-        | Stopped(a, b) -> { model with AnimationState = Started(a, b) }
-        , Events.None
-    | AnimTick dt -> animTick model dt
-    | SetPos p -> { model with ScreenPos = p }, Events.None
-    | SetDirectionX(flipH) -> { model with FlipH = flipH }, Events.None
-    | SetDirectionY(flipV) -> { model with FlipV = flipV }, Events.None
+let stop model =
+    match model.AnimationState with
+    | Stopped _ -> model
+    | Started(a, b) -> { model with AnimationState = Stopped(a, b) }
+
+let switchAnimation (newAni, increment, start) model =
+    let (img, yPos) = currentImageConfigAndRelativePos model.Images newAni Option.None
+
+    { model with
+        AnimationState = if start then Started(newAni, 0) else Stopped(newAni, 0)
+        CurrentImage = img
+        RelativeYPos = yPos
+        FrameLength = increment }
+
+let startAnimation model =
+    match model.AnimationState with
+    | Started _ -> model
+    | Stopped(a, b) -> { model with AnimationState = Started(a, b) }
+
+let setPos p model = { model with ScreenPos = p }
+let setDirectionX flipH model = { model with FlipH = flipH }
+let setDirectionY flipV model = { model with FlipV = flipV }
 
 
-let view model (cameraPos: Vector2) (dispatch: Message -> unit) =
-    seq {
-        yield drawSprite model cameraPos
-        yield onupdate (fun input -> dispatch (AnimTick input.totalGameTime))
-    }
+//let view model (cameraPos: Vector2) (dispatch: Message -> unit) =
+//    seq {
+//        yield drawSprite model cameraPos
+//        yield onupdate (fun input -> dispatch (AnimTick input.totalGameTime))
+//    }

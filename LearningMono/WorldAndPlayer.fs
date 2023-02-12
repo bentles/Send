@@ -6,7 +6,6 @@ open Microsoft.Xna.Framework
 open GameConfig
 open PlayerConfig
 open Elmish
-open Collision
 open FsToolkit.ErrorHandling
 open Utility
 open Level
@@ -116,7 +115,7 @@ let updateWorldSprites (totalTime: int64) (tiles: PersistentVector<Tile>) : Pers
         let entityy =
             option {
                 let! entity = tile.Entity
-                let (sprite, _) = (Sprite.update (Sprite.AnimTick totalTime) entity.Sprite)
+                let (sprite, _) = Sprite.animTick totalTime entity.Sprite
                 let r = ({ entity with Sprite = sprite })
                 return r
             }
@@ -208,7 +207,7 @@ let update (message: Message) (model: Model) : Model * Cmd<Message> =
 
                     let entityType = withTarget entity.Type (coordsToIndex at model.Size)
                     let entity = Entity.init entityType roundedPos model.TimeElapsed facing true
-                    let sprite, _ = Sprite.update Sprite.StartAnimation entity.Sprite
+                    let sprite = Sprite.startAnimation entity.Sprite
                     let entity = { entity with Sprite = sprite }
 
                     let tiles =
@@ -370,10 +369,10 @@ let viewWorld (model: Model) (worldConfig: WorldConfig) =
 
             tile.Entity
             |> Option.iter (fun (entity: Entity.Model) ->
-                Sprite.drawSpriteInner
+                Sprite.drawSprite
                     entity.Sprite
                     -cameraOffset
-                    loadedAssets.textures[entity.Sprite.CurrentImage.TextureName]
+                    loadedAssets
                     spriteBatch)
 
 
