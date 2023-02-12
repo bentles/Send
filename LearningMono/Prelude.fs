@@ -22,3 +22,4 @@ type Level =
     | L1
     | L2
     | L3
+    | L4

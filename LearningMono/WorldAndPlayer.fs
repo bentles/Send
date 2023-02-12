@@ -47,7 +47,7 @@ let getTileAtPos (pos: Vector2) (size: int * int) (tiles: PersistentVector<Tile>
     index |> Option.map (fun index -> PersistentVector.nth index tiles, index)
 
 let init time =
-    let level = level3 time
+    let level = level4 time
 
     { Tiles = level.Tiles
       Size = level.Size

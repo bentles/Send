@@ -9,7 +9,6 @@ open GameConfig
 open PlayerConfig
 open Elmish
 open Utility
-open Microsoft.Xna.Framework.Input
 open Xelmish.Viewables
 open Xelmish.Model
 

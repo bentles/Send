@@ -9,11 +9,13 @@ TODO:
 - make it easier to create entities for carrying
 - just use facing to determine observable target
 - button press should be on keypress not key down
+- option --> voption
+- add simple music and sfx
 
 DOING:
-- create level 3
 
 DONE:
+- create level 3
 - created toggle but not tested yet
 - levels and switching between them
 	- levels need borders

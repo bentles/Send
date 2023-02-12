@@ -208,6 +208,45 @@ let level3: LevelBuilder =
                 | 8, 6 -> observerOnGrass (Vector2(fx, fy)) time (observing (Toggle true) targetLeft None) FacingLeft false
 
                 | 2, 3 -> createButtonOnGrass (Vector2(fx, fy)) time false
+                | 8, 8 -> createEntityOnGrass (GoToLevelButton L4) (Vector2(fx, fy)) time false
+
+
+                | _ -> createNonCollidableTile FloorType.Grass fx fy)
+
+        { PlayerStartsAtPos = Vector2(200f, 100f)
+          PlayerStartsCarrying = [ (observerEntity (buildObserver Id)); (observerEntity (buildObserver Id)) ]
+          Tiles = tiles
+          Size = (width, height) }
+
+
+let level4: LevelBuilder =
+    fun time ->
+        let width = 10
+        let height = 10
+
+        let tiles =
+            iterWorld (width, height) (fun (x, y) ->
+                let (fx, fy, bottom, right) = worldVars x y height width
+                let obs = [ (2, 4); (2, 5); (6, 5); (6, 4); (6, 3) ]
+                //TODO target just honors facing
+                let targetUp = (coordsToIndex (x, y - 1) (width, height))
+                let targetLeft = (coordsToIndex (x - 1, y) (width, height))
+
+                match x, y with
+                | Corner (bottom, right) _ -> createCollidableTile Wall fx fy
+                | Wall (bottom, right) wallType -> createCollidableTile wallType fx fy
+                | xy when (List.contains xy obs) ->
+                    observerOnGrass (Vector2(fx, fy)) time (observing Id targetUp None) FacingUp true
+                | 2, 6
+                | 2, 7
+                | 2, 8
+                | 6, 7
+                | 6, 8
+                | 6, 6 -> observerOnGrass (Vector2(fx, fy)) time (observing (Toggle true) targetUp None) FacingUp false
+                | 7, 6
+                | 8, 6 -> observerOnGrass (Vector2(fx, fy)) time (observing (Toggle true) targetLeft None) FacingLeft false
+
+                | 2, 3 -> createTimerOnGrass (Vector2(fx, fy)) time false
                 | 8, 8 -> createEntityOnGrass (GoToLevelButton L1) (Vector2(fx, fy)) time false
 
 
@@ -224,3 +263,4 @@ let levelLookup (level: Level) : LevelBuilder =
     | L1 -> level1
     | L2 -> level2
     | L3 -> level3
+    | L4 -> level4
