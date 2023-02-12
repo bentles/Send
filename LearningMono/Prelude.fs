@@ -9,9 +9,10 @@ type Facing =
     | FacingLeft
     | FacingRight
 
-
+[<Struct>]
 type AABB = { Pos: Vector2; Half: Vector2 }
 
+[<Struct>]
 type PhysicsInfo =
     { Time: int64
       PossibleObstacles: AABB seq
@@ -23,3 +24,9 @@ type Level =
     | L2
     | L3
     | L4
+
+[<Struct>]
+type PlayerWorldInteraction =
+    | TryPickup
+    | TryPlace
+    | NoAction

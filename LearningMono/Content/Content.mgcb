@@ -13,6 +13,30 @@
 
 #---------------------------------- Content ---------------------------------#
 
+#begin music/tutorial.mp3
+/importer:Mp3Importer
+/processor:SongProcessor
+/processorParam:Quality=Best
+/build:music/tutorial.mp3
+
+#begin soundfx/click2.mp3
+/importer:Mp3Importer
+/processor:SoundEffectProcessor
+/processorParam:Quality=Best
+/build:soundfx/click2.mp3
+
+#begin soundfx/pickup.mp3
+/importer:Mp3Importer
+/processor:SoundEffectProcessor
+/processorParam:Quality=Best
+/build:soundfx/pickup.mp3
+
+#begin soundfx/putdown.mp3
+/importer:Mp3Importer
+/processor:SoundEffectProcessor
+/processorParam:Quality=Best
+/build:soundfx/putdown.mp3
+
 #begin SourceCodePro.spritefont
 /importer:FontDescriptionImporter
 /processor:FontDescriptionProcessor

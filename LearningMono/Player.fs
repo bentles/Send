@@ -29,6 +29,7 @@ type Model =
       ArrowsControlPlacement: bool
 
       Carrying: Entity.Model list
+      CarryingDelta: int
       Target: Vector2
       PlacementFacing: Facing
 
@@ -53,8 +54,10 @@ let init (pos: Vector2) (carrying: Entity.Model list) (playerConfig: PlayerConfi
 
       MovementFrozen = false
       ArrowsControlPlacement = false
-
+   
       Carrying = carrying
+      CarryingDelta = 0
+
       Facing = Vector2(1f, 0f)
       Target = pos + 60f * Vector2(1f, 0f)
       Pos = pos
@@ -80,7 +83,6 @@ type Message =
     | TransformCharacter
     | FreezeMovement of bool
     | ArrowsControlPlacement of bool
-    | PlayerPhysicsTick of info: PhysicsInfo
 
 let calcVelocity modelVel modelMaxVel (acc: Vector2) (dt: float32) =
     let vel = modelVel + acc * dt
@@ -265,15 +267,16 @@ let tickAnimations model time =
     | Sprite.AnimationLooped _
     | Sprite.None -> { model with SpriteInfo = newSprite }
 
+let tick (info:PhysicsInfo) (model:Model) : Model = 
+    let newModel = updatePhysics model info
+    //possibly move animation stuff out of physics
+    let newModel = updateAnimations newModel model
+    let newModel = tickAnimations newModel info.Time
+    newModel
+
 let update (message: Message) (model: Model) =
     match message with
     | Input direction -> { model with Input = direction }, Cmd.none
-    | PlayerPhysicsTick info ->
-        let newModel = updatePhysics model info
-        //possibly move animation stuff out of physics
-        let newModel = updateAnimations newModel model
-        let newModel = tickAnimations newModel info.Time
-        newModel, Cmd.none
     | TransformCharacter ->
         let (newState, transformAnimation) = transformStart model.CharacterState
 

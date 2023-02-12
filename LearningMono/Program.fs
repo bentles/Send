@@ -65,6 +65,14 @@ let main _ =
               PipelineTexture("toggleOff", "./content/sprites/entity/ToggleOff")
               PipelineTexture("toggleOn", "./content/sprites/entity/ToggleOn")
 
+              //music
+              PipelineMusic("tutorial", "./content/music/tutorial")
+
+              //soundfx
+              PipelineSound("click", "./content/soundfx/click2")
+              PipelineSound("pickUp", "./content/soundfx/pickup")
+              PipelineSound("putDown", "./content/soundfx/putdown")
+
               //fonts
               PipelineFont("defaultFont", "./content/SourceCodePro") ]
           mouseVisible = true }

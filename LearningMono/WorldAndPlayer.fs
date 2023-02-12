@@ -14,8 +14,15 @@ open FSharpx.Collections
 open Microsoft.Xna.Framework.Graphics
 open Prelude
 
+[<Struct>]
+type SongState =
+    | PlaySong of song: string
+    | PlayingSong of playing: string
+    | Stopped
+
 type Model =
     { Tiles: PersistentVector<Tile>
+      Song: SongState
 
       Size: int * int
 
@@ -24,6 +31,7 @@ type Model =
       TimeElapsed: int64
 
       //player and camera
+      PlayerAction: PlayerWorldInteraction
       Player: Player.Model
       PlayerTarget: (Tile * int) option
       CameraPos: Vector2 }
@@ -47,10 +55,12 @@ let getTileAtPos (pos: Vector2) (size: int * int) (tiles: PersistentVector<Tile>
     index |> Option.map (fun index -> PersistentVector.nth index tiles, index)
 
 let init time =
-    let level = level4 time
+    let level = level3 time
 
     { Tiles = level.Tiles
+      Song = PlaySong "tutorial"
       Size = level.Size
+      PlayerAction = NoAction
       Player = Player.init level.PlayerStartsAtPos level.PlayerStartsCarrying playerConfig charSprite time
       Slow = false
       Dt = 0f
@@ -64,6 +74,7 @@ type Message =
     | PickUpEntity
     | PlaceEntity
     | Interact
+    | SongStarted of string
     | PhysicsTick of time: int64 * slow: bool
     | ChangeLevel of levelBuilder: LevelBuilder
 
@@ -142,54 +153,33 @@ let mapEntityEventToCommand (event: Entity.InteractionEvent) : Cmd<Message> =
 
 let mutable lastTick = 0L // we use a mutable tick counter here in order to ensure precision
 
-let update (message: Message) (model: Model) : Model * Cmd<Message> =
+let pickUpEntity (model: Model) : Model =
     let player = model.Player
+    let playerLimit = Player.getPlayerPickupLimit player.CharacterState
 
-    match message with
-    | PlayerMessage playerMsg ->
-        let (newPlayerModel, playerCommand) = Player.update playerMsg model.Player
-        { model with Player = newPlayerModel }, Cmd.map PlayerMessage playerCommand
-    | PickUpEntity ->
-        let playerLimit = Player.getPlayerPickupLimit player.CharacterState
+    match player.CharacterState with
+    | Player.Small _ when player.Carrying.Length + 1 <= playerLimit ->
+        option {
+            let! (tile, i) = model.PlayerTarget
+            let! entity = tile.Entity
 
-        match player.CharacterState with
-        | Player.Small _ when player.Carrying.Length + 1 <= playerLimit ->
-            option {
-                let! (tile, i) = model.PlayerTarget
-                let! entity = tile.Entity
+            if entity.CanBePickedUp then
+                let tiles = model.Tiles |> PersistentVector.update i { tile with Entity = None }
 
-                if entity.CanBePickedUp then
-                    let tiles = model.Tiles |> PersistentVector.update i { tile with Entity = None }
+                return
+                    { model with
+                        Tiles = tiles
+                        Player = { player with Carrying = entity :: player.Carrying } }
 
-                    return
-                        { model with
-                            Tiles = tiles
-                            Player = { player with Carrying = entity :: player.Carrying } },
-                        Cmd.none
-                else
-                    return! None
-            }
-            |> Option.defaultValue (model, Cmd.none)
-        | _ -> model, Cmd.none
-    | Interact ->
-        let maybeUpdate =
-            option {
-                let! (tile, i) = model.PlayerTarget
-                let! entity = tile.Entity
-                let newEntity, event = Entity.interact entity
-                let cmd = mapEntityEventToCommand event
+            else
+                return! None
+        }
+        |> Option.defaultValue model
+    | _ -> model
 
-                let tiles =
-                    model.Tiles |> PersistentVector.update i { tile with Entity = Some newEntity }
-
-                return tiles, cmd
-            }
-
-        match maybeUpdate with
-        | None -> model, Cmd.none
-        | Some(tiles, cmd) -> { model with Tiles = tiles }, cmd
-    | PlaceEntity ->
-        match player.CharacterState with
+let placeEntity (model:Model): Model = 
+    let player = model.Player
+    match player.CharacterState with
         | Player.Small _ ->
             let tileAndIndex = model.PlayerTarget
 
@@ -215,12 +205,52 @@ let update (message: Message) (model: Model) : Model * Cmd<Message> =
 
                     { model with
                         Tiles = tiles
-                        Player = { player with Carrying = rest } },
-                    Cmd.none
-                | _ -> model, Cmd.none
-            | _ -> model, Cmd.none
-        | _ -> model, Cmd.none
+                        Player = { player with Carrying = rest } }
+                | _ -> model
+            | _ -> model
+        | _ -> model
+
+let update (message: Message) (model: Model) : Model * Cmd<Message> =
+    match message with
+    | PlayerMessage playerMsg ->
+        let (newPlayerModel, playerCommand) = Player.update playerMsg model.Player
+        { model with Player = newPlayerModel }, Cmd.map PlayerMessage playerCommand
+    | SongStarted name -> { model with Song = PlayingSong name }, Cmd.none
+    | PickUpEntity ->
+        { model with PlayerAction = TryPickup }, Cmd.none
+    | PlaceEntity ->
+        { model with PlayerAction = TryPlace }, Cmd.none
+    | Interact ->
+        let maybeUpdate =
+            option {
+                let! (tile, i) = model.PlayerTarget
+                let! entity = tile.Entity
+                let newEntity, event = Entity.interact entity
+                let cmd = mapEntityEventToCommand event
+
+                let tiles =
+                    model.Tiles |> PersistentVector.update i { tile with Entity = Some newEntity }
+
+                return tiles, cmd
+            }
+
+        match maybeUpdate with
+        | None -> model, Cmd.none
+        | Some(tiles, cmd) -> { model with Tiles = tiles }, cmd
+    
     | PhysicsTick(time, slow) ->
+        let wasCarrying = model.Player.Carrying.Length
+
+        let model = 
+            match model.PlayerAction with
+            | TryPickup ->
+                pickUpEntity model
+            | TryPlace ->
+                placeEntity model
+            | NoAction -> model
+
+        let isCarrying = model.Player.Carrying.Length
+
         let dt = (float32 (time - lastTick)) / 1000f
         lastTick <- time
 
@@ -229,11 +259,10 @@ let update (message: Message) (model: Model) : Model * Cmd<Message> =
               Dt = dt
               PossibleObstacles = getCollidables model.Tiles }
 
-        let player, playerMsg = Player.update (Player.PlayerPhysicsTick info) model.Player
+        let player = Player.tick info model.Player
         let tileAndIndex = getTileAtPos player.Target model.Size model.Tiles
 
         let tiles = updateWorldReactive model.Tiles
-
         //TODO: move this outside if update ticks < 60ps
         let tiles = updateWorldSprites time tiles
 
@@ -245,9 +274,11 @@ let update (message: Message) (model: Model) : Model * Cmd<Message> =
             TimeElapsed = time
             Tiles = tiles
             CameraPos = newCameraPos
-            Player = player
-            PlayerTarget = tileAndIndex },
-        Cmd.batch [ Cmd.map PlayerMessage playerMsg ]
+            Player = { player with CarryingDelta = isCarrying - wasCarrying }
+            PlayerTarget = tileAndIndex
+            PlayerAction = NoAction
+             },
+        Cmd.none
     | ChangeLevel levelBuilder ->
         let newLevel = levelBuilder model.TimeElapsed
 
@@ -369,15 +400,15 @@ let viewWorld (model: Model) (worldConfig: WorldConfig) =
 
             tile.Entity
             |> Option.iter (fun (entity: Entity.Model) ->
-                Sprite.drawSprite
-                    entity.Sprite
-                    -cameraOffset
-                    loadedAssets
-                    spriteBatch)
+                Sprite.drawSprite entity.Sprite -cameraOffset loadedAssets spriteBatch)
 
+            match tile.Entity with
+            | Some({ Type = EmittingObservable(_, _) }) -> loadedAssets.sounds[ "click" ].Play(1f, 0.0f, 0.0f) |> ignore
+            | _ -> ()
 
             match tile.Entity with
             | Some({ Type = EmittingedObservable(etype, t) }) ->
+
                 viewEmitting
                     etype
                     t
@@ -400,10 +431,21 @@ let view model (dispatch: Message -> unit) =
                 let mousePos = input.mouseState.Position
                 ())
 
+        // music
+        yield
+            OnDraw(fun loaded _inputs _spriteBatch ->
+                match model.Song with
+                | PlaySong songName ->
+                    // Media.MediaPlayer.Play(loaded.music[songName])
+                    // Media.MediaPlayer.IsRepeating <- true
+                    dispatch (SongStarted songName)
+                | Stopped -> Media.MediaPlayer.Stop()
+                | _ -> ())
+
         // physics
         yield onupdate (fun input -> dispatch (PhysicsTick(input.totalGameTime, input.gameTime.IsRunningSlowly)))
 
-        //rende
+        //render
         yield viewWorld model worldConfig
         yield! Player.view model.Player (halfScreenOffset model.CameraPos) (PlayerMessage >> dispatch)
 
