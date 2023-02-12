@@ -190,9 +190,9 @@ let updatePhysics (model: Model) (info: PhysicsInfo) =
         Pos = pos
         IsMoving = isMoving }
 
-let changeDir facing oldFacing =
+let changeDir facing oldFacing setDirection =
     if facing <> 0f && facing <> oldFacing then
-        Sprite.setDirectionX (facing < 0f)
+        setDirection (facing < 0f)
     else
         id
 
@@ -203,8 +203,8 @@ let carryingUpdate pos model =
         { carry with Sprite = newSprite })
 
 let updateAnimations (newModel: Model) (oldModel: Model) =
-    let xChange = changeDir oldModel.Facing.X newModel.Facing.X
-    let yChange = changeDir oldModel.Facing.Y newModel.Facing.Y
+    let xChange = changeDir newModel.Facing.X oldModel.Facing.X Sprite.setDirectionX
+    let yChange = changeDir newModel.Facing.Y oldModel.Facing.Y Sprite.setDirectionY
 
     let animationCommands =
         match (oldModel.IsMoving, newModel.IsMoving, oldModel.CharacterState) with
@@ -264,7 +264,7 @@ let tickAnimations model time =
             
 
     | Sprite.AnimationLooped _
-    | Sprite.None -> model
+    | Sprite.None -> { model with SpriteInfo = newSprite }
 
 let update (message: Message) (model: Model) =
     match message with

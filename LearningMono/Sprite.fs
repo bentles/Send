@@ -221,10 +221,3 @@ let startAnimation model =
 let setPos p model = { model with ScreenPos = p }
 let setDirectionX flipH model = { model with FlipH = flipH }
 let setDirectionY flipV model = { model with FlipV = flipV }
-
-
-//let view model (cameraPos: Vector2) (dispatch: Message -> unit) =
-//    seq {
-//        yield drawSprite model cameraPos
-//        yield onupdate (fun input -> dispatch (AnimTick input.totalGameTime))
-//    }
