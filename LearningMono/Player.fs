@@ -305,10 +305,17 @@ let viewCarrying (carrying: Entity.Model list) (cameraPos: Vector2) (charState: 
        let offSetPos = cameraPos + offsetStart + (Vector2(0f, 25f) * (float32 i))
        Sprite.drawSprite c.Sprite offSetPos loadedAssets spriteBatch)
 
+let hearCarrying (carryingDelta:int) (loadedAssets:LoadedAssets) = 
+    match carryingDelta with 
+    | 1 -> loadedAssets.sounds["pickUp"].Play(0.5f, 0f, 0f) |> ignore
+    | -1 -> loadedAssets.sounds["place"].Play(0.5f, 0f, 0f) |> ignore
+    | _ -> ()
+
 let viewPlayer (model:Model) (cameraPos:Vector2) =
     OnDraw(fun loadedAssets _ (spriteBatch: SpriteBatch) ->
                 Sprite.drawSprite model.SpriteInfo cameraPos loadedAssets spriteBatch |> ignore
                 viewCarrying model.Carrying cameraPos model.CharacterState loadedAssets spriteBatch
+                hearCarrying model.CarryingDelta loadedAssets                
     )
 
 let view (model: Model) (cameraPos: Vector2) (dispatch: Message -> unit) =

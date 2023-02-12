@@ -71,7 +71,7 @@ let main _ =
               //soundfx
               PipelineSound("click", "./content/soundfx/click2")
               PipelineSound("pickUp", "./content/soundfx/pickup")
-              PipelineSound("putDown", "./content/soundfx/putdown")
+              PipelineSound("place", "./content/soundfx/putdown")
 
               //fonts
               PipelineFont("defaultFont", "./content/SourceCodePro") ]
