@@ -48,4 +48,4 @@ Door:
 
 Can I separate state out so that some changes every frame and some does not???
 
-Toggle observable that switches between collidable and not when triggered
+

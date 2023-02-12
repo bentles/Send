@@ -48,13 +48,13 @@ let init (pos: Vector2) (carrying: Entity.Model list) (playerConfig: PlayerConfi
     { SpriteInfo = Sprite.init pos time spriteConfig None None
       CharacterState = Small true
       Input = Vector2.Zero
-      XInputTimeAndDir = -1000, 1f
+      XInputTimeAndDir = 0, 1f
       YInputTimeAndDir = 0, 0f
       PlacementFacing = FacingRight
 
       MovementFrozen = false
       ArrowsControlPlacement = false
-   
+
       Carrying = carrying
       CarryingDelta = 0
 
@@ -157,7 +157,6 @@ let updatePhysics (model: Model) (info: PhysicsInfo) =
     let milisSinceY = millisSince yinputTime
 
     let facing = calcFacing (milisSinceX, lastXDir) (milisSinceY, lastYDir)
-
     let target = pos + (60f * facing) + Vector2(0f, 20f)
 
     let (vel, pos, isMoving) =
@@ -169,27 +168,21 @@ let updatePhysics (model: Model) (info: PhysicsInfo) =
     let placementFacing =
         vectorToFacing model.Input |> Option.defaultValue model.PlacementFacing
 
-    { model with
-        Target =
-            if model.ArrowsControlPlacement then
-                model.Target
-            else
-                target
-        XInputTimeAndDir = xinputTime, lastXDir
-        YInputTimeAndDir = yinputTime, lastYDir
-        Facing =
-            if model.ArrowsControlPlacement then
-                model.Facing
-            else
-                facing
-        PlacementFacing =
-            if model.ArrowsControlPlacement then
-                placementFacing
-            else
-                model.PlacementFacing
-        Vel = vel
-        Pos = pos
-        IsMoving = isMoving }
+    if model.ArrowsControlPlacement then
+        { model with
+            PlacementFacing = placementFacing
+            Vel = vel
+            Pos = pos
+            IsMoving = isMoving }
+    else
+        { model with
+            Target = target
+            XInputTimeAndDir = xinputTime, lastXDir
+            YInputTimeAndDir = yinputTime, lastYDir
+            Facing = facing
+            Vel = vel
+            Pos = pos
+            IsMoving = isMoving }
 
 let changeDir facing oldFacing setDirection =
     if facing <> 0f && facing <> oldFacing then
@@ -260,14 +253,13 @@ let tickAnimations model time =
         { model with
             CharacterState = newState
             MaxVelocity = maxVelocity
-            SpriteInfo = Sprite.switchAnimation (walkAni, walkAni.Speed, model.IsMoving) newSprite
-            }
-            
+            SpriteInfo = Sprite.switchAnimation (walkAni, walkAni.Speed, model.IsMoving) newSprite }
+
 
     | Sprite.AnimationLooped _
     | Sprite.None -> { model with SpriteInfo = newSprite }
 
-let tick (info:PhysicsInfo) (model:Model) : Model = 
+let tick (info: PhysicsInfo) (model: Model) : Model =
     let newModel = updatePhysics model info
     //possibly move animation stuff out of physics
     let newModel = updateAnimations newModel model
@@ -280,10 +272,11 @@ let update (message: Message) (model: Model) =
     | TransformCharacter ->
         let (newState, transformAnimation) = transformStart model.CharacterState
 
-        { model with CharacterState = newState 
-                     SpriteInfo = Sprite.switchAnimation (transformAnimation, 100, true) model.SpriteInfo },
-                     Cmd.none
-        
+        { model with
+            CharacterState = newState
+            SpriteInfo = Sprite.switchAnimation (transformAnimation, 100, true) model.SpriteInfo },
+        Cmd.none
+
     | FreezeMovement holding -> { model with MovementFrozen = holding }, Cmd.none
     | ArrowsControlPlacement theyDo ->
         { model with
@@ -292,31 +285,36 @@ let update (message: Message) (model: Model) =
         Cmd.none
 
 
-let viewCarrying (carrying: Entity.Model list) (cameraPos: Vector2) (charState: State) (loadedAssets:LoadedAssets) (spriteBatch:Graphics.SpriteBatch) =
-   let offsetStart =
-       match charState with
-       | Small true -> Vector2(0f, 40f)
-       | Small false -> Vector2(0f, 70f)
-       | _ -> Vector2(0f, 55f)
+let viewCarrying
+    (carrying: Entity.Model list)
+    (cameraPos: Vector2)
+    (charState: State)
+    (loadedAssets: LoadedAssets)
+    (spriteBatch: Graphics.SpriteBatch)
+    =
+    let offsetStart =
+        match charState with
+        | Small true -> Vector2(0f, 40f)
+        | Small false -> Vector2(0f, 70f)
+        | _ -> Vector2(0f, 55f)
 
-   carrying
-   |> Seq.indexed
-   |> Seq.iter (fun (i, c) ->
-       let offSetPos = cameraPos + offsetStart + (Vector2(0f, 25f) * (float32 i))
-       Sprite.drawSprite c.Sprite offSetPos loadedAssets spriteBatch)
+    carrying
+    |> Seq.indexed
+    |> Seq.iter (fun (i, c) ->
+        let offSetPos = cameraPos + offsetStart + (Vector2(0f, 25f) * (float32 i))
+        Sprite.drawSprite c.Sprite offSetPos loadedAssets spriteBatch)
 
-let hearCarrying (carryingDelta:int) (loadedAssets:LoadedAssets) = 
-    match carryingDelta with 
-    | 1 -> loadedAssets.sounds["pickUp"].Play(0.5f, 0f, 0f) |> ignore
-    | -1 -> loadedAssets.sounds["place"].Play(0.5f, 0f, 0f) |> ignore
+let hearCarrying (carryingDelta: int) (loadedAssets: LoadedAssets) =
+    match carryingDelta with
+    | 1 -> loadedAssets.sounds[ "pickUp" ].Play(0.5f, 0f, 0f) |> ignore
+    | -1 -> loadedAssets.sounds[ "place" ].Play(0.5f, 0f, 0f) |> ignore
     | _ -> ()
 
-let viewPlayer (model:Model) (cameraPos:Vector2) =
+let viewPlayer (model: Model) (cameraPos: Vector2) =
     OnDraw(fun loadedAssets _ (spriteBatch: SpriteBatch) ->
-                Sprite.drawSprite model.SpriteInfo cameraPos loadedAssets spriteBatch |> ignore
-                viewCarrying model.Carrying cameraPos model.CharacterState loadedAssets spriteBatch
-                hearCarrying model.CarryingDelta loadedAssets                
-    )
+        Sprite.drawSprite model.SpriteInfo cameraPos loadedAssets spriteBatch |> ignore
+        viewCarrying model.Carrying cameraPos model.CharacterState loadedAssets spriteBatch
+        hearCarrying model.CarryingDelta loadedAssets)
 
 let view (model: Model) (cameraPos: Vector2) (dispatch: Message -> unit) =
     seq {
@@ -332,4 +330,3 @@ let view (model: Model) (cameraPos: Vector2) (dispatch: Message -> unit) =
         //render
         yield viewPlayer model cameraPos
     }
-

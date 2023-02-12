@@ -50,23 +50,24 @@ let createNonCollidableTile t x y =
         FloorType = t
         Coords = Vector2(x, y) }
 
-let createEntityOnGrass (entityType: EntityType) (coords: Vector2) (time: int64) (canBePickedUp: bool) =
+let createEntityOn (entityType: EntityType) (floor:FloorType) (coords: Vector2) (time: int64)  (canBePickedUp: bool)  =
     let pos = coordsToVector coords.X coords.Y half
 
     { defaultTile with
         Coords = coords
-        FloorType = FloorType.Grass
+        FloorType = floor
         Entity = Some(Entity.init entityType pos time FacingRight canBePickedUp) }
 
-let createRockOnGrass (coords: Vector2) time = createEntityOnGrass Rock coords time
+let createRockOnGrass (coords: Vector2) time = createEntityOn Rock Grass coords time
 
 let createSubjectOnGrass (subjectType: SubjectType) (coords: Vector2) time pickedUp =
-    createEntityOnGrass
+    createEntityOn
         (Entity.Subject
             { Type = subjectType
               TicksSinceEmit = 0
               GenerationNumber = 0
               ToEmit = Nothing })
+        Grass
         coords
         time
         pickedUp
@@ -132,7 +133,7 @@ let level1: LevelBuilder =
                 | Corner (bottom, right) _ -> createCollidableTile Wall fx fy
                 | Wall (bottom, right) wallType -> createCollidableTile wallType fx fy
 
-                | 7, 7 -> createEntityOnGrass (GoToLevelButton L2) (Vector2(fx, fy)) time false
+                | 7, 7 -> createEntityOn (GoToLevelButton L2) Grass (Vector2(fx, fy)) time false
                 //some kind of goal
                 | _ -> createNonCollidableTile FloorType.Grass fx fy)
 
@@ -171,7 +172,7 @@ let level2: LevelBuilder =
                 | xy when (List.contains xy observers) ->
                     observerOnGrass (Vector2(fx, fy)) time (buildObserver Id) FacingLeft true
 
-                | 8, 8 -> createEntityOnGrass (GoToLevelButton L3) (Vector2(8f, 8f)) time false
+                | 8, 8 -> createEntityOn (GoToLevelButton L3) Grass (Vector2(8f, 8f)) time false
 
                 | _ -> createNonCollidableTile FloorType.Grass fx fy)
 
@@ -208,7 +209,7 @@ let level3: LevelBuilder =
                 | 8, 6 -> observerOnGrass (Vector2(fx, fy)) time (observing (Toggle true) targetLeft None) FacingLeft false
 
                 | 2, 3 -> createButtonOnGrass (Vector2(fx, fy)) time false
-                | 8, 8 -> createEntityOnGrass (GoToLevelButton L4) (Vector2(fx, fy)) time false
+                | 8, 8 -> createEntityOn (GoToLevelButton L4) Grass (Vector2(fx, fy)) time false
 
 
                 | _ -> createNonCollidableTile FloorType.Grass fx fy)
@@ -247,7 +248,7 @@ let level4: LevelBuilder =
                 | 8, 6 -> observerOnGrass (Vector2(fx, fy)) time (observing (Toggle true) targetLeft None) FacingLeft false
 
                 | 2, 3 -> createTimerOnGrass (Vector2(fx, fy)) time false
-                | 8, 8 -> createEntityOnGrass (GoToLevelButton L1) (Vector2(fx, fy)) time false
+                | 8, 8 -> createEntityOn (GoToLevelButton L1) Grass (Vector2(fx, fy)) time false
 
 
                 | _ -> createNonCollidableTile FloorType.Grass fx fy)

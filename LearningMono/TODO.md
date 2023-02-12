@@ -10,11 +10,15 @@ TODO:
 - just use facing to determine observable target
 - button press should be on keypress not key down
 - option --> voption
-- add simple music and sfx
+- interaction menus :'(
+- use tile to show which entities are permanent
 
 DOING:
 
 DONE:
+- fix weird jumping when switching placement orientation
+- add simple music and sfx
+- Toggle observable that switches between collidable and not when triggered
 - create level 3
 - created toggle but not tested yet
 - levels and switching between them
