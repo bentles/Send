@@ -301,7 +301,7 @@ let viewEmitting
     (texture: Graphics.Texture2D)
     =
     let imageInfo = getEmitImage entityType
-    let (width, height) = (imageInfo.SpriteSize)
+    let struct(width, height) = (imageInfo.SpriteSize)
 
     if ticksSinceLast < 20 then
         let alpha = int ((float32 (30 - ticksSinceLast) / 20f) * 220f)
@@ -379,7 +379,7 @@ let viewWorld (model: Model) (worldConfig: WorldConfig) =
                             (Color.Green * alpha)
                 }
 
-            let texture, effect =
+            let struct (texture, effect) =
                 match model.Player.PlacementFacing with
                 | FacingUp -> "facingUp", SpriteEffects.None
                 | FacingRight -> "facingRight", SpriteEffects.None

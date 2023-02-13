@@ -78,28 +78,26 @@ let init pos time (config: SpriteConfig) (ypos: int option) (flipH: bool option)
           ScreenPos = pos }
 
 //TODO: almost definitely wrong lol
-let reInit (sprite: Model) (config:SpriteConfig) =
+let reInit (sprite: Model) (config: SpriteConfig) =
     match config with
     | SingleSpriteConfig singleConfig ->
-        {
-           sprite with
-              Images = [ singleConfig.Image ]
-              CurrentImage = singleConfig.Image
-              Tint = singleConfig.Tint
-              AnimationState = Stopped(imageSpriteConfig, 0)
-              FrameLength = singleConfig.FrameLength
-        }
+        { sprite with
+            Images = [ singleConfig.Image ]
+            CurrentImage = singleConfig.Image
+            Tint = singleConfig.Tint
+            AnimationState = Stopped(imageSpriteConfig, 0)
+            FrameLength = singleConfig.FrameLength }
 
     | AnimatedSpriteConfig aniConfig ->
         let (img, yPos) =
             currentImageConfigAndRelativePos aniConfig.Images aniConfig.InitAnimation None
 
-        { sprite with        
-              Images = aniConfig.Images
-              CurrentImage = img
-              Tint = aniConfig.Tint
-              RelativeYPos = yPos
-              AnimationState =
+        { sprite with
+            Images = aniConfig.Images
+            CurrentImage = img
+            Tint = aniConfig.Tint
+            RelativeYPos = yPos
+            AnimationState =
                 if aniConfig.Started then
                     Started(aniConfig.InitAnimation, 0)
                 else
@@ -111,14 +109,14 @@ type Events =
     | AnimationLooped of int
 
 let spriteSourceRect (spriteInfo: ImageConfig) (aniState: AnimationState) pos =
-    let width, height = spriteInfo.SpriteSize
+    let struct (width, height) = spriteInfo.SpriteSize
 
-    let xPos, yPos =
+    let struct (xPos, yPos) =
         match aniState with
         | Stopped(_, x) -> x, pos
         | Started(_, x) -> x, pos
 
-    let x, y = xPos * width, yPos * height
+    let struct (x, y) = xPos * width, yPos * height
     rect x y width height
 
 
@@ -154,8 +152,7 @@ let drawSprite (model: Model) (cameraPos: Vector2) (loadedAssets: LoadedAssets) 
     )
 
 let view (model: Model) (cameraPos: Vector2) : Viewable =
-    OnDraw(fun loadedAssets _ (spriteBatch: SpriteBatch) ->
-        drawSprite model cameraPos loadedAssets spriteBatch)
+    OnDraw(fun loadedAssets _ (spriteBatch: SpriteBatch) -> drawSprite model cameraPos loadedAssets spriteBatch)
 
 
 let animTick time model =
@@ -191,11 +188,11 @@ let animTick time model =
                     Started(ani, lastFrame), Events.None
                 else
                     Started(ani, nextX), Events.None
-    struct
-        ({ model with
-            AnimationState = newAnimationState
-            LastFrameTime = t },
-        event)
+
+    struct ({ model with
+                AnimationState = newAnimationState
+                LastFrameTime = t },
+            event)
 
 
 

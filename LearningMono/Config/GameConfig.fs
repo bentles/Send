@@ -12,7 +12,7 @@ type WorldConfig =
 let worldConfig = { TileWidth = 50 }
 
 type ImageConfig =
-    { SpriteSize: int * int
+    { SpriteSize: struct (int * int)
       Rows: int
       Columns: int
       Offset: Vector2
