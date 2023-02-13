@@ -40,14 +40,15 @@ let halfScreenOffset (camPos: Vector2) : Vector2 =
     Vector2.Subtract(camPos, Vector2(800f, 450f))
 
 let getCollidables (tiles: Tile seq) : AABB seq =
-    tiles
-    |> Seq.choose  (fun tile ->
-        match tile.Collider with
-        | ValueSome collider -> Some collider
-        | _ ->
-            match tile.Entity with
-            | ValueSome { Collider = ValueSome collider } -> Some collider
-            | _ -> None)
+    seq { for tile in tiles do
+            match tile.Collider with
+            | ValueSome collider -> collider
+            | _ ->
+                match tile.Entity with
+                | ValueSome { Collider = ValueSome collider } -> collider
+                | _ -> ()
+                }
+
 
 let getTileAtPos (pos: Vector2) (size: int * int) (tiles: PersistentVector<Tile>) : struct (Tile * int) voption =
     let coords = vectorToCoords pos
@@ -386,8 +387,9 @@ let viewWorld (model: Model) (worldConfig: WorldConfig) =
                 | FacingDown -> "facingUp", SpriteEffects.FlipVertically
                 | FacingLeft -> "facingRight", SpriteEffects.FlipHorizontally
 
-            maybeTargetColor
-            |> ValueOption.iter (fun color ->
+
+            match maybeTargetColor with 
+            | ValueSome color ->
                 spriteBatch.Draw(
                     loadedAssets.textures[texture],
                     Rectangle(actualX, actualY, sourceRect.Width, sourceRect.Height),
@@ -397,11 +399,13 @@ let viewWorld (model: Model) (worldConfig: WorldConfig) =
                     Vector2.Zero,
                     effect,
                     0f
-                ))
+                )
+            | ValueNone -> ()
 
-            tile.Entity
-            |> ValueOption.iter (fun (entity: Entity.Model) ->
-                Sprite.drawSprite entity.Sprite -cameraOffset loadedAssets spriteBatch)
+            match tile.Entity with
+            | ValueSome entity -> 
+                Sprite.drawSprite entity.Sprite -cameraOffset loadedAssets spriteBatch
+            | ValueNone -> ()
 
             match tile.Entity with
             | ValueSome({ Type = EmittingObservable(_, _) }) -> loadedAssets.sounds[ "click" ].Play(1f, 0.0f, 0.0f) |> ignore
