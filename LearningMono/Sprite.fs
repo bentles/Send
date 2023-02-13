@@ -9,8 +9,8 @@ open GameConfig
 
 [<Struct>]
 type AnimationState =
-    | Stopped of stop: (AnimationConfig * int)
-    | Started of start: (AnimationConfig * int)
+    | Stopped of stop: struct (AnimationConfig * int)
+    | Started of start: struct (AnimationConfig * int)
 
 [<Struct>]
 type Model =
@@ -191,11 +191,11 @@ let animTick time model =
                     Started(ani, lastFrame), Events.None
                 else
                     Started(ani, nextX), Events.None
-
-    { model with
-        AnimationState = newAnimationState
-        LastFrameTime = t },
-    event
+    struct
+        ({ model with
+            AnimationState = newAnimationState
+            LastFrameTime = t },
+        event)
 
 
 

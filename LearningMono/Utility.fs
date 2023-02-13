@@ -45,11 +45,11 @@ let coordsOutOfBounds (x: int, y: int)  (width:int, height:int) : bool =
     || y >= height
     || y < 0
 
-let coordsToIndex (x: int, y: int) (width:int, height:int) : int option =
+let coordsToIndex (x: int, y: int) (width:int, height:int) : int voption =
     if coordsOutOfBounds (x, y) (width, height) then
-        None
+        ValueNone
     else
-        Some(toIndex (x, y) width)
+        ValueSome(toIndex (x, y) width)
 
 let createColliderFromCoords (xx: float32) (yy: float32) (half: Vector2) =
     { Pos = coordsToVector xx yy half

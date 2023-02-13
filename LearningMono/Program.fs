@@ -19,8 +19,8 @@ type Message =
 let update message (model: Model) =
     match message with
     | WorldMessage p ->
-        let (newWorld, cmd) = World.update p model.World
-        { model with World = newWorld }, Cmd.map WorldMessage cmd
+        let (newWorld) = World.update p model.World
+        { model with World = newWorld }, Cmd.none
     | Tick time -> { model with TimeElapsed = time } , Cmd.none
 
 

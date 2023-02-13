@@ -33,7 +33,7 @@ type Model =
       //player and camera
       PlayerAction: PlayerWorldInteraction
       Player: Player.Model
-      PlayerTarget: (Tile * int) option
+      PlayerTarget: struct (Tile * int) voption
       CameraPos: Vector2 }
 
 let halfScreenOffset (camPos: Vector2) : Vector2 =
@@ -41,18 +41,18 @@ let halfScreenOffset (camPos: Vector2) : Vector2 =
 
 let getCollidables (tiles: Tile seq) : AABB seq =
     tiles
-    |> Seq.choose (fun tile ->
+    |> Seq.choose  (fun tile ->
         match tile.Collider with
-        | Some collider -> Some collider
+        | ValueSome collider -> Some collider
         | _ ->
             match tile.Entity with
-            | Some { Collider = collider } -> collider
+            | ValueSome { Collider = ValueSome collider } -> Some collider
             | _ -> None)
 
-let getTileAtPos (pos: Vector2) (size: int * int) (tiles: PersistentVector<Tile>) : (Tile * int) option =
+let getTileAtPos (pos: Vector2) (size: int * int) (tiles: PersistentVector<Tile>) : struct (Tile * int) voption =
     let coords = vectorToCoords pos
     let index = coordsToIndex coords size
-    index |> Option.map (fun index -> PersistentVector.nth index tiles, index)
+    index |> ValueOption.map (fun index -> PersistentVector.nth index tiles, index)
 
 let init time =
     let level = level3 time
@@ -64,7 +64,7 @@ let init time =
       Player = Player.init level.PlayerStartsAtPos level.PlayerStartsCarrying playerConfig charSprite time
       Slow = false
       Dt = 0f
-      PlayerTarget = None
+      PlayerTarget = ValueNone
       TimeElapsed = 0
       CameraPos = Vector2(0f, -0f) }
 
@@ -76,13 +76,12 @@ type Message =
     | Interact
     | SongStarted of string
     | PhysicsTick of time: int64 * slow: bool
-    | ChangeLevel of levelBuilder: LevelBuilder
 
 let updateWorldReactive (tiles: PersistentVector<Tile>) : PersistentVector<Tile> =
     tiles
     |> PersistentVector.map (fun tile ->
         let maybeEntity =
-            option {
+            voption {
                 let! entity = tile.Entity
 
                 let newEntityType =
@@ -93,8 +92,8 @@ let updateWorldReactive (tiles: PersistentVector<Tile>) : PersistentVector<Tile>
                                    Observing2 = ob2 } as oData) ->
 
                         // get what is being is observed if anything
-                        let getObserved (ob: int option) =
-                            option {
+                        let getObserved (ob: int voption) =
+                            voption {
                                 let! i = ob
                                 let tile = PersistentVector.nth i tiles
                                 let! e = tile.Entity
@@ -124,16 +123,16 @@ let updateWorldSprites (totalTime: int64) (tiles: PersistentVector<Tile>) : Pers
     tiles
     |> PersistentVector.map (fun tile ->
         let entityy =
-            option {
+            voption {
                 let! entity = tile.Entity
-                let (sprite, _) = Sprite.animTick totalTime entity.Sprite
+                let struct (sprite, _) = Sprite.animTick totalTime entity.Sprite
                 let r = ({ entity with Sprite = sprite })
                 return r
             }
 
         match entityy with
-        | Some(entity) -> { tile with Entity = Some entity }
-        | None -> { tile with Entity = None })
+        | ValueSome(entity) -> { tile with Entity = ValueSome entity }
+        | ValueNone -> { tile with Entity = ValueNone })
 
 let updateCameraPos (playerPos: Vector2) (oldCamPos: Vector2) : Vector2 =
     let diff = Vector2.Subtract(playerPos, oldCamPos)
@@ -144,12 +143,7 @@ let updateCameraPos (playerPos: Vector2) (oldCamPos: Vector2) : Vector2 =
     else
         oldCamPos + halfDiff
 
-let mapEntityEventToCommand (event: Entity.InteractionEvent) : Cmd<Message> =
-    match event with
-    | GoToLevel l ->
-        let newLevel = levelLookup l
-        Cmd.ofMsg (ChangeLevel newLevel)
-    | NoEvent -> Cmd.none
+
 
 let mutable lastTick = 0L // we use a mutable tick counter here in order to ensure precision
 
@@ -164,7 +158,7 @@ let pickUpEntity (model: Model) : Model =
             let! entity = tile.Entity
 
             if entity.CanBePickedUp then
-                let tiles = model.Tiles |> PersistentVector.update i { tile with Entity = None }
+                let tiles = model.Tiles |> PersistentVector.update i { tile with Entity = ValueNone }
 
                 return
                     { model with
@@ -184,7 +178,7 @@ let placeEntity (model:Model): Model =
             let tileAndIndex = model.PlayerTarget
 
             match tileAndIndex with
-            | Some({ Entity = None } as tile, i) ->
+            | ValueSome({ Entity = ValueNone } as tile, i) ->
                 match player.Carrying with
                 | entity :: rest ->
                     //make a targeting function
@@ -201,7 +195,7 @@ let placeEntity (model:Model): Model =
                     let entity = { entity with Sprite = sprite }
 
                     let tiles =
-                        model.Tiles |> PersistentVector.update i { tile with Entity = Some(entity) }
+                        model.Tiles |> PersistentVector.update i { tile with Entity = ValueSome(entity) }
 
                     { model with
                         Tiles = tiles
@@ -210,33 +204,51 @@ let placeEntity (model:Model): Model =
             | _ -> model
         | _ -> model
 
-let update (message: Message) (model: Model) : Model * Cmd<Message> =
+let changeLevel (model:Model) (levelBuilder:LevelBuilder): Model =
+    let newLevel = levelBuilder model.TimeElapsed
+
+    { model with
+        Size = newLevel.Size
+        Tiles = newLevel.Tiles
+        Player =
+            { model.Player with
+                Pos = newLevel.PlayerStartsAtPos
+                Carrying = newLevel.PlayerStartsCarrying } }
+
+let interactions (event: Entity.InteractionEvent) (model:Model) : Model =
+    match event with
+    | GoToLevel l ->
+        changeLevel model (levelLookup l)
+        
+    | NoEvent -> model
+
+let update (message: Message) (model: Model) : Model =
     match message with
     | PlayerMessage playerMsg ->
-        let (newPlayerModel, playerCommand) = Player.update playerMsg model.Player
-        { model with Player = newPlayerModel }, Cmd.map PlayerMessage playerCommand
-    | SongStarted name -> { model with Song = PlayingSong name }, Cmd.none
+        let (newPlayerModel) = Player.update playerMsg model.Player
+        { model with Player = newPlayerModel }
+    | SongStarted name -> { model with Song = PlayingSong name }
     | PickUpEntity ->
-        { model with PlayerAction = TryPickup }, Cmd.none
+        { model with PlayerAction = TryPickup }
     | PlaceEntity ->
-        { model with PlayerAction = TryPlace }, Cmd.none
+        { model with PlayerAction = TryPlace }
     | Interact ->
         let maybeUpdate =
-            option {
+            voption {
                 let! (tile, i) = model.PlayerTarget
                 let! entity = tile.Entity
                 let newEntity, event = Entity.interact entity
-                let cmd = mapEntityEventToCommand event
+                let model = interactions event model
 
                 let tiles =
-                    model.Tiles |> PersistentVector.update i { tile with Entity = Some newEntity }
+                    model.Tiles |> PersistentVector.update i { tile with Entity = ValueSome newEntity }
 
-                return tiles, cmd
+                return { model with Tiles = tiles }
             }
 
         match maybeUpdate with
-        | None -> model, Cmd.none
-        | Some(tiles, cmd) -> { model with Tiles = tiles }, cmd
+        | ValueNone -> model
+        | ValueSome mnodel -> model
     
     | PhysicsTick(time, slow) ->
         let wasCarrying = model.Player.Carrying.Length
@@ -277,19 +289,7 @@ let update (message: Message) (model: Model) : Model * Cmd<Message> =
             Player = { player with CarryingDelta = isCarrying - wasCarrying }
             PlayerTarget = tileAndIndex
             PlayerAction = NoAction
-             },
-        Cmd.none
-    | ChangeLevel levelBuilder ->
-        let newLevel = levelBuilder model.TimeElapsed
-
-        { model with
-            Size = newLevel.Size
-            Tiles = newLevel.Tiles
-            Player =
-                { model.Player with
-                    Pos = newLevel.PlayerStartsAtPos
-                    Carrying = newLevel.PlayerStartsCarrying } },
-        Cmd.none
+             }
 
 // VIEW
 
@@ -318,15 +318,16 @@ let viewEmitting
         ()
 
 
+let blockWidth = worldConfig.TileWidth
+let empty = "tile"
+let grass = "grass"
+let wall = "wall"
+let leftWall = "leftWall"
+let rightWall = "rightWall"
+let topWall = "topWall"
+let bottomWall = "bottomWall"
+
 let viewWorld (model: Model) (worldConfig: WorldConfig) =
-    let blockWidth = worldConfig.TileWidth
-    let empty = "tile"
-    let grass = "grass"
-    let wall = "wall"
-    let leftWall = "leftWall"
-    let rightWall = "rightWall"
-    let topWall = "topWall"
-    let bottomWall = "bottomWall"
 
     let sourceRect = rect 0 0 blockWidth blockWidth
     let cameraOffset = -(halfScreenOffset model.CameraPos)
@@ -366,10 +367,10 @@ let viewWorld (model: Model) (worldConfig: WorldConfig) =
             let alpha = 0.5f
             //target
             let maybeTargetColor =
-                option {
+                voption {
                     let! (tile, ind) = model.PlayerTarget
-                    let! target = if i = ind then Some tile else None
-                    let illegal = Option.isSome target.Collider || Option.isSome target.Entity
+                    let! target = if i = ind then ValueSome tile else ValueNone
+                    let illegal = ValueOption.isSome target.Collider || ValueOption.isSome target.Entity
 
                     return
                         if illegal then
@@ -386,7 +387,7 @@ let viewWorld (model: Model) (worldConfig: WorldConfig) =
                 | FacingLeft -> "facingRight", SpriteEffects.FlipHorizontally
 
             maybeTargetColor
-            |> Option.iter (fun color ->
+            |> ValueOption.iter (fun color ->
                 spriteBatch.Draw(
                     loadedAssets.textures[texture],
                     Rectangle(actualX, actualY, sourceRect.Width, sourceRect.Height),
@@ -399,15 +400,15 @@ let viewWorld (model: Model) (worldConfig: WorldConfig) =
                 ))
 
             tile.Entity
-            |> Option.iter (fun (entity: Entity.Model) ->
+            |> ValueOption.iter (fun (entity: Entity.Model) ->
                 Sprite.drawSprite entity.Sprite -cameraOffset loadedAssets spriteBatch)
 
             match tile.Entity with
-            | Some({ Type = EmittingObservable(_, _) }) -> loadedAssets.sounds[ "click" ].Play(1f, 0.0f, 0.0f) |> ignore
+            | ValueSome({ Type = EmittingObservable(_, _) }) -> loadedAssets.sounds[ "click" ].Play(1f, 0.0f, 0.0f) |> ignore
             | _ -> ()
 
             match tile.Entity with
-            | Some({ Type = EmittingedObservable(etype, t) }) ->
+            | ValueSome({ Type = EmittingedObservable(etype, t) }) ->
 
                 viewEmitting
                     etype
@@ -423,8 +424,6 @@ let view model (dispatch: Message -> unit) =
         yield onkeydown Keys.X (fun _ -> dispatch (PickUpEntity))
         yield onkeydown Keys.C (fun _ -> dispatch (PlaceEntity))
         yield onkeydown Keys.Z (fun _ -> dispatch (Interact))
-
-        yield onkeydown Keys.OemPeriod (fun _ -> dispatch (ChangeLevel level2))
 
         yield
             onupdate (fun input ->

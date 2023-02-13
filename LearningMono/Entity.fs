@@ -44,8 +44,8 @@ and ObservableData =
     { Type: ObservableType
       ToEmit: Emit<EntityType>
       TicksSinceEmit: int
-      Observing: int option
-      Observing2: int option }
+      Observing: int voption
+      Observing2: int voption }
 
 and SubjectData =
     { Type: SubjectType
@@ -56,7 +56,7 @@ and SubjectData =
 [<Struct>]
 type Model =
     { Sprite: Sprite.Model
-      Collider: AABB option
+      Collider: AABB voption
       CanBePickedUp: bool
       Facing: Facing
       Type: EntityType }
@@ -108,13 +108,13 @@ let rec entityEq (e1: EntityType) (e2: EntityType) =
     | Subject { Type = Button _ }, Subject { Type = Button _ } -> true
     | _, _ -> false
 
-let getCollider (eType: EntityType) (pos: Vector2) : AABB option =
+let getCollider (eType: EntityType) (pos: Vector2) : AABB voption =
     match eType with
-    | GoToLevelButton _ -> None
+    | GoToLevelButton _ -> ValueNone
     | Rock
     | Subject _
     | Box _
-    | Observable _ -> Some { Pos = pos; Half = Vector2(10f, 10f) }
+    | Observable _ -> ValueSome { Pos = pos; Half = Vector2(10f, 10f) }
 
 let (|Emittinged|_|) (emit: Emit<'a>) =
     match emit with
@@ -140,27 +140,27 @@ let (|EmittingObservable|_|) (emit: EntityType) =
 
 
 let getObserverFunc (obs: ObservableType) =
-    let behaviorFunc (a: EntityType option) (b: EntityType option) =
+    let behaviorFunc (a: EntityType voption) (b: EntityType voption) =
         match obs with
         | Id
         | Toggle _ ->
             match a with
-            | (Some e1) -> WillEmit e1
+            | (ValueSome e1) -> WillEmit e1
             | _ -> Nothing
         | Map e ->
             match a with
-            | (Some _) -> WillEmit e
+            | (ValueSome _) -> WillEmit e
             | _ -> Nothing
         | Filter e ->
             match a with
-            | (Some e1) when (entityEq e e1) -> WillEmit e1
+            | (ValueSome e1) when (entityEq e e1) -> WillEmit e1
             | _ -> Nothing
         | Compare ->
             match (a, b) with
-            | (Some e1), (Some e2) when (entityEq e1 e2) -> WillEmit e1
+            | (ValueSome e1), (ValueSome e2) when (entityEq e1 e2) -> WillEmit e1
             | _ -> Nothing
 
-    fun (observable: ObservableData) (observing: EntityType option) (observing2: EntityType option) ->
+    fun (observable: ObservableData) (observing: EntityType voption) (observing2: EntityType voption) ->
         //if you have your own stuffs do that
         let toEmit =
             match observable.ToEmit with
@@ -175,13 +175,13 @@ let getObserverFunc (obs: ObservableType) =
             | Emitted _ as cur ->
                 let observed =
                     match observing with
-                    | Some(EmittingObservable(s, _)) -> Some s
-                    | _ -> None
+                    | ValueSome(EmittingObservable(s, _)) -> ValueSome s
+                    | _ -> ValueNone
 
                 let observed2 =
                     match observing with
-                    | Some(EmittingObservable(s, _)) -> Some s
-                    | _ -> None
+                    | ValueSome(EmittingObservable(s, _)) -> ValueSome s
+                    | _ -> ValueNone
 
                 let emit = behaviorFunc observed observed2
 
@@ -211,7 +211,7 @@ let getOnEmit (obs: EntityType) (pos: Vector2) =
                      toggleOffSpriteConfig)
             { entity with
                 Type = Observable { obData with Type = (Toggle(not state)) }
-                Collider = if not state then getCollider entity.Type pos else None
+                Collider = if not state then getCollider entity.Type pos else ValueNone
                 Sprite = Sprite.reInit entity.Sprite newSprite }
     | _ -> (id)
 
@@ -273,9 +273,9 @@ let initNoCollider (entityType: EntityType) (pos: Vector2) time (facing: Facing)
       Sprite = Sprite.init pos time (getSpriteConfig entityType) None None
       Facing = facing
       CanBePickedUp = canBePickedUp
-      Collider = None }
+      Collider = ValueNone }
 
-let withTarget (entityType: EntityType) (target: int option) =
+let withTarget (entityType: EntityType) (target: int voption) =
     match entityType with
     | Observable obs -> Observable { obs with Observing = target }
     | other -> other
@@ -292,7 +292,7 @@ let buildRockTimer =
 
 let rockTimer: EntityType = buildRockTimer
 
-let observing (oType: ObservableType) (target: int option) (target2: int option) : EntityType =
+let observing (oType: ObservableType) (target: int voption) (target2: int voption) : EntityType =
     Observable(
         { Type = oType
           ToEmit = Nothing
@@ -301,7 +301,7 @@ let observing (oType: ObservableType) (target: int option) (target2: int option)
           Observing2 = target2 }
     )
 
-let buildObserver (oType: ObservableType) = observing oType None None
+let buildObserver (oType: ObservableType) = observing oType ValueNone ValueNone
 
 let tileHalf = float32 (worldConfig.TileWidth / 2)
 let half = Vector2(tileHalf)

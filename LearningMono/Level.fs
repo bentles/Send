@@ -20,15 +20,15 @@ type FloorType =
 [<Struct>]
 type Tile =
     { FloorType: FloorType
-      Collider: AABB option
+      Collider: AABB voption
       Coords: Vector2
-      Entity: Entity.Model option }
+      Entity: Entity.Model voption }
 
 let defaultTile =
     { FloorType = FloorType.Empty
-      Collider = None
+      Collider = ValueNone
       Coords = Vector2.Zero
-      Entity = None }
+      Entity = ValueNone }
 
 type LevelData =
     { PlayerStartsAtPos: Vector2
@@ -43,7 +43,7 @@ let createCollidableTile t x y =
     { defaultTile with
         Coords = Vector2(x, y)
         FloorType = t
-        Collider = Some(createColliderFromCoords x y half) }
+        Collider = ValueSome(createColliderFromCoords x y half) }
 
 let createNonCollidableTile t x y =
     { defaultTile with
@@ -56,7 +56,7 @@ let createEntityOn (entityType: EntityType) (floor:FloorType) (coords: Vector2) 
     { defaultTile with
         Coords = coords
         FloorType = floor
-        Entity = Some(Entity.init entityType pos time FacingRight canBePickedUp) }
+        Entity = ValueSome(Entity.init entityType pos time FacingRight canBePickedUp) }
 
 let createRockOnGrass (coords: Vector2) time = createEntityOn Rock Grass coords time
 
@@ -91,7 +91,7 @@ let observerOnGrass (coords: Vector2) time observer facing canPickup : Tile =
     { defaultTile with
         Coords = coords
         FloorType = FloorType.Grass
-        Entity = Some(Entity.init observer pos time facing canPickup) }
+        Entity = ValueSome(Entity.init observer pos time facing canPickup) }
 
 let iterWorld (width: int, height: int) (func: (int * int) -> Tile) : PersistentVector<Tile> =
     seq {
@@ -198,15 +198,15 @@ let level3: LevelBuilder =
                 | Corner (bottom, right) _ -> createCollidableTile Wall fx fy
                 | Wall (bottom, right) wallType -> createCollidableTile wallType fx fy
                 | xy when (List.contains xy obs) ->
-                    observerOnGrass (Vector2(fx, fy)) time (observing Id targetUp None) FacingUp true
+                    observerOnGrass (Vector2(fx, fy)) time (observing Id targetUp ValueNone) FacingUp true
                 | 2, 6
                 | 2, 7
                 | 2, 8
                 | 6, 7
                 | 6, 8
-                | 6, 6 -> observerOnGrass (Vector2(fx, fy)) time (observing (Toggle true) targetUp None) FacingUp false
+                | 6, 6 -> observerOnGrass (Vector2(fx, fy)) time (observing (Toggle true) targetUp ValueNone) FacingUp false
                 | 7, 6
-                | 8, 6 -> observerOnGrass (Vector2(fx, fy)) time (observing (Toggle true) targetLeft None) FacingLeft false
+                | 8, 6 -> observerOnGrass (Vector2(fx, fy)) time (observing (Toggle true) targetLeft ValueNone) FacingLeft false
 
                 | 2, 3 -> createButtonOnGrass (Vector2(fx, fy)) time false
                 | 8, 8 -> createEntityOn (GoToLevelButton L4) Grass (Vector2(fx, fy)) time false
@@ -237,20 +237,18 @@ let level4: LevelBuilder =
                 | Corner (bottom, right) _ -> createCollidableTile Wall fx fy
                 | Wall (bottom, right) wallType -> createCollidableTile wallType fx fy
                 | xy when (List.contains xy obs) ->
-                    observerOnGrass (Vector2(fx, fy)) time (observing Id targetUp None) FacingUp true
+                    observerOnGrass (Vector2(fx, fy)) time (observing Id targetUp ValueNone) FacingUp true
                 | 2, 6
                 | 2, 7
                 | 2, 8
                 | 6, 7
                 | 6, 8
-                | 6, 6 -> observerOnGrass (Vector2(fx, fy)) time (observing (Toggle true) targetUp None) FacingUp false
+                | 6, 6 -> observerOnGrass (Vector2(fx, fy)) time (observing (Toggle true) targetUp ValueNone) FacingUp false
                 | 7, 6
-                | 8, 6 -> observerOnGrass (Vector2(fx, fy)) time (observing (Toggle true) targetLeft None) FacingLeft false
+                | 8, 6 -> observerOnGrass (Vector2(fx, fy)) time (observing (Toggle true) targetLeft ValueNone) FacingLeft false
 
                 | 2, 3 -> createTimerOnGrass (Vector2(fx, fy)) time false
                 | 8, 8 -> createEntityOn (GoToLevelButton L1) Grass (Vector2(fx, fy)) time false
-
-
                 | _ -> createNonCollidableTile FloorType.Grass fx fy)
 
         { PlayerStartsAtPos = Vector2(200f, 100f)

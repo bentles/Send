@@ -237,7 +237,7 @@ let transformComplete (characterState: State) =
     | Small false -> Small false, CharAnimations.BigWalk
 
 let tickAnimations model time =
-    let (newSprite, event) = Sprite.animTick time model.SpriteInfo
+    let struct (newSprite, event) = Sprite.animTick time model.SpriteInfo
 
     match event with
     | Sprite.AnimationComplete _ ->
@@ -268,21 +268,19 @@ let tick (info: PhysicsInfo) (model: Model) : Model =
 
 let update (message: Message) (model: Model) =
     match message with
-    | Input direction -> { model with Input = direction }, Cmd.none
+    | Input direction -> { model with Input = direction }
     | TransformCharacter ->
         let (newState, transformAnimation) = transformStart model.CharacterState
 
         { model with
             CharacterState = newState
-            SpriteInfo = Sprite.switchAnimation (transformAnimation, 100, true) model.SpriteInfo },
-        Cmd.none
+            SpriteInfo = Sprite.switchAnimation (transformAnimation, 100, true) model.SpriteInfo }
 
-    | FreezeMovement holding -> { model with MovementFrozen = holding }, Cmd.none
+    | FreezeMovement holding -> { model with MovementFrozen = holding }
     | ArrowsControlPlacement theyDo ->
         { model with
             MovementFrozen = theyDo
-            ArrowsControlPlacement = theyDo },
-        Cmd.none
+            ArrowsControlPlacement = theyDo }
 
 
 let viewCarrying

@@ -10,8 +10,10 @@ TODO:
 - just use facing to determine observable target
 - button press should be on keypress not key down
 - option --> voption
-- interaction menus :'(
 - use tile to show which entities are permanent
+
+THINKING:
+- interaction menus :'(
 
 DOING:
 

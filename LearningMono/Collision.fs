@@ -13,12 +13,14 @@ let clamp value min max =
     elif value > max then max
     else value
 
+[<Struct>]
 type CollisionInfo =
     {
       //collision
       Half: Vector2
       Offset: Vector2 }
 
+[<Struct>]
 type Hit =
     { Collider: AABB
       Pos: Vector2
@@ -26,8 +28,9 @@ type Hit =
       Normal: Vector2
       Time: float32 }
 
+[<Struct>]
 type Sweep =
-    { Hit: Hit option
+    { Hit: Hit voption
       Pos: Vector2
       Time: float32 } //default to 1
 
@@ -42,7 +45,7 @@ let collider (pos: Vector2) (collisionInfo: CollisionInfo) : AABB =
     { Pos = pos + collisionInfo.Offset
       Half = collisionInfo.Half }
 
-let intersectSegment (aabb: AABB) (pos: Vector2) (delta: Vector2) paddingX paddingY : Hit option =
+let intersectSegment (aabb: AABB) (pos: Vector2) (delta: Vector2) paddingX paddingY : Hit voption =
     let scaleX = 1.0f / delta.X
     let scaleY = 1.0f / delta.Y
 
@@ -61,13 +64,13 @@ let intersectSegment (aabb: AABB) (pos: Vector2) (delta: Vector2) paddingX paddi
     let farTimeY = if Single.IsNaN(farTimeY) then -infinityf else farTimeY
 
     if nearTimeX > farTimeY || nearTimeY > farTimeX then
-        None
+        ValueNone
     else
         let nearTime = max nearTimeX nearTimeY
         let farTime = min farTimeX farTimeY
 
         if nearTime >= 1.0f || farTime <= 0f then
-            None
+            ValueNone
         else
             let hittime = clamp nearTime 0f 1f
 
@@ -80,29 +83,29 @@ let intersectSegment (aabb: AABB) (pos: Vector2) (delta: Vector2) paddingX paddi
             let hitdelta = Vector2((1.0f - hittime) * -delta.X, (1.0f - hittime) * -delta.Y)
             let hitpos = Vector2(pos.X + delta.X * hittime, pos.Y + delta.Y * hittime)
 
-            Some
+            ValueSome
                 { Collider = aabb
                   Pos = hitpos
                   Delta = hitdelta
                   Normal = hitNormal
                   Time = hittime }
 
-let intersectAABB (aabb: AABB) (box: AABB) : Hit option =
+let intersectAABB (aabb: AABB) (box: AABB) : Hit voption =
     let dx = box.Pos.X - aabb.Pos.X
     let px = (box.Half.X + aabb.Half.X) - (abs dx)
 
     if (px <= 0f) then
-        None
+        ValueNone
     else
         let dy = box.Pos.Y - aabb.Pos.Y
         let py = (box.Half.Y + aabb.Half.Y) - (abs dy)
 
         if (py <= 0f) then
-            None
+            ValueNone
         else if (px < py) then
             let sx = float32 (sign dx)
 
-            Some
+            ValueSome
                 { Time = 0f
                   Collider = aabb
                   Delta = Vector2(px * sx, 0f)
@@ -111,7 +114,7 @@ let intersectAABB (aabb: AABB) (box: AABB) : Hit option =
         else
             let sy = float32 (sign dy)
 
-            Some
+            ValueSome
                 { Time = 0f
                   Collider = aabb
                   Delta = Vector2(0f, py * sy)
@@ -124,16 +127,16 @@ let sweepAABB (aabb: AABB) (box: AABB) (delta: Vector2) : Sweep =
         let hit = intersectAABB aabb box
 
         match hit with
-        | Some hit ->
+        | ValueSome hit ->
             { Pos = box.Pos
-              Hit = Some { hit with Time = 0f }
+              Hit = ValueSome { hit with Time = 0f }
               Time = 0f }
-        | None -> { Pos = box.Pos; Hit = None; Time = 1f }
+        | ValueNone -> { Pos = box.Pos; Hit = ValueNone; Time = 1f }
     else
         let hit = intersectSegment aabb box.Pos delta box.Half.X box.Half.Y
 
         match hit with
-        | Some hit ->
+        | ValueSome hit ->
             let sweepTime = clamp (hit.Time - EPSILON) 0f 1f
             let sweepPosX = box.Pos.X + delta.X * sweepTime
             let sweepPosY = box.Pos.Y + delta.Y * sweepTime
@@ -149,16 +152,16 @@ let sweepAABB (aabb: AABB) (box: AABB) (delta: Vector2) : Sweep =
 
             let hitPos = Vector2(hitPosX, hitPosY)
 
-            { Hit = Some { hit with Pos = hitPos }
+            { Hit = ValueSome { hit with Pos = hitPos }
               Pos = sweepPos
               Time = sweepTime }
-        | None ->
+        | ValueNone ->
             let sweepPosX = box.Pos.X + delta.X
             let sweepPosY = box.Pos.Y + delta.Y
             let sweepPos = Vector2(sweepPosX, sweepPosY)
             let sweepTime = 1f
 
-            { Hit = None
+            { Hit = ValueNone
               Pos = sweepPos
               Time = sweepTime }
 
@@ -166,7 +169,7 @@ let sweepInto (aabb: AABB) (staticColliders: AABB seq) (delta: Vector2) : Sweep 
     let nearest: Sweep =
         { Time = 1f
           Pos = Vector2(aabb.Pos.X + delta.X, aabb.Pos.Y + delta.Y)
-          Hit = None }
+          Hit = ValueNone }
 
     let nearestCollisionFn =
         (fun nearest collider ->
@@ -192,7 +195,7 @@ let collide pos oldPos colInfo obstacles =
         let sweep1 = sweepIntoWithOffset pos oldPos obstacles
 
         match sweep1.Hit with
-        | Some hit ->
+        | ValueSome hit ->
             let movementIntoAABB = pos - sweep1.Pos
             let vectorOut = (hit.Normal * hit.Normal) * movementIntoAABB //grab the component that points out
             let deltaParallel = movementIntoAABB - vectorOut //calc component along the surface
@@ -204,7 +207,7 @@ let collide pos oldPos colInfo obstacles =
                 let sweep2 = sweepIntoWithOffset (sweep1.Pos + deltaParallel) sweep1.Pos obstacles
 
                 match sweep2.Hit with
-                | Some _ -> sweep2.Pos
-                | None -> sweep1.Pos + deltaParallel
+                | ValueSome _ -> sweep2.Pos
+                | ValueNone -> sweep1.Pos + deltaParallel
 
-        | None -> pos
+        | ValueNone -> pos
