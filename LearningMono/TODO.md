@@ -8,16 +8,18 @@ TODO:
 - prevent transform if carrying limits exceeded
 - make it easier to create entities for carrying
 - just use facing to determine observable target
-- button press should be on keypress not key down
-- option --> voption
+- button goes down on key down
 - use tile to show which entities are permanent
 
 THINKING:
 - interaction menus :'(
 
 DOING:
+- move away from viewables as much as possible -- too much GC
 
 DONE:
+- option --> voption
+- button press should be on keypress not key down
 - fix weird jumping when switching placement orientation
 - add simple music and sfx
 - Toggle observable that switches between collidable and not when triggered

@@ -1,6 +1,7 @@
 ﻿module Prelude
 
 open Microsoft.Xna.Framework
+open Xelmish.Model
 
 [<Struct>]
 type Facing =
@@ -30,3 +31,22 @@ type PlayerWorldInteraction =
     | TryPickup
     | TryPlace
     | NoAction
+
+module Direct =
+    /// Run the given event if the given key has just been pressed
+    let onkeydown key event (inputs:Inputs) =
+        if inputs.keyboardState.IsKeyDown key 
+        && not (inputs.lastKeyboardState.IsKeyDown key) then 
+            event ()
+
+    /// Run the given event if the given key is currently pressed
+    let whilekeydown key event (inputs:Inputs) =
+        if inputs.keyboardState.IsKeyDown key 
+        && inputs.lastKeyboardState.IsKeyDown key then 
+            event ()
+
+    /// Run the given event if the given key has just been released
+    let onkeyup key event (inputs:Inputs)  =
+        if not (inputs.keyboardState.IsKeyDown key)
+        && inputs.lastKeyboardState.IsKeyDown key then 
+            event ()
