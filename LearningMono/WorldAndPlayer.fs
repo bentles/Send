@@ -55,7 +55,7 @@ let getTileAtPos (pos: Vector2) (size: int * int) (tiles: PersistentVector<Tile>
     index |> ValueOption.map (fun index -> PersistentVector.nth index tiles, index)
 
 let init time =
-    let level = level3 time
+    let level = level1 time
 
     { Tiles = level.Tiles
       Song = PlaySong "tutorial"
@@ -248,7 +248,7 @@ let update (message: Message) (model: Model) : Model =
 
         match maybeUpdate with
         | ValueNone -> model
-        | ValueSome mnodel -> model
+        | ValueSome updatedModel -> updatedModel
     
     | PhysicsTick(time, slow) ->
         let wasCarrying = model.Player.Carrying.Length
