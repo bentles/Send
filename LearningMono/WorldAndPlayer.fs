@@ -40,14 +40,15 @@ let halfScreenOffset (camPos: Vector2) : Vector2 =
     Vector2.Subtract(camPos, Vector2(800f, 450f))
 
 let getCollidables (tiles: Tile seq) : AABB seq =
-    seq { for tile in tiles do
+    seq {
+        for tile in tiles do
             match tile.Collider with
             | ValueSome collider -> collider
             | _ ->
                 match tile.Entity with
                 | ValueSome { Collider = ValueSome collider } -> collider
                 | _ -> ()
-                }
+    }
 
 
 let getTileAtPos (pos: Vector2) (size: int * int) (tiles: PersistentVector<Tile>) : struct (Tile * int) voption =
@@ -56,7 +57,7 @@ let getTileAtPos (pos: Vector2) (size: int * int) (tiles: PersistentVector<Tile>
     index |> ValueOption.map (fun index -> PersistentVector.nth index tiles, index)
 
 let init time =
-    let level = level1 time
+    let level = level3 time
 
     { Tiles = level.Tiles
       Song = PlaySong "tutorial"
@@ -159,7 +160,8 @@ let pickUpEntity (model: Model) : Model =
             let! entity = tile.Entity
 
             if entity.CanBePickedUp then
-                let tiles = model.Tiles |> PersistentVector.update i { tile with Entity = ValueNone }
+                let tiles =
+                    model.Tiles |> PersistentVector.update i { tile with Entity = ValueNone }
 
                 return
                     { model with
@@ -172,40 +174,42 @@ let pickUpEntity (model: Model) : Model =
         |> Option.defaultValue model
     | _ -> model
 
-let placeEntity (model:Model): Model = 
+let placeEntity (model: Model) : Model =
     let player = model.Player
+
     match player.CharacterState with
-        | Player.Small _ ->
-            let tileAndIndex = model.PlayerTarget
+    | Player.Small _ ->
+        let tileAndIndex = model.PlayerTarget
 
-            match tileAndIndex with
-            | ValueSome({ Entity = ValueNone } as tile, i) ->
-                match player.Carrying with
-                | entity :: rest ->
-                    //make a targeting function
-                    let roundedPos = posRounded player.Target worldConfig
-                    let (x, y) = vectorToCoords roundedPos
-                    let xface, yface = facingToCoords player.PlacementFacing
-                    let at = (x + xface, y + yface)
+        match tileAndIndex with
+        | ValueSome({ Entity = ValueNone } as tile, i) ->
+            match player.Carrying with
+            | entity :: rest ->
+                //make a targeting function
+                let roundedPos = posRounded player.Target worldConfig
+                let (x, y) = vectorToCoords roundedPos
+                let xface, yface = facingToCoords player.PlacementFacing
+                let at = (x + xface, y + yface)
 
-                    let facing = player.PlacementFacing
+                let facing = player.PlacementFacing
 
-                    let entityType = withTarget entity.Type (coordsToIndex at model.Size)
-                    let entity = Entity.init entityType roundedPos model.TimeElapsed facing true
-                    let sprite = Sprite.startAnimation entity.Sprite
-                    let entity = { entity with Sprite = sprite }
+                let entityType = withTarget entity.Type (coordsToIndex at model.Size)
+                let entity = Entity.init entityType roundedPos model.TimeElapsed facing true
+                let sprite = Sprite.startAnimation entity.Sprite
+                let entity = { entity with Sprite = sprite }
 
-                    let tiles =
-                        model.Tiles |> PersistentVector.update i { tile with Entity = ValueSome(entity) }
+                let tiles =
+                    model.Tiles
+                    |> PersistentVector.update i { tile with Entity = ValueSome(entity) }
 
-                    { model with
-                        Tiles = tiles
-                        Player = { player with Carrying = rest } }
-                | _ -> model
+                { model with
+                    Tiles = tiles
+                    Player = { player with Carrying = rest } }
             | _ -> model
         | _ -> model
+    | _ -> model
 
-let changeLevel (model:Model) (levelBuilder:LevelBuilder): Model =
+let changeLevel (model: Model) (levelBuilder: LevelBuilder) : Model =
     let newLevel = levelBuilder model.TimeElapsed
 
     { model with
@@ -216,11 +220,10 @@ let changeLevel (model:Model) (levelBuilder:LevelBuilder): Model =
                 Pos = newLevel.PlayerStartsAtPos
                 Carrying = newLevel.PlayerStartsCarrying } }
 
-let interactions (event: Entity.InteractionEvent) (model:Model) : Model =
+let interactions (event: Entity.InteractionEvent) (model: Model) : Model =
     match event with
-    | GoToLevel l ->
-        changeLevel model (levelLookup l)
-        
+    | GoToLevel l -> changeLevel model (levelLookup l)
+
     | NoEvent -> model
 
 let update (message: Message) (model: Model) : Model =
@@ -229,10 +232,8 @@ let update (message: Message) (model: Model) : Model =
         let (newPlayerModel) = Player.update playerMsg model.Player
         { model with Player = newPlayerModel }
     | SongStarted name -> { model with Song = PlayingSong name }
-    | PickUpEntity ->
-        { model with PlayerAction = TryPickup }
-    | PlaceEntity ->
-        { model with PlayerAction = TryPlace }
+    | PickUpEntity -> { model with PlayerAction = TryPickup }
+    | PlaceEntity -> { model with PlayerAction = TryPlace }
     | Interact ->
         let maybeUpdate =
             voption {
@@ -242,7 +243,8 @@ let update (message: Message) (model: Model) : Model =
                 let model = interactions event model
 
                 let tiles =
-                    model.Tiles |> PersistentVector.update i { tile with Entity = ValueSome newEntity }
+                    model.Tiles
+                    |> PersistentVector.update i { tile with Entity = ValueSome newEntity }
 
                 return { model with Tiles = tiles }
             }
@@ -250,16 +252,14 @@ let update (message: Message) (model: Model) : Model =
         match maybeUpdate with
         | ValueNone -> model
         | ValueSome updatedModel -> updatedModel
-    
+
     | PhysicsTick(time, slow) ->
         let wasCarrying = model.Player.Carrying.Length
 
-        let model = 
+        let model =
             match model.PlayerAction with
-            | TryPickup ->
-                pickUpEntity model
-            | TryPlace ->
-                placeEntity model
+            | TryPickup -> pickUpEntity model
+            | TryPlace -> placeEntity model
             | NoAction -> model
 
         let isCarrying = model.Player.Carrying.Length
@@ -289,8 +289,7 @@ let update (message: Message) (model: Model) : Model =
             CameraPos = newCameraPos
             Player = { player with CarryingDelta = isCarrying - wasCarrying }
             PlayerTarget = tileAndIndex
-            PlayerAction = NoAction
-             }
+            PlayerAction = NoAction }
 
 // VIEW
 
@@ -302,7 +301,7 @@ let viewEmitting
     (texture: Graphics.Texture2D)
     =
     let imageInfo = getEmitImage entityType
-    let struct(width, height) = (imageInfo.SpriteSize)
+    let struct (width, height) = (imageInfo.SpriteSize)
 
     if ticksSinceLast < 20 then
         let alpha = int ((float32 (30 - ticksSinceLast) / 20f) * 220f)
@@ -328,130 +327,114 @@ let rightWall = "rightWall"
 let topWall = "topWall"
 let bottomWall = "bottomWall"
 
-let viewWorld (model: Model) (worldConfig: WorldConfig) =
-
+let drawWorld (model: Model) loadedAssets (spriteBatch: SpriteBatch) =
     let sourceRect = rect 0 0 blockWidth blockWidth
     let cameraOffset = -(halfScreenOffset model.CameraPos)
 
-    OnDraw(fun loadedAssets _ (spriteBatch: SpriteBatch) ->
-        model.Tiles
-        |> PersistentVector.toSeq
-        |> Seq.iteri (fun i tile ->
+    model.Tiles
+    |> PersistentVector.toSeq
+    |> Seq.iteri (fun i tile ->
 
-            let texture =
-                match tile.FloorType with
-                | FloorType.Grass -> grass
-                | FloorType.Empty -> empty
-                | FloorType.Wall -> wall
-                | FloorType.LeftWall -> leftWall
-                | FloorType.RightWall -> rightWall
-                | FloorType.TopWall -> topWall
-                | FloorType.BottomWall -> bottomWall
+        let texture =
+            match tile.FloorType with
+            | FloorType.Grass -> grass
+            | FloorType.Empty -> empty
+            | FloorType.Wall -> wall
+            | FloorType.LeftWall -> leftWall
+            | FloorType.RightWall -> rightWall
+            | FloorType.TopWall -> topWall
+            | FloorType.BottomWall -> bottomWall
 
-            let startX = 0
-            let startY = 0
-            let width, _ = model.Size
+        let startX = 0
+        let startY = 0
+        let width, _ = model.Size
 
-            let xBlockOffSet = (i % width) * blockWidth
-            let yBlockOffSet = (i / width) * blockWidth
+        let xBlockOffSet = (i % width) * blockWidth
+        let yBlockOffSet = (i / width) * blockWidth
 
-            let actualX = startX + xBlockOffSet + int (cameraOffset.X)
-            let actualY = startY + yBlockOffSet + int (cameraOffset.Y)
+        let actualX = startX + xBlockOffSet + int (cameraOffset.X)
+        let actualY = startY + yBlockOffSet + int (cameraOffset.Y)
 
-            //floor
+        //floor
+        spriteBatch.Draw(
+            loadedAssets.textures[texture],
+            Rectangle(actualX, actualY, sourceRect.Width, sourceRect.Height),
+            Color.White
+        )
+
+        let alpha = 0.5f
+        //target
+        let maybeTargetColor =
+            voption {
+                let! (tile, ind) = model.PlayerTarget
+                let! target = if i = ind then ValueSome tile else ValueNone
+                let illegal = ValueOption.isSome target.Collider || ValueOption.isSome target.Entity
+
+                return
+                    if illegal then
+                        (Color.Orange * alpha)
+                    else
+                        (Color.Green * alpha)
+            }
+
+        let struct (texture, effect) =
+            match model.Player.PlacementFacing with
+            | FacingUp -> "facingUp", SpriteEffects.None
+            | FacingRight -> "facingRight", SpriteEffects.None
+            | FacingDown -> "facingUp", SpriteEffects.FlipVertically
+            | FacingLeft -> "facingRight", SpriteEffects.FlipHorizontally
+
+
+        match maybeTargetColor with
+        | ValueSome color ->
             spriteBatch.Draw(
                 loadedAssets.textures[texture],
                 Rectangle(actualX, actualY, sourceRect.Width, sourceRect.Height),
-                Color.White
+                System.Nullable<Rectangle>(),
+                color,
+                0f,
+                Vector2.Zero,
+                effect,
+                0f
             )
+        | ValueNone -> ()
 
-            let alpha = 0.5f
-            //target
-            let maybeTargetColor =
-                voption {
-                    let! (tile, ind) = model.PlayerTarget
-                    let! target = if i = ind then ValueSome tile else ValueNone
-                    let illegal = ValueOption.isSome target.Collider || ValueOption.isSome target.Entity
+        match tile.Entity with
+        | ValueSome entity -> Sprite.drawSprite entity.Sprite -cameraOffset loadedAssets spriteBatch
+        | ValueNone -> ()
 
-                    return
-                        if illegal then
-                            (Color.Orange * alpha)
-                        else
-                            (Color.Green * alpha)
-                }
+        match tile.Entity with
+        | ValueSome({ Type = EmittingObservable(_, _) }) ->
+            loadedAssets.sounds[ "click" ].Play(1f, 0.0f, 0.0f) |> ignore
+        | _ -> ()
 
-            let struct (texture, effect) =
-                match model.Player.PlacementFacing with
-                | FacingUp -> "facingUp", SpriteEffects.None
-                | FacingRight -> "facingRight", SpriteEffects.None
-                | FacingDown -> "facingUp", SpriteEffects.FlipVertically
-                | FacingLeft -> "facingRight", SpriteEffects.FlipHorizontally
+        match tile.Entity with
+        | ValueSome({ Type = EmittingedObservable(etype, t) }) ->
 
+            viewEmitting etype t (actualX, actualY) spriteBatch loadedAssets.textures[(getEmitImage etype).TextureName]
+        | _ -> ())
 
-            match maybeTargetColor with 
-            | ValueSome color ->
-                spriteBatch.Draw(
-                    loadedAssets.textures[texture],
-                    Rectangle(actualX, actualY, sourceRect.Width, sourceRect.Height),
-                    System.Nullable<Rectangle>(),
-                    color,
-                    0f,
-                    Vector2.Zero,
-                    effect,
-                    0f
-                )
-            | ValueNone -> ()
+let draw model (dispatch: Message -> unit) loadedAssets _inputs spriteBatch =
+    match model.Song with
+    | PlaySong songName ->
+        // Media.MediaPlayer.Play(loaded.music[songName])
+        // Media.MediaPlayer.IsRepeating <- true
+        dispatch (SongStarted songName)
+    | Stopped -> Media.MediaPlayer.Stop()
+    | _ -> ()
 
-            match tile.Entity with
-            | ValueSome entity -> 
-                Sprite.drawSprite entity.Sprite -cameraOffset loadedAssets spriteBatch
-            | ValueNone -> ()
+    drawWorld model loadedAssets spriteBatch
+    Player.drawPlayer model.Player (halfScreenOffset model.CameraPos) loadedAssets spriteBatch
 
-            match tile.Entity with
-            | ValueSome({ Type = EmittingObservable(_, _) }) -> loadedAssets.sounds[ "click" ].Play(1f, 0.0f, 0.0f) |> ignore
-            | _ -> ()
+let inputs (inputs: Inputs) (dispatch: Message -> unit) =
+    if KeyBoard.iskeydown Keys.X inputs then
+        (dispatch (PickUpEntity))
 
-            match tile.Entity with
-            | ValueSome({ Type = EmittingedObservable(etype, t) }) ->
+    if KeyBoard.iskeydown Keys.C inputs then
+        (dispatch (PlaceEntity))
 
-                viewEmitting
-                    etype
-                    t
-                    (actualX, actualY)
-                    spriteBatch
-                    loadedAssets.textures[(getEmitImage etype).TextureName]
-            | _ -> ()))
+    if KeyBoard.iskeydown Keys.Z inputs then
+        (dispatch (Interact))
 
-let view model (dispatch: Message -> unit) =
-    seq {
-        // input
-        yield onkeydown Keys.X (fun _ -> dispatch (PickUpEntity))
-        yield onkeydown Keys.C (fun _ -> dispatch (PlaceEntity))
-        yield onkeydown Keys.Z (fun _ -> dispatch (Interact))
-
-        yield
-            onupdate (fun input ->
-                let mousePos = input.mouseState.Position
-                ())
-
-        // music
-        yield
-            OnDraw(fun loaded _inputs _spriteBatch ->
-                match model.Song with
-                | PlaySong songName ->
-                    // Media.MediaPlayer.Play(loaded.music[songName])
-                    // Media.MediaPlayer.IsRepeating <- true
-                    dispatch (SongStarted songName)
-                | Stopped -> Media.MediaPlayer.Stop()
-                | _ -> ())
-
-        // physics
-        yield onupdate (fun input -> dispatch (PhysicsTick(input.totalGameTime, input.gameTime.IsRunningSlowly)))
-
-        //render
-        yield viewWorld model worldConfig
-        yield! Player.view model.Player (halfScreenOffset model.CameraPos) (PlayerMessage >> dispatch)
-
-    //debug
-    //  yield debugText $"running slow?:{model.Slow}" (40, 100)
-    }
+    Player.inputs inputs (PlayerMessage >> dispatch)
+    dispatch (PhysicsTick(inputs.totalGameTime, inputs.gameTime.IsRunningSlowly))

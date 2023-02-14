@@ -151,9 +151,6 @@ let drawSprite (model: Model) (cameraPos: Vector2) (loadedAssets: LoadedAssets) 
         0f
     )
 
-let view (model: Model) (cameraPos: Vector2) : Viewable =
-    OnDraw(fun loadedAssets _ (spriteBatch: SpriteBatch) -> drawSprite model cameraPos loadedAssets spriteBatch)
-
 
 let animTick time model =
     let t = time - model.LastFrameTime
@@ -193,8 +190,6 @@ let animTick time model =
                 AnimationState = newAnimationState
                 LastFrameTime = t },
             event)
-
-
 
 let stop model =
     match model.AnimationState with

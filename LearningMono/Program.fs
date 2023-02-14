@@ -2,6 +2,7 @@
 open Xelmish.Model // required for config types used when using program.run
 open Xelmish.Viewables // required to get access to helpers like 'colour'
 open GameConfig
+open Prelude
 
 type Model = { World: World.Model
                TimeElapsed: int64
@@ -21,17 +22,28 @@ let update message (model: Model) =
     | WorldMessage p ->
         let (newWorld) = World.update p model.World
         { model with World = newWorld }, Cmd.none
-    | Tick time -> { model with TimeElapsed = time } , Cmd.none
+    | Tick time -> { model with TimeElapsed = time } , Cmd.none 
 
 
 let view (model: Model) (dispatch: Message -> unit) =
-    seq { 
-      yield! World.view model.World (WorldMessage >> dispatch)
+    [
+        OnDraw(fun loadedAssets inputs spriteBatch -> 
+            World.draw model.World (WorldMessage >> dispatch) loadedAssets inputs spriteBatch
+        )
+        OnUpdate(fun inputs -> 
+            World.inputs inputs (WorldMessage >> dispatch)
+            dispatch (Tick inputs.totalGameTime) //TODO: probs don't need this
+            if KeyBoard.iskeydown Keys.Escape inputs then exit()
+            )
+    ]
 
-      yield onupdate (fun input -> dispatch (Tick input.totalGameTime))
+    // seq { 
+    //   yield! World.view model.World (WorldMessage >> dispatch)
 
-      //input
-      yield onkeydown Keys.Escape exit } |> Seq.toList
+    //   yield onupdate (fun input -> dispatch (Tick input.totalGameTime))
+
+    //   //input
+    //   yield onkeydown Keys.Escape exit } |> Seq.toList
 
 [<EntryPoint>]
 let main _ =

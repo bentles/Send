@@ -308,23 +308,31 @@ let hearCarrying (carryingDelta: int) (loadedAssets: LoadedAssets) =
     | -1 -> loadedAssets.sounds[ "place" ].Play(0.5f, 0f, 0f) |> ignore
     | _ -> ()
 
+let drawPlayer (model: Model) (cameraPos: Vector2) loadedAssets (spriteBatch: SpriteBatch) =
+    Sprite.drawSprite model.SpriteInfo cameraPos loadedAssets spriteBatch
+    viewCarrying model.Carrying cameraPos model.CharacterState loadedAssets spriteBatch
+    hearCarrying model.CarryingDelta loadedAssets
+
 let viewPlayer (model: Model) (cameraPos: Vector2) =
-    OnDraw(fun loadedAssets _ (spriteBatch: SpriteBatch) ->
-        Sprite.drawSprite model.SpriteInfo cameraPos loadedAssets spriteBatch |> ignore
-        viewCarrying model.Carrying cameraPos model.CharacterState loadedAssets spriteBatch
-        hearCarrying model.CarryingDelta loadedAssets)
+    OnDraw(fun loadedAssets _ (spriteBatch: SpriteBatch) -> drawPlayer model cameraPos loadedAssets spriteBatch)
 
-let view (model: Model) (cameraPos: Vector2) (dispatch: Message -> unit) =
-    seq {
-        //input
-        yield directions Keys.Up Keys.Down Keys.Left Keys.Right (fun f -> dispatch (Input f))
-        yield onkeydown Keys.Space (fun _ -> dispatch (TransformCharacter))
-        yield onkeydown Keys.LeftControl (fun _ -> dispatch (FreezeMovement true))
-        yield onkeyup Keys.LeftControl (fun _ -> dispatch (FreezeMovement false))
+let inputs (inputs: Inputs) (dispatch: Message -> unit) =
+    let currentInputsAsVector =
+        KeyBoard.directions Keys.Up Keys.Down Keys.Left Keys.Right inputs
 
-        yield onkeydown Keys.LeftShift (fun _ -> dispatch (ArrowsControlPlacement true))
-        yield onkeyup Keys.LeftShift (fun _ -> dispatch (ArrowsControlPlacement false))
+    dispatch (Input currentInputsAsVector)
 
-        //render
-        yield viewPlayer model cameraPos
-    }
+    if KeyBoard.iskeydown Keys.Space inputs then
+        (dispatch TransformCharacter)
+
+    if KeyBoard.iskeydown Keys.LeftControl inputs then
+        (dispatch (FreezeMovement true))
+
+    if KeyBoard.iskeyup Keys.LeftControl inputs then
+        (dispatch (FreezeMovement false))
+
+    if KeyBoard.iskeydown Keys.LeftShift inputs then
+        (dispatch (ArrowsControlPlacement true))
+
+    if KeyBoard.iskeyup Keys.LeftShift inputs then
+        (dispatch (ArrowsControlPlacement false))
