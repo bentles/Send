@@ -155,12 +155,12 @@ let drawSprite (model: Model) (cameraPos: Vector2) (loadedAssets: LoadedAssets) 
 let animTick time model =
     let t = time - model.LastFrameTime
 
-    let (t, inc) =
+    let struct (t, inc) =
         match (t > model.FrameLength) with
-        | true -> (time, 1)
-        | false -> model.LastFrameTime, 0
+        | true -> struct (time, 1)
+        | false -> struct (model.LastFrameTime, 0)
 
-    let (newAnimationState, event) =
+    let struct (newAnimationState, event) =
         match model.AnimationState with
         | Stopped(ani, oldX) -> Stopped(ani, oldX), Events.None
         | Started(ani, oldX) ->

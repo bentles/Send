@@ -297,10 +297,9 @@ let viewCarrying
         | _ -> Vector2(0f, 55f)
 
     carrying
-    |> Seq.indexed
-    |> Seq.iter (fun (i, c) ->
+    |> Seq.iteri (fun i item ->
         let offSetPos = cameraPos + offsetStart + (Vector2(0f, 25f) * (float32 i))
-        Sprite.drawSprite c.Sprite offSetPos loadedAssets spriteBatch)
+        Sprite.drawSprite item.Sprite offSetPos loadedAssets spriteBatch)
 
 let hearCarrying (carryingDelta: int) (loadedAssets: LoadedAssets) =
     match carryingDelta with
