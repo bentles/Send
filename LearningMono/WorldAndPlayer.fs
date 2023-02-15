@@ -89,8 +89,7 @@ let updateWorldReactive (tiles: PersistentVector<Tile>) : PersistentVector<Tile>
                 let newEntityType =
                     match entity.Type with
                     | Subject subject -> Subject((getSubjectFunc subject.Type) subject)
-                    | Observable({ Type = oType
-                                   Observing = ob1
+                    | Observable({ Observing = ob1
                                    Observing2 = ob2 } as oData) ->
 
                         // get what is being is observed if anything
@@ -105,7 +104,7 @@ let updateWorldReactive (tiles: PersistentVector<Tile>) : PersistentVector<Tile>
                         let eType1 = getObserved ob1
                         let eType2 = getObserved ob2
 
-                        Observable((getObserverFunc oType) oData eType1 eType2)
+                        Observable(observerFunc oData eType1 eType2)
                     | other -> other
 
                 // if emitting and has an onEmit fun then apply that

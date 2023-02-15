@@ -139,65 +139,65 @@ let (|EmittingObservable|_|) (emit: EntityType) =
     | _ -> None
 
 
-let getObserverFunc (obs: ObservableType) =
-    let behaviorFunc (a: EntityType voption) (b: EntityType voption) =
-        match obs with
-        | Id
-        | Toggle _ ->
-            match a with
-            | (ValueSome e1) -> WillEmit e1
-            | _ -> Nothing
-        | Map e ->
-            match a with
-            | (ValueSome _) -> WillEmit e
-            | _ -> Nothing
-        | Filter e ->
-            match a with
-            | (ValueSome e1) when (entityEq e e1) -> WillEmit e1
-            | _ -> Nothing
-        | Compare ->
-            match (a, b) with
-            | (ValueSome e1), (ValueSome e2) when (entityEq e1 e2) -> WillEmit e1
-            | _ -> Nothing
+let behaviorFunc (observable: ObservableData) (a: EntityType voption) (b: EntityType voption) =
+    match observable.Type with
+    | Id
+    | Toggle _ ->
+        match a with
+        | (ValueSome e1) -> WillEmit e1
+        | _ -> Nothing
+    | Map e ->
+        match a with
+        | (ValueSome _) -> WillEmit e
+        | _ -> Nothing
+    | Filter e ->
+        match a with
+        | (ValueSome e1) when (entityEq e e1) -> WillEmit e1
+        | _ -> Nothing
+    | Compare ->
+        match (a, b) with
+        | (ValueSome e1), (ValueSome e2) when (entityEq e1 e2) -> WillEmit e1
+        | _ -> Nothing
 
-    fun (observable: ObservableData) (observing: EntityType voption) (observing2: EntityType voption) ->
-        //if you have your own stuffs do that
-        let toEmit =
-            match observable.ToEmit with
-            | WillEmit t -> Emitting t
-            | Emitting t -> Emitted t
-            | other -> other
+let observerFunc (observable: ObservableData) (observing: EntityType voption) (observing2: EntityType voption) =
 
-        //otherwise check in on the thing you are observing
-        let toEmit =
-            match toEmit with
-            | Nothing
-            | Emitted _ as cur ->
-                let observed =
-                    match observing with
-                    | ValueSome(EmittingObservable(s, _)) -> ValueSome s
-                    | _ -> ValueNone
+    //if you have your own stuffs do that
+    let toEmit =
+        match observable.ToEmit with
+        | WillEmit t -> Emitting t
+        | Emitting t -> Emitted t
+        | other -> other
 
-                let observed2 =
-                    match observing with
-                    | ValueSome(EmittingObservable(s, _)) -> ValueSome s
-                    | _ -> ValueNone
+    //otherwise check in on the thing you are observing
+    let toEmit =
+        match toEmit with
+        | Nothing
+        | Emitted _ as cur ->
+            let observed =
+                match observing with
+                | ValueSome(EmittingObservable(s, _)) -> ValueSome s
+                | _ -> ValueNone
 
-                let emit = behaviorFunc observed observed2
+            let observed2 =
+                match observing with
+                | ValueSome(EmittingObservable(s, _)) -> ValueSome s
+                | _ -> ValueNone
 
-                match emit with
-                | Nothing -> cur
-                | _ -> emit
-            | _ -> toEmit
+            let emit = behaviorFunc observable observed observed2
 
-        let ticks =
-            match toEmit with
-            | Emitting _ -> 0
-            | _ -> observable.TicksSinceEmit + 1
+            match emit with
+            | Nothing -> cur
+            | _ -> emit
+        | _ -> toEmit
 
-        { observable with
-            ToEmit = toEmit
-            TicksSinceEmit = ticks }
+    let ticks =
+        match toEmit with
+        | Emitting _ -> 0
+        | _ -> observable.TicksSinceEmit + 1
+
+    { observable with
+        ToEmit = toEmit
+        TicksSinceEmit = ticks }
 
 let getOnEmit (obs: EntityType) (pos: Vector2) =
     match obs with

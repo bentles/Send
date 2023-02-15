@@ -8,7 +8,7 @@ open GameConfig
 
 let EPSILON = 1e-8f
 
-let clamp value min max =
+let clamp (value:float32) (min:float32) (max:float32) =
     if value < min then min
     elif value > max then max
     else value
