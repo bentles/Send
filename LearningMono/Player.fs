@@ -127,7 +127,7 @@ let updatePhysics (model: Model) (info: PhysicsInfo) =
         Vector2.Normalize(facing)
 
     let millisSince eventTime =
-        (float32 (currentTime - eventTime)) / 1000f
+        (currentTime - eventTime)
 
     // acceleration and velocity
     let acc =

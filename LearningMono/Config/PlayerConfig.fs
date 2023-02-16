@@ -71,4 +71,4 @@ let charSprite: SpriteConfig =
 
 // how much time to consider an old input for to see if the player is trying to
 // face diagonally since both fingers come off the keyboard at fractionally different times :(
-let diagonalReleaseDelay = 0.1f
+let diagonalReleaseDelay = 100L 

@@ -222,8 +222,8 @@ let level3: LevelBuilder =
 
 let level4: LevelBuilder =
     fun time ->
-        let width = 10
-        let height = 10
+        let width = 30
+        let height = 30
 
         let tiles =
             iterWorld (width, height) (fun (x, y) ->
