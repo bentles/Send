@@ -74,7 +74,7 @@ let createSubjectOnGrass (subjectType: SubjectType) (coords: Vector2) time picke
 
 let createTimerOnGrass (coords: Vector2) time pickedUp =
     createSubjectOnGrass
-        (Entity.Timer([ Rock; buildObserver Id; buildObserver (Map Rock); rockTimer ], 60))
+        (Entity.Timer({ Items = [ Rock; buildObserver Id; buildObserver (Map Rock); rockTimer ]; IsOpen = false }, 60))
         coords
         time
         pickedUp
@@ -210,7 +210,7 @@ let level3: LevelBuilder =
                 | xy when (List.contains xy rocks) -> createRockOnGrass (Vector2(fx, fy)) time true
                 | xy when (List.contains xy observers) ->
                     observerOnGrass (Vector2(fx, fy)) time (buildObserver Id) FacingLeft true
-                | 7, 7 -> createEntityOn (Box []) Grass (Vector2(fx, fy)) time true
+                | 7, 7 -> createEntityOn (Box {Items = []; IsOpen = true }) Grass (Vector2(fx, fy)) time true
                 | 8, 8 -> createEntityOn (GoToLevelButton L3) Grass (Vector2(fx, fy)) time false
 
                 | _ -> createNonCollidableTile FloorType.Grass fx fy)

@@ -196,7 +196,7 @@ let stop model =
     | Stopped _ -> model
     | Started(a, b) -> { model with AnimationState = Stopped(a, b) }
 
-let switchAnimation (newAni, increment, start) model =
+let switchAnimation (newAni:AnimationConfig, increment, start) model =
     let (img, yPos) = currentImageConfigAndRelativePos model.Images newAni Option.None
 
     { model with

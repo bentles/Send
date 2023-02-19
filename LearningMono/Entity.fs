@@ -24,7 +24,9 @@ type SubjectType =
     | Timer of BoxType * int
     | Button of EntityType
 
-and BoxType = EntityType list
+and BoxType =
+    { Items: (EntityType list)
+      IsOpen: bool }
 
 and ObservableType =
     | Id
@@ -215,6 +217,7 @@ let getOnEmit (obs: EntityType) (pos: Vector2) =
                      toggleOnSpriteConfig
                  else
                      toggleOffSpriteConfig)
+
             { entity with
                 Type = Observable { obData with Type = (Toggle(not state)) }
                 Collider = if not state then getCollider entity.Type pos else ValueNone
@@ -231,13 +234,13 @@ let subjectStep (subject: SubjectData) =
             | Emitting t -> Emitted t
             | other -> other }
 
-let buildRepeatListEmittingEvery list (every: int) =
-    let length = List.length list
+let buildRepeatListEmittingEvery (box: BoxType) (every: int) =
+    let length = List.length box.Items
 
     fun (subject: SubjectData) ->
         if subject.TicksSinceEmit > every then
             let index = subject.GenerationNumber % length
-            let itemToEmit = List.item index list
+            let itemToEmit = List.item index box.Items
 
             { subject with
                 TicksSinceEmit = 0
@@ -287,11 +290,11 @@ let withTarget (entityType: EntityType) (target: int voption) =
     | other -> other
 
 let buildRepeatItemEmitEvery (every: int) (item: EntityType) =
-    buildRepeatListEmittingEvery [ item ] every
+    buildRepeatListEmittingEvery { Items = [ item ]; IsOpen = false } every
 
 let buildRockTimer =
     Subject
-        { Type = Timer([ Rock ], 30)
+        { Type = Timer({ Items = [ Rock ]; IsOpen = false }, 30)
           ToEmit = Nothing
           TicksSinceEmit = 0
           GenerationNumber = 0 }
@@ -323,5 +326,17 @@ let interact (entity: Model) : Model * InteractionEvent =
                         ToEmit = WillEmit eType
                         TicksSinceEmit = 0
                         GenerationNumber = subData.GenerationNumber + 1 } },
+        InteractionEvent.NoEvent
+    | Box({ IsOpen = state } as boxType) ->
+        let animIndex = if state then 1 else 0
+
+        let newSprite =
+            Sprite.switchAnimation ({ imageSpriteConfig with Index = animIndex }, 0, false) entity.Sprite
+
+        { entity with
+            Type = Box { boxType with IsOpen = not state }
+            Sprite = newSprite
+
+         },
         InteractionEvent.NoEvent
     | _ -> entity, InteractionEvent.NoEvent

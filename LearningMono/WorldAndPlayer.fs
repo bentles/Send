@@ -89,8 +89,7 @@ let updateWorldReactive (tiles: PersistentVector<Tile>) : PersistentVector<Tile>
                 let newEntityType =
                     match entity.Type with
                     | Subject subject -> Subject((getSubjectFunc subject.Type) subject)
-                    | Observable({ Observing = ob1
-                                   Observing2 = ob2 } as oData) ->
+                    | Observable({ Observing = ob1; Observing2 = ob2 } as oData) ->
 
                         // get what is being is observed if anything
                         let getObserved (ob: int voption) =
@@ -159,12 +158,16 @@ let pickUpEntity (model: Model) : Model =
             let! entity = tile.Entity
 
             if entity.CanBePickedUp then
-                match entity with 
-                | { Type = Box (first::rest) } as boxEntity -> 
+                match entity with
+                | { Type = Box({ Items = first :: rest; IsOpen = true } as box);  } as boxEntity ->
                     let tiles =
-                        model.Tiles |> PersistentVector.update i { tile with Entity = ValueSome { boxEntity with Type = Box rest } }
+                        model.Tiles
+                        |> PersistentVector.update
+                            i
+                            { tile with Entity = ValueSome { boxEntity with Type = Box { box with Items = rest } } }
 
                     let entity = Entity.init first Vector2.Zero 0 FacingLeft true
+
                     return
                         { model with
                             Tiles = tiles
@@ -195,35 +198,43 @@ let placeEntity (model: Model) : Model =
 
             match tileAndIndex with
             | ValueSome({ Entity = ValueNone } as tile, i) ->
-                    //make a targeting function
-                    let roundedPos = posRounded player.Target worldConfig
-                    let (x, y) = vectorToCoords roundedPos
-                    let xface, yface = facingToCoords player.PlacementFacing
-                    let at = (x + xface, y + yface)
+                //make a targeting function
+                let roundedPos = posRounded player.Target worldConfig
+                let (x, y) = vectorToCoords roundedPos
+                let xface, yface = facingToCoords player.PlacementFacing
+                let at = (x + xface, y + yface)
 
-                    let facing = player.PlacementFacing
+                let facing = player.PlacementFacing
 
-                    let entityType = withTarget entity.Type (coordsToIndex at model.Size)
-                    let entity = Entity.init entityType roundedPos model.TimeElapsed facing true
-                    let sprite = Sprite.startAnimation entity.Sprite
-                    let entity = { entity with Sprite = sprite }
+                let entityType = withTarget entity.Type (coordsToIndex at model.Size)
+                let entity = Entity.init entityType roundedPos model.TimeElapsed facing true
+                let sprite = Sprite.startAnimation entity.Sprite
+                let entity = { entity with Sprite = sprite }
 
-                    let tiles =
-                        model.Tiles
-                        |> PersistentVector.update i { tile with Entity = ValueSome(entity) }
-
-                    { model with
-                        Tiles = tiles
-                        Player = { player with Carrying = rest } }
-            | ValueSome({ Entity = ValueSome ({ Type = Box contents } as box) } as tile, i) ->
-                let appendedBox = ValueSome({ box with Type = Box (entity.Type::contents) })
                 let tiles =
-                        model.Tiles
-                        |> PersistentVector.update i { tile with Entity = appendedBox }
+                    model.Tiles
+                    |> PersistentVector.update i { tile with Entity = ValueSome(entity) }
+
                 { model with
-                        Tiles = tiles
-                        Player = { player with Carrying = rest } }
-             | _ -> model
+                    Tiles = tiles
+                    Player = { player with Carrying = rest } }
+            | ValueSome({ Entity = ValueSome({ Type = Box { Items = contents; IsOpen = true } } as box) } as tile, i) ->
+                let appendedBox =
+                    ValueSome(
+                        { box with
+                            Type =
+                                Box
+                                    { Items = entity.Type :: contents
+                                      IsOpen = true } }
+                    )
+
+                let tiles =
+                    model.Tiles |> PersistentVector.update i { tile with Entity = appendedBox }
+
+                { model with
+                    Tiles = tiles
+                    Player = { player with Carrying = rest } }
+            | _ -> model
         | _ -> model
     | _ -> model
 

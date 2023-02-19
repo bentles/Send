@@ -30,25 +30,16 @@ let emptyImage =
       TextureName = "empty"
       Offset = Vector2(0f, 0f) }
 
-let nextLevelImage = 
-    { emptyImage 
-      with TextureName = "nextLevel"
-    }
+let nextLevelImage = { emptyImage with TextureName = "nextLevel" }
 
-let buttonImage = 
-    { emptyImage 
-      with TextureName = "button"
-    }
+let buttonImage = { emptyImage with TextureName = "button" }
 
-let rockImage = 
-    { emptyImage 
-      with TextureName = "rock"
-    }
+let rockImage = { emptyImage with TextureName = "rock" }
 
-let boxImage = 
-    { emptyImage 
-      with TextureName = "box"
-    }
+let boxImage =
+    { emptyImage with
+        TextureName = "box"
+        Rows = 2 }
 
 //entities
 let timerSpriteConfig =
@@ -77,8 +68,12 @@ let idConfig =
 let idSpriteConfig = SingleSpriteConfig idConfig
 let mapSpriteConfig = SingleSpriteConfig { idConfig with Image = mapImage }
 let filterSpriteConfig = SingleSpriteConfig { idConfig with Image = filterImage }
-let toggleOffSpriteConfig = SingleSpriteConfig { idConfig with Image = toggleOffImage }
-let toggleOnSpriteConfig = SingleSpriteConfig { idConfig with Image = toggleOnImage }
+
+let toggleOffSpriteConfig =
+    SingleSpriteConfig { idConfig with Image = toggleOffImage }
+
+let toggleOnSpriteConfig =
+    SingleSpriteConfig { idConfig with Image = toggleOnImage }
 
 let rockSpriteConfig =
     SingleSpriteConfig
