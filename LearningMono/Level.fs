@@ -181,7 +181,46 @@ let level2: LevelBuilder =
           Tiles = tiles
           Size = (width, height) }
 
+
 let level3: LevelBuilder =
+    fun time ->
+        let width = 10
+        let height = 10
+
+        let tiles =
+            iterWorld (width, height) (fun (x, y) ->
+                let (fx, fy, bottom, right) = worldVars x y height width
+
+                let rocks =
+                    [ (2, 2)
+                      (5, 5)
+                      (7, 6)
+                      (6, 6)
+                      (6, 8)
+                      (6, 6)
+                      (7, 8)
+                      (8, 7)
+                      (8, 6) ]
+
+                let observers = [ (3, 3); (3, 4); (6, 7) ]
+
+                match x, y with
+                | Corner (bottom, right) _ -> createCollidableTile Wall fx fy
+                | Wall (bottom, right) wallType -> createCollidableTile wallType fx fy
+                | xy when (List.contains xy rocks) -> createRockOnGrass (Vector2(fx, fy)) time true
+                | xy when (List.contains xy observers) ->
+                    observerOnGrass (Vector2(fx, fy)) time (buildObserver Id) FacingLeft true
+                | 7, 7 -> createEntityOn (Box []) Grass (Vector2(fx, fy)) time true
+                | 8, 8 -> createEntityOn (GoToLevelButton L3) Grass (Vector2(fx, fy)) time false
+
+                | _ -> createNonCollidableTile FloorType.Grass fx fy)
+
+        { PlayerStartsAtPos = (Vector2(200f, 100f))
+          PlayerStartsCarrying = []
+          Tiles = tiles
+          Size = (width, height) }
+
+let level4: LevelBuilder =
     fun time ->
         let width = 10
         let height = 10
@@ -220,7 +259,7 @@ let level3: LevelBuilder =
           Size = (width, height) }
 
 
-let level4: LevelBuilder =
+let level5: LevelBuilder =
     fun time ->
         let width = 10
         let height = 10

@@ -45,6 +45,11 @@ let rockImage =
       with TextureName = "rock"
     }
 
+let boxImage = 
+    { emptyImage 
+      with TextureName = "box"
+    }
+
 //entities
 let timerSpriteConfig =
     AnimatedSpriteConfig
@@ -84,6 +89,12 @@ let rockSpriteConfig =
 let emptySpriteConfig =
     SingleSpriteConfig
         { Image = emptyImage
+          Tint = Color.White
+          FrameLength = 300L }
+
+let boxSpriteConfig =
+    SingleSpriteConfig
+        { Image = boxImage
           Tint = Color.White
           FrameLength = 300L }
 

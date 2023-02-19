@@ -12,12 +12,17 @@ TODO:
 - use tile to show which entities are permanent
 
 THINKING:
-- interaction menus :'(
 
 DOING:
-- move away from viewables as much as possible -- too much GC
+- make the box work :)
+	- place items into with place item button
+	- remove item with remove button
+	- some way to see what's inside??
 
 DONE:
+- interaction menus :'(
+	- might be possible to avoid making this by using action button and other items
+- move away from viewables as much as possible -- too much GC
 - option --> voption
 - button press should be on keypress not key down
 - fix weird jumping when switching placement orientation

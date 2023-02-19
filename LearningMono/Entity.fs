@@ -68,7 +68,7 @@ let getSpriteConfig (eType: EntityType) : SpriteConfig =
     | Empty -> emptySpriteConfig
     | Rock -> rockSpriteConfig
     | GoToLevelButton _ -> nextLevelSpriteConfig
-    | Box _ -> rockSpriteConfig
+    | Box _ -> boxSpriteConfig
     | Subject { Type = sub } ->
         match sub with
         | Timer _ -> timerSpriteConfig
@@ -87,7 +87,7 @@ let getEmitImage (eType: EntityType) =
     | Empty -> emptyImage
     | Rock -> rockImage
     | GoToLevelButton _ -> nextLevelImage
-    | Box _ -> rockImage
+    | Box _ -> boxImage
     | Subject { Type = sub } ->
         match sub with
         | Timer _ -> timerImage
