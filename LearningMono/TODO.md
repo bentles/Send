@@ -17,6 +17,7 @@ DOING:
 - make the box work :)
 	- place items into with place item button
 	- remove item with remove button
+	- action button toggle open/closedness of box
 	- some way to see what's inside??
 
 DONE:

@@ -159,13 +159,24 @@ let pickUpEntity (model: Model) : Model =
             let! entity = tile.Entity
 
             if entity.CanBePickedUp then
-                let tiles =
-                    model.Tiles |> PersistentVector.update i { tile with Entity = ValueNone }
+                match entity with 
+                | { Type = Box (first::rest) } as boxEntity -> 
+                    let tiles =
+                        model.Tiles |> PersistentVector.update i { tile with Entity = ValueSome { boxEntity with Type = Box rest } }
 
-                return
-                    { model with
-                        Tiles = tiles
-                        Player = { player with Carrying = entity :: player.Carrying } }
+                    let entity = Entity.init first Vector2.Zero 0 FacingLeft true
+                    return
+                        { model with
+                            Tiles = tiles
+                            Player = { player with Carrying = entity :: player.Carrying } }
+                | _ ->
+                    let tiles =
+                        model.Tiles |> PersistentVector.update i { tile with Entity = ValueNone }
+
+                    return
+                        { model with
+                            Tiles = tiles
+                            Player = { player with Carrying = entity :: player.Carrying } }
 
             else
                 return! None
@@ -178,33 +189,41 @@ let placeEntity (model: Model) : Model =
 
     match player.CharacterState with
     | Player.Small _ ->
-        let tileAndIndex = model.PlayerTarget
+        match player.Carrying with
+        | entity :: rest ->
+            let tileAndIndex = model.PlayerTarget
 
-        match tileAndIndex with
-        | ValueSome({ Entity = ValueNone } as tile, i) ->
-            match player.Carrying with
-            | entity :: rest ->
-                //make a targeting function
-                let roundedPos = posRounded player.Target worldConfig
-                let (x, y) = vectorToCoords roundedPos
-                let xface, yface = facingToCoords player.PlacementFacing
-                let at = (x + xface, y + yface)
+            match tileAndIndex with
+            | ValueSome({ Entity = ValueNone } as tile, i) ->
+                    //make a targeting function
+                    let roundedPos = posRounded player.Target worldConfig
+                    let (x, y) = vectorToCoords roundedPos
+                    let xface, yface = facingToCoords player.PlacementFacing
+                    let at = (x + xface, y + yface)
 
-                let facing = player.PlacementFacing
+                    let facing = player.PlacementFacing
 
-                let entityType = withTarget entity.Type (coordsToIndex at model.Size)
-                let entity = Entity.init entityType roundedPos model.TimeElapsed facing true
-                let sprite = Sprite.startAnimation entity.Sprite
-                let entity = { entity with Sprite = sprite }
+                    let entityType = withTarget entity.Type (coordsToIndex at model.Size)
+                    let entity = Entity.init entityType roundedPos model.TimeElapsed facing true
+                    let sprite = Sprite.startAnimation entity.Sprite
+                    let entity = { entity with Sprite = sprite }
 
+                    let tiles =
+                        model.Tiles
+                        |> PersistentVector.update i { tile with Entity = ValueSome(entity) }
+
+                    { model with
+                        Tiles = tiles
+                        Player = { player with Carrying = rest } }
+            | ValueSome({ Entity = ValueSome ({ Type = Box contents } as box) } as tile, i) ->
+                let appendedBox = ValueSome({ box with Type = Box (entity.Type::contents) })
                 let tiles =
-                    model.Tiles
-                    |> PersistentVector.update i { tile with Entity = ValueSome(entity) }
-
+                        model.Tiles
+                        |> PersistentVector.update i { tile with Entity = appendedBox }
                 { model with
-                    Tiles = tiles
-                    Player = { player with Carrying = rest } }
-            | _ -> model
+                        Tiles = tiles
+                        Player = { player with Carrying = rest } }
+             | _ -> model
         | _ -> model
     | _ -> model
 
