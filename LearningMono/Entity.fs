@@ -31,9 +31,11 @@ and ObservableType =
     | Toggle of bool
     | Map of EntityType
     | Filter of EntityType
+    //| Merge
     | Compare
 
 and EntityType =
+    | Empty
     | Rock
     | GoToLevelButton of Level
     | Box of BoxType
@@ -63,6 +65,7 @@ type Model =
 
 let getSpriteConfig (eType: EntityType) : SpriteConfig =
     match eType with
+    | Empty -> emptySpriteConfig
     | Rock -> rockSpriteConfig
     | GoToLevelButton _ -> nextLevelSpriteConfig
     | Box _ -> rockSpriteConfig
@@ -81,6 +84,7 @@ let getSpriteConfig (eType: EntityType) : SpriteConfig =
 
 let getEmitImage (eType: EntityType) =
     match eType with
+    | Empty -> emptyImage
     | Rock -> rockImage
     | GoToLevelButton _ -> nextLevelImage
     | Box _ -> rockImage
@@ -99,6 +103,7 @@ let getEmitImage (eType: EntityType) =
 let rec entityEq (e1: EntityType) (e2: EntityType) =
     match (e1, e2) with
     | Rock, Rock -> true
+    | Empty, Empty -> true
     | Box _, Box _ -> true // check contents ??
     | Observable { Type = Id }, Observable { Type = Id } -> true
     | Observable { Type = Toggle _ }, Observable { Type = Toggle _ } -> true
@@ -110,23 +115,24 @@ let rec entityEq (e1: EntityType) (e2: EntityType) =
 
 let getCollider (eType: EntityType) (pos: Vector2) : AABB voption =
     match eType with
+    | Empty
     | GoToLevelButton _ -> ValueNone
     | Rock
     | Subject _
     | Box _
     | Observable _ -> ValueSome { Pos = pos; Half = Vector2(10f, 10f) }
 
-let (|Emittinged|_|) (emit: Emit<'a>) =
+let (|RenderEmitting|_|) (emit: Emit<'a>) =
     match emit with
     | Emitting e
     | Emitted e -> Some(e)
     | _ -> None
 
-let (|EmittingedObservable|_|) (emit: EntityType) =
+let (|RenderEmittingObservable|_|) (emit: EntityType) =
     match emit with
-    | Subject { ToEmit = Emittinged e
+    | Subject { ToEmit = RenderEmitting e
                 TicksSinceEmit = t }
-    | Observable { ToEmit = Emittinged e
+    | Observable { ToEmit = RenderEmitting e
                    TicksSinceEmit = t } -> Some(e, t)
     | _ -> None
 
@@ -139,7 +145,7 @@ let (|EmittingObservable|_|) (emit: EntityType) =
     | _ -> None
 
 
-let behaviorFunc (observable: ObservableData) (a: EntityType voption) (b: EntityType voption) =
+let private behaviorFunc (observable: ObservableData) (a: EntityType voption) (b: EntityType voption) =
     match observable.Type with
     | Id
     | Toggle _ ->

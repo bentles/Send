@@ -408,7 +408,7 @@ let drawWorld (model: Model) loadedAssets (spriteBatch: SpriteBatch) =
         | _ -> ()
 
         match tile.Entity with
-        | ValueSome({ Type = EmittingedObservable(etype, t) }) ->
+        | ValueSome({ Type = RenderEmittingObservable(etype, t) }) ->
 
             viewEmitting etype t (actualX, actualY) spriteBatch loadedAssets.textures[(getEmitImage etype).TextureName]
         | _ -> ())

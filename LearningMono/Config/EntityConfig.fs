@@ -23,21 +23,26 @@ let filterImage = { idImage with TextureName = "filter" }
 let toggleOnImage = { idImage with TextureName = "toggleOn" }
 let toggleOffImage = { idImage with TextureName = "toggleOff" }
 
-let rockImage =
+let emptyImage =
     { SpriteSize = (50, 50)
       Rows = 1
       Columns = 1
-      TextureName = "rock"
+      TextureName = "empty"
       Offset = Vector2(0f, 0f) }
 
 let nextLevelImage = 
-    { rockImage 
+    { emptyImage 
       with TextureName = "nextLevel"
     }
 
 let buttonImage = 
-    { rockImage 
+    { emptyImage 
       with TextureName = "button"
+    }
+
+let rockImage = 
+    { emptyImage 
+      with TextureName = "rock"
     }
 
 //entities
@@ -73,6 +78,12 @@ let toggleOnSpriteConfig = SingleSpriteConfig { idConfig with Image = toggleOnIm
 let rockSpriteConfig =
     SingleSpriteConfig
         { Image = rockImage
+          Tint = Color.White
+          FrameLength = 300L }
+
+let emptySpriteConfig =
+    SingleSpriteConfig
+        { Image = emptyImage
           Tint = Color.White
           FrameLength = 300L }
 
