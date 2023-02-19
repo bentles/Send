@@ -327,16 +327,18 @@ let interact (entity: Model) : Model * InteractionEvent =
                         TicksSinceEmit = 0
                         GenerationNumber = subData.GenerationNumber + 1 } },
         InteractionEvent.NoEvent
-    | Box({ IsOpen = state } as boxType) ->
-        let animIndex = if state then 1 else 0
+    | Box({ IsOpen = isOpen; Items = items } as boxType) ->
+        let animIndex = if isOpen then 1 else
+                            match items with
+                            | [] -> 0
+                            | _ -> 2
 
         let newSprite =
             Sprite.switchAnimation ({ imageSpriteConfig with Index = animIndex }, 0, false) entity.Sprite
 
         { entity with
-            Type = Box { boxType with IsOpen = not state }
+            Type = Box { boxType with IsOpen = not isOpen }
             Sprite = newSprite
-
          },
         InteractionEvent.NoEvent
     | _ -> entity, InteractionEvent.NoEvent

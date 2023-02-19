@@ -39,7 +39,7 @@ let rockImage = { emptyImage with TextureName = "rock" }
 let boxImage =
     { emptyImage with
         TextureName = "box"
-        Rows = 2 }
+        Rows = 3 }
 
 //entities
 let timerSpriteConfig =

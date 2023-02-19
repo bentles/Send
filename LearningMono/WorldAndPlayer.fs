@@ -158,29 +158,37 @@ let pickUpEntity (model: Model) : Model =
             let! entity = tile.Entity
 
             if entity.CanBePickedUp then
-                match entity with
-                | { Type = Box({ Items = first :: rest; IsOpen = true } as box);  } as boxEntity ->
-                    let tiles =
-                        model.Tiles
-                        |> PersistentVector.update
-                            i
-                            { tile with Entity = ValueSome { boxEntity with Type = Box { box with Items = rest } } }
+                let tiles, entity =
+                    match entity with
+                    | { Type = Box({ Items = first :: rest; IsOpen = true } as box) } as boxEntity ->
+                        let sprite =
+                            match rest with
+                            | [] ->
+                                Sprite.switchAnimation ({ imageSpriteConfig with Index = 0 }, 0, false) entity.Sprite
+                            | _ -> entity.Sprite
 
-                    let entity = Entity.init first Vector2.Zero 0 FacingLeft true
+                        let restOfBox =
+                            { boxEntity with
+                                Type = Box { box with Items = rest }
+                                Sprite = sprite }
 
-                    return
-                        { model with
-                            Tiles = tiles
-                            Player = { player with Carrying = entity :: player.Carrying } }
-                | _ ->
-                    let tiles =
-                        model.Tiles |> PersistentVector.update i { tile with Entity = ValueNone }
+                        let tiles =
+                            model.Tiles
+                            |> PersistentVector.update i { tile with Entity = ValueSome restOfBox }
 
-                    return
-                        { model with
-                            Tiles = tiles
-                            Player = { player with Carrying = entity :: player.Carrying } }
+                        let entity = Entity.init first Vector2.Zero 0 FacingLeft true
 
+                        tiles, entity
+                    | _ ->
+                        let tiles =
+                            model.Tiles |> PersistentVector.update i { tile with Entity = ValueNone }
+
+                        tiles, entity
+
+                return
+                    { model with
+                        Tiles = tiles
+                        Player = { player with Carrying = entity :: player.Carrying } }
             else
                 return! None
         }
@@ -219,9 +227,15 @@ let placeEntity (model: Model) : Model =
                     Tiles = tiles
                     Player = { player with Carrying = rest } }
             | ValueSome({ Entity = ValueSome({ Type = Box { Items = contents; IsOpen = true } } as box) } as tile, i) ->
+                let sprite =
+                    match contents with
+                    | [] -> Sprite.switchAnimation ({ imageSpriteConfig with Index = 2 }, 0, false) box.Sprite
+                    | _ -> box.Sprite
+
                 let appendedBox =
                     ValueSome(
                         { box with
+                            Sprite = sprite
                             Type =
                                 Box
                                     { Items = entity.Type :: contents
