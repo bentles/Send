@@ -57,7 +57,7 @@ let getTileAtPos (pos: Vector2) (size: int * int) (tiles: PersistentVector<Tile>
     index |> ValueOption.map (fun index -> PersistentVector.nth index tiles, index)
 
 let init time =
-    let level = level3 time
+    let level = level1 time
 
     { Tiles = level.Tiles
       Song = PlaySong "tutorial"
@@ -279,13 +279,12 @@ let update (message: Message) (model: Model) : Model =
                 let! (tile, i) = model.PlayerTarget
                 let! entity = tile.Entity
                 let newEntity, event = Entity.interact entity
-                let model = interactions event model
 
                 let tiles =
                     model.Tiles
                     |> PersistentVector.update i { tile with Entity = ValueSome newEntity }
 
-                return { model with Tiles = tiles }
+                return interactions event { model with Tiles = tiles }
             }
 
         match maybeUpdate with
