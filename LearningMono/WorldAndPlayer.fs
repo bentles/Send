@@ -259,10 +259,9 @@ let changeLevel (model: Model) (levelBuilder: LevelBuilder) : Model =
                 Pos = newLevel.PlayerStartsAtPos
                 Carrying = newLevel.PlayerStartsCarrying } }
 
-let interactions (event: Entity.InteractionEvent) (model: Model) : Model =
+let interactionEvent (event: Entity.InteractionEvent) (model: Model) : Model =
     match event with
     | GoToLevel l -> changeLevel model (levelLookup l)
-
     | NoEvent -> model
 
 let update (message: Message) (model: Model) : Model =
@@ -284,7 +283,7 @@ let update (message: Message) (model: Model) : Model =
                     model.Tiles
                     |> PersistentVector.update i { tile with Entity = ValueSome newEntity }
 
-                return interactions event { model with Tiles = tiles }
+                return interactionEvent event { model with Tiles = tiles }
             }
 
         match maybeUpdate with

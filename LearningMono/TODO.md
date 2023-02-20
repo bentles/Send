@@ -1,26 +1,30 @@
 ﻿
 TODO:
-- nicer toggling of debug sprites
+- debug sprites with toggling
 - quick check for collision exclusion of far away objects
 - simplify away the pre-sending potential collider objects since world+player are now one
-- use the stopped animation
-- simplify all the things
+- use the stopped animation on characters
 - prevent transform if carrying limits exceeded
-- make it easier to create entities for carrying
-- just use facing to determine observable target
 - button goes down on key down
 - use tile to show which entities are permanent
+- simplify all the things
+	- make it easier to create entities for carrying
+	- just use facing to determine observable target
+	- simplify interaction event stuffs - seems dumb
+	- make it easier to switch animations
+- make buttons work using same mechanic as box
 
 THINKING:
+- win condition for box level?
 
 DOING:
+
+DONE:
 - make the box work :)
 	- place items into with place item button
 	- remove item with remove button
 	- action button toggle open/closedness of box
 	- some way to see what's inside??
-
-DONE:
 - interaction menus :'(
 	- might be possible to avoid making this by using action button and other items
 - move away from viewables as much as possible -- too much GC
@@ -45,7 +49,6 @@ DONE:
 - make the world
 	- entities vs blocks?
 		- pick up entities mechanic
-
 		- remove chunks until chunks are needed
 - make transformation animation work correctly
 	- need the concept of priority or some way to say this animation has precendence
