@@ -257,16 +257,19 @@ let getSubjectFunc (sub: SubjectType) =
 
 let init (entityType: EntityType) (pos: Vector2) (time) (facing: Facing) (canBePickedUp: bool) =
     let config = (getSpriteConfig entityType)
-    let rowsLastIndex = (getTotalRows config) - 1
 
     let ypos, flipped =
-        match facing with
-        | FacingLeft -> 0, true
-        | FacingRight -> 0, false
-        | FacingUp -> 2, false
-        | FacingDown -> 1, false
-
-    let ypos = min ypos rowsLastIndex
+        match entityType with
+        | Observable _ ->
+            match facing with
+            | FacingLeft -> 0, true
+            | FacingRight -> 0, false
+            | FacingUp -> 2, false
+            | FacingDown -> 1, false
+        | Box { IsOpen = false } -> 1, false
+        | Box { Items = _ :: _ } -> 2, false
+        | Box { Items = [] } -> 0, false
+        | _ -> 0, false
 
     let sprite = Sprite.init pos time config (Some ypos) (Some flipped)
     let collider = getCollider entityType pos
@@ -328,17 +331,19 @@ let interact (entity: Model) : Model * InteractionEvent =
                         GenerationNumber = subData.GenerationNumber + 1 } },
         InteractionEvent.NoEvent
     | Box({ IsOpen = isOpen; Items = items } as boxType) ->
-        let animIndex = if isOpen then 1 else
-                            match items with
-                            | [] -> 0
-                            | _ -> 2
+        let animIndex =
+            if isOpen then
+                1
+            else
+                match items with
+                | [] -> 0
+                | _ -> 2
 
         let newSprite =
             Sprite.switchAnimation ({ imageSpriteConfig with Index = animIndex }, 0, false) entity.Sprite
 
         { entity with
             Type = Box { boxType with IsOpen = not isOpen }
-            Sprite = newSprite
-         },
+            Sprite = newSprite },
         InteractionEvent.NoEvent
     | _ -> entity, InteractionEvent.NoEvent
