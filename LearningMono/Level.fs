@@ -21,47 +21,47 @@ type FloorType =
 type Tile =
     { FloorType: FloorType
       Collider: AABB voption
-      Coords: Vector2
+      Coords: Coords
       Entity: Entity.Model voption }
 
 let defaultTile =
     { FloorType = FloorType.Empty
       Collider = ValueNone
-      Coords = Vector2.Zero
+      Coords = (0, 0)
       Entity = ValueNone }
 
 type LevelData =
     { PlayerStartsAtPos: Vector2
       PlayerStartsCarrying: Entity.Model list
       Tiles: PersistentVector<Tile>
-      Size: (int * int) }
+      Size: Coords }
 
 type LevelBuilder = int64 -> LevelData
 
 // helpers
-let createCollidableTile t (coords: Vector2) =
+let createCollidableTile t (coords: Coords) =
     { defaultTile with
         Coords = coords
         FloorType = t
-        Collider = ValueSome(createColliderFromCoords coords.X coords.Y half) }
+        Collider = ValueSome(createColliderFromCoords (toCoordsF coords) half) }
 
-let createNonCollidableTile t (coords: Vector2) =
+let createNonCollidableTile t (coords: Coords) =
     { defaultTile with
         FloorType = t
         Coords = coords }
 
-let createEntityOn (entityType: EntityType) (floor: FloorType) (time: int64) (canBePickedUp: bool) (coords: Vector2) =
-    let pos = coordsToVector coords.X coords.Y half
+let createEntityOn (entityType: EntityType) (floor: FloorType) (time: int64) (canBePickedUp: bool) (coords: Coords) =
+    let pos = xAndYToOffsetVector (toCoordsF coords) half
 
     { defaultTile with
         Coords = coords
         FloorType = floor
         Entity = ValueSome(Entity.init entityType pos time FacingRight canBePickedUp) }
 
-let createRockOnGrass time (canBePickedUp: bool) (coords: Vector2) =
+let createRockOnGrass time (canBePickedUp: bool) (coords: Coords) =
     createEntityOn Rock Grass time canBePickedUp coords
 
-let createSubjectOnGrass (subjectType: SubjectType) time pickedUp (coords: Vector2) =
+let createSubjectOnGrass (subjectType: SubjectType) time pickedUp (coords: Coords) =
     createEntityOn
         (Entity.Subject
             { Type = subjectType
@@ -73,7 +73,7 @@ let createSubjectOnGrass (subjectType: SubjectType) time pickedUp (coords: Vecto
         pickedUp
         coords
 
-let createTimerOnGrass time pickedUp (coords: Vector2) =
+let createTimerOnGrass time pickedUp (coords: Coords) =
     createSubjectOnGrass
         (Entity.Timer(
             { Items = [ Rock; buildObserver Id; buildObserver (Map Rock); rockTimer ]
@@ -84,14 +84,14 @@ let createTimerOnGrass time pickedUp (coords: Vector2) =
         pickedUp
         coords
 
-let createButtonOnGrass time pickedUp (coords: Vector2) =
+let createButtonOnGrass time pickedUp (coords: Coords) =
     createSubjectOnGrass (Entity.Button Rock) time pickedUp coords
 
 let observerEntity observer =
     Entity.init observer Vector2.Zero 0 FacingLeft true
 
-let observerOnGrass time observer facing canPickup (coords: Vector2) : Tile =
-    let pos = coordsToVector coords.X coords.Y half
+let observerOnGrass time observer facing canPickup (coords: Coords) : Tile =
+    let pos = xAndYToOffsetVector (toCoordsF coords) half
 
     { defaultTile with
         Coords = coords
@@ -114,11 +114,11 @@ let iterWorld
     |> PersistentVector.ofSeq
 
 
-let worldFromTemplate (template: List<List<Vector2 -> Tile>>) =
+let worldFromTemplate (template: List<List<Coords -> Tile>>) =
     seq {
         for y, row in List.indexed (template) do
             for x, tileBuilder in List.indexed (row) do
-                let loc = Vector2(float32 x, float32 y)
+                let loc = struct (x,y)
                 tileBuilder loc
     }
     |> PersistentVector.ofSeq,
@@ -151,12 +151,12 @@ let level1: LevelBuilder =
         let tiles =
             iterWorld (width, height) (fun (x, y) (fx, fy) (bottom, right) ->
                 match x, y with
-                | Corner (bottom, right) _ -> createCollidableTile Wall (Vector2(fx, fy))
-                | Wall (bottom, right) wallType -> createCollidableTile wallType (Vector2(fx, fy))
+                | Corner (bottom, right) _ -> createCollidableTile Wall (x, y)
+                | Wall (bottom, right) wallType -> createCollidableTile wallType (x,y)
 
-                | 5, 5 -> createEntityOn (GoToLevelButton L2) Grass time false (Vector2(fx, fy))
+                | 5, 5 -> createEntityOn (GoToLevelButton L2) Grass time false (x,y)
                 //some kind of goal
-                | _ -> createNonCollidableTile FloorType.Grass (Vector2(fx, fy)))
+                | _ -> createNonCollidableTile FloorType.Grass (x,y))
 
         { PlayerStartsAtPos = Vector2(150f, 150f)
           PlayerStartsCarrying = []
@@ -184,13 +184,13 @@ let level2: LevelBuilder =
                       (5, 2) ]
 
                 match x, y with
-                | Corner (bottom, right) _ -> createCollidableTile Wall (Vector2(fx, fy))
-                | Wall (bottom, right) wallType -> createCollidableTile wallType (Vector2(fx, fy))
-                | xy when (List.contains xy rocks) -> createRockOnGrass time true (Vector2(fx, fy))
+                | Corner (bottom, right) _ -> createCollidableTile Wall (x,y)
+                | Wall (bottom, right) wallType -> createCollidableTile wallType (x,y)
+                | xy when (List.contains xy rocks) -> createRockOnGrass time true (x,y)
 
-                | 5, 5 -> createEntityOn (GoToLevelButton L3) Grass time false (Vector2(fx, fy))
+                | 5, 5 -> createEntityOn (GoToLevelButton L3) Grass time false (x,y)
 
-                | _ -> createNonCollidableTile FloorType.Grass (Vector2(fx, fy)))
+                | _ -> createNonCollidableTile FloorType.Grass (x,y))
 
         { PlayerStartsAtPos = (Vector2(200f, 100f))
           PlayerStartsCarrying = []
@@ -254,29 +254,29 @@ let level4: LevelBuilder =
                 let targetLeft = (coordsToIndex (x - 1, y) (width, height))
 
                 match x, y with
-                | Corner (bottom, right) _ -> createCollidableTile Wall (Vector2(fx, fy))
-                | Wall (bottom, right) wallType -> createCollidableTile wallType (Vector2(fx, fy))
+                | Corner (bottom, right) _ -> createCollidableTile Wall (x,y)
+                | Wall (bottom, right) wallType -> createCollidableTile wallType (x,y)
                 | xy when (List.contains xy obs) ->
-                    observerOnGrass time (observing Id targetUp ValueNone) FacingUp true (Vector2(fx, fy))
+                    observerOnGrass time (observing Id true false) FacingUp true (x,y)
                 | 2, 6
                 | 2, 7
                 | 2, 8
                 | 6, 7
                 | 6, 8
                 | 6, 6 ->
-                    observerOnGrass time (observing (Toggle true) targetUp ValueNone) FacingUp false (Vector2(fx, fy))
+                    observerOnGrass time (observing (Toggle true) true false) FacingUp false (x,y)
                 | 7, 6
                 | 8, 6 ->
                     observerOnGrass
                         time
-                        (observing (Toggle true) targetLeft ValueNone)
+                        (observing (Toggle true) true false)
                         FacingLeft
                         false
-                        (Vector2(fx, fy))
+                        (x,y)
 
-                | 2, 3 -> createButtonOnGrass time false (Vector2(fx, fy))
-                | 8, 8 -> createEntityOn (GoToLevelButton L5) Grass time false (Vector2(fx, fy))
-                | _ -> createNonCollidableTile FloorType.Grass (Vector2(fx, fy)))
+                | 2, 3 -> createButtonOnGrass time false (x,y)
+                | 8, 8 -> createEntityOn (GoToLevelButton L5) Grass time false (x,y)
+                | _ -> createNonCollidableTile FloorType.Grass (x,y))
 
         { PlayerStartsAtPos = Vector2(200f, 100f)
           PlayerStartsCarrying = [ (observerEntity (buildObserver Id)); (observerEntity (buildObserver Id)) ]
@@ -297,29 +297,29 @@ let level5: LevelBuilder =
                 let targetLeft = (coordsToIndex (x - 1, y) (width, height))
 
                 match x, y with
-                | Corner (bottom, right) _ -> createCollidableTile Wall (Vector2(fx, fy))
-                | Wall (bottom, right) wallType -> createCollidableTile wallType (Vector2(fx, fy))
+                | Corner (bottom, right) _ -> createCollidableTile Wall (x,y)
+                | Wall (bottom, right) wallType -> createCollidableTile wallType (x,y)
                 | xy when (List.contains xy obs) ->
-                    observerOnGrass time (observing Id targetUp ValueNone) FacingUp true (Vector2(fx, fy))
+                    observerOnGrass time (observing Id true false) FacingUp true (x,y)
                 | 2, 6
                 | 2, 7
                 | 2, 8
                 | 6, 7
                 | 6, 8
                 | 6, 6 ->
-                    observerOnGrass time (observing (Toggle true) targetUp ValueNone) FacingUp false (Vector2(fx, fy))
+                    observerOnGrass time (observing (Toggle true) true false) FacingUp false (x,y)
                 | 7, 6
                 | 8, 6 ->
                     observerOnGrass
                         time
-                        (observing (Toggle true) targetLeft ValueNone)
+                        (observing (Toggle true) true false)
                         FacingLeft
                         false
-                        (Vector2(fx, fy))
+                        (x,y)
 
-                | 2, 3 -> createTimerOnGrass time false (Vector2(fx, fy))
-                | 8, 8 -> createEntityOn (GoToLevelButton L1) Grass time false (Vector2(fx, fy))
-                | _ -> createNonCollidableTile FloorType.Grass (Vector2(fx, fy)))
+                | 2, 3 -> createTimerOnGrass time false (x,y)
+                | 8, 8 -> createEntityOn (GoToLevelButton L1) Grass time false (x,y)
+                | _ -> createNonCollidableTile FloorType.Grass (x,y))
 
         { PlayerStartsAtPos = Vector2(200f, 100f)
           PlayerStartsCarrying = [ (observerEntity (buildObserver Id)); (observerEntity (buildObserver Id)) ]

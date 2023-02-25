@@ -13,6 +13,9 @@ type Facing =
 [<Struct>]
 type AABB = { Pos: Vector2; Half: Vector2 }
 
+type Coords = (struct(int * int))
+type CoordsF = (struct(float32 * float32))
+
 [<Struct>]
 type PhysicsInfo =
     { Time: int64

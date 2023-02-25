@@ -6,7 +6,7 @@ open Xelmish.Viewables
 open Prelude
 open GameConfig
 
-let coordsToVector (x: float32) (y: float32) (half: Vector2) =
+let xAndYToOffsetVector ((x,y): CoordsF) (half: Vector2) =
     let startX = 0f
     let startY = 0f
 
@@ -18,10 +18,13 @@ let coordsToVector (x: float32) (y: float32) (half: Vector2) =
 
     Vector2(actualX, actualY)
 
-let vectorToCoords (pos: Vector2) : (int * int) =
+
+let offsetVectorToCoords (pos: Vector2) : Coords =
     let x = int (pos.X / float32 worldConfig.TileWidth)
     let y = int (pos.Y / float32 worldConfig.TileWidth)
     (x, y)
+
+let toCoordsF ((x, y): Coords) : CoordsF = (float32 x, float32 y)
 
 let posRounded (pos: Vector2) (worldConfig: WorldConfig) =
     let x =
@@ -32,27 +35,23 @@ let posRounded (pos: Vector2) (worldConfig: WorldConfig) =
 
     Vector2(x, y) + Vector2(float32 (worldConfig.TileWidth / 2))
 
-let toIndex (x: int, y: int) (width: int) = 
-    y * width + x
+let toIndex ((x, y): Coords) (width: int) = y * width + x
 
-let posToIndex (pos: Vector2) (width:int) : int =
-    let coords = vectorToCoords pos
+let posToIndex (pos: Vector2) (width: int) : int =
+    let coords = offsetVectorToCoords pos
     toIndex coords width
 
-let coordsOutOfBounds (x: int, y: int)  (width:int, height:int) : bool =
-    x >= width
-    || x < 0
-    || y >= height
-    || y < 0
+let coordsOutOfBounds ((x, y): Coords) (width: int, height: int) : bool =
+    x >= width || x < 0 || y >= height || y < 0
 
-let coordsToIndex (x: int, y: int) (width:int, height:int) : int voption =
-    if coordsOutOfBounds (x, y) (width, height) then
+let coordsToIndex (coords: Coords) ((width: int, height: int): Coords) : int voption =
+    if coordsOutOfBounds coords (width, height) then
         ValueNone
     else
-        ValueSome(toIndex (x, y) width)
+        ValueSome(toIndex coords width)
 
-let createColliderFromCoords (xx: float32) (yy: float32) (half: Vector2) =
-    { Pos = coordsToVector xx yy half
+let createColliderFromCoords (coordsF: CoordsF) (half: Vector2) =
+    { Pos = xAndYToOffsetVector coordsF half
       Half = half }
 
 let imageWithSource
@@ -81,10 +80,10 @@ let imageWithSource
             0f
         ))
 
-let round (x:float32) = int (System.Math.Round(float x))
+let round (x: float32) = int (System.Math.Round(float x))
 
 let debugText s (x, y) =
-    text "defaultFont" 20. Colour.White (0, 0) s (x , y)
+    text "defaultFont" 20. Colour.White (0, 0) s (x, y)
 
 let directions up down left right event =
     onupdate (fun inputs ->
@@ -105,14 +104,14 @@ let rotateFacing (facing: Facing) (clock: bool) =
     | FacingDown, true
     | FacingUp, false -> FacingLeft
 
-let facingToCoords (facing: Facing) : int * int =
+let facingToCoords (facing: Facing) : Coords =
     match facing with
     | FacingLeft -> (-1, 0)
     | FacingRight -> (1, 0)
     | FacingUp -> (0, -1)
     | FacingDown -> (0, 1)
 
-let vectorToFacing (vec:Vector2) : Facing option =
+let vectorToFacing (vec: Vector2) : Facing option =
     match vec.X, vec.Y with
     | 1f, 0f -> Some FacingRight
     | -1f, 0f -> Some FacingLeft

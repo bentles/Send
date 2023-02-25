@@ -24,7 +24,7 @@ type Model =
     { Tiles: PersistentVector<Tile>
       Song: SongState
 
-      Size: int * int
+      Size: Coords
 
       Dt: float32
       Slow: bool
@@ -51,8 +51,8 @@ let getCollidables (tiles: Tile seq) : AABB seq =
     }
 
 
-let getTileAtPos (pos: Vector2) (size: int * int) (tiles: PersistentVector<Tile>) : struct (Tile * int) voption =
-    let coords = vectorToCoords pos
+let getTileAtPos (pos: Vector2) (size: Coords) (tiles: PersistentVector<Tile>) : struct (Tile * int) voption =
+    let coords = offsetVectorToCoords pos
     let index = coordsToIndex coords size
     index |> ValueOption.map (fun index -> PersistentVector.nth index tiles, index)
 
@@ -79,7 +79,7 @@ type Message =
     | SongStarted of string
     | PhysicsTick of time: int64 * slow: bool
 
-let updateWorldReactive (tiles: PersistentVector<Tile>) : PersistentVector<Tile> =
+let updateWorldReactive (tiles: PersistentVector<Tile>) ((width,height):Coords) : PersistentVector<Tile> =
     tiles
     |> PersistentVector.map (fun tile ->
         let maybeEntity =
@@ -92,16 +92,19 @@ let updateWorldReactive (tiles: PersistentVector<Tile>) : PersistentVector<Tile>
                     | Observable({ Observing = ob1; Observing2 = ob2 } as oData) ->
 
                         // get what is being is observed if anything
-                        let getObserved (ob: int voption) =
-                            voption {
-                                let! i = ob
-                                let tile = PersistentVector.nth i tiles
-                                let! e = tile.Entity
-                                return e.Type
-                            }
+                        let getObserved (ob: bool) (tile:Tile) (facing:Facing) =
+                            if not ob then ValueNone else
+                                voption {
+                                    let struct (tx, ty) = facingToCoords(facing)
+                                    let struct (x, y) = tile.Coords
+                                    let! targetIndex = (coordsToIndex(x + tx, y + ty) (width, height))
+                                    let tile = PersistentVector.nth targetIndex tiles
+                                    let! e = tile.Entity
+                                    return e.Type
+                                }
 
-                        let eType1 = getObserved ob1
-                        let eType2 = getObserved ob2
+                        let eType1 = getObserved ob1 tile entity.Facing
+                        let eType2 = getObserved ob2 tile (rotateFacing entity.Facing false)
 
                         Observable(observerFunc oData eType1 eType2)
                     | other -> other
@@ -110,7 +113,7 @@ let updateWorldReactive (tiles: PersistentVector<Tile>) : PersistentVector<Tile>
                 let onEmit =
                     match newEntityType with
                     | EmittingObservable _ ->
-                        let pos = (coordsToVector tile.Coords.X tile.Coords.Y half)
+                        let pos = (xAndYToOffsetVector (toCoordsF tile.Coords) half)
                         getOnEmit newEntityType pos
                     | _ -> id
 
@@ -203,13 +206,13 @@ let placeEntity (model: Model) : Model =
             | ValueSome({ Entity = ValueNone } as tile, i) ->
                 //make a targeting function
                 let roundedPos = posRounded player.Target worldConfig
-                let (x, y) = vectorToCoords roundedPos
-                let xface, yface = facingToCoords player.PlacementFacing
+                let struct (x, y) = offsetVectorToCoords roundedPos
+                let struct (xface, yface) = facingToCoords player.PlacementFacing
                 let at = (x + xface, y + yface)
 
                 let facing = player.PlacementFacing
 
-                let entityType = withTarget entity.Type (coordsToIndex at model.Size)
+                let entityType = withTarget entity.Type
                 let entity = Entity.init entityType roundedPos model.TimeElapsed facing true
                 let sprite = Sprite.startAnimation entity.Sprite
                 let entity = { entity with Sprite = sprite }
@@ -312,7 +315,7 @@ let update (message: Message) (model: Model) : Model =
         let player = Player.tick info model.Player
         let tileAndIndex = getTileAtPos player.Target model.Size model.Tiles
 
-        let tiles = updateWorldReactive model.Tiles
+        let tiles = updateWorldReactive model.Tiles model.Size
         //TODO: move this outside if update ticks < 60ps
         let tiles = updateWorldSprites time tiles
 
@@ -384,7 +387,7 @@ let drawWorld (model: Model) loadedAssets (spriteBatch: SpriteBatch) =
 
         let startX = 0
         let startY = 0
-        let width, _ = model.Size
+        let struct (width, _) = model.Size
 
         let xBlockOffSet = (i % width) * blockWidth
         let yBlockOffSet = (i / width) * blockWidth

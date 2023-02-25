@@ -48,8 +48,8 @@ and ObservableData =
     { Type: ObservableType
       ToEmit: Emit<EntityType>
       TicksSinceEmit: int
-      Observing: int voption
-      Observing2: int voption }
+      Observing: bool
+      Observing2: bool }
 
 and SubjectData =
     { Type: SubjectType
@@ -287,9 +287,9 @@ let initNoCollider (entityType: EntityType) (pos: Vector2) time (facing: Facing)
       CanBePickedUp = canBePickedUp
       Collider = ValueNone }
 
-let withTarget (entityType: EntityType) (target: int voption) =
+let withTarget (entityType: EntityType) =
     match entityType with
-    | Observable obs -> Observable { obs with Observing = target }
+    | Observable obs -> Observable { obs with Observing = true }
     | other -> other
 
 let buildRepeatItemEmitEvery (every: int) (item: EntityType) =
@@ -304,7 +304,7 @@ let buildRockTimer =
 
 let rockTimer: EntityType = buildRockTimer
 
-let observing (oType: ObservableType) (target: int voption) (target2: int voption) : EntityType =
+let observing (oType: ObservableType) (target: bool) (target2: bool) : EntityType =
     Observable(
         { Type = oType
           ToEmit = Nothing
@@ -313,7 +313,7 @@ let observing (oType: ObservableType) (target: int voption) (target2: int voptio
           Observing2 = target2 }
     )
 
-let buildObserver (oType: ObservableType) = observing oType ValueNone ValueNone
+let buildObserver (oType: ObservableType) = observing oType false false
 
 let tileHalf = float32 (worldConfig.TileWidth / 2)
 let half = Vector2(tileHalf)
