@@ -57,7 +57,7 @@ let getTileAtPos (pos: Vector2) (size: Coords) (tiles: PersistentVector<Tile>) :
     index |> ValueOption.map (fun index -> PersistentVector.nth index tiles, index)
 
 let init time =
-    let level = level3 time
+    let level = level4 time
 
     { Tiles = level.Tiles
       Song = PlaySong "tutorial"

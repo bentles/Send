@@ -118,7 +118,7 @@ let worldFromTemplate (template: List<List<Coords -> Tile>>) =
     seq {
         for y, row in List.indexed (template) do
             for x, tileBuilder in List.indexed (row) do
-                let loc = struct (x,y)
+                let loc = struct (x, y)
                 tileBuilder loc
     }
     |> PersistentVector.ofSeq,
@@ -141,8 +141,6 @@ let (|Wall|_|) (bottom, right) (x, y) =
     | x, _ when x = right -> Some RightWall
     | _ -> None
 
-
-
 let level1: LevelBuilder =
     fun time ->
         let width = 7
@@ -152,11 +150,11 @@ let level1: LevelBuilder =
             iterWorld (width, height) (fun (x, y) (fx, fy) (bottom, right) ->
                 match x, y with
                 | Corner (bottom, right) _ -> createCollidableTile Wall (x, y)
-                | Wall (bottom, right) wallType -> createCollidableTile wallType (x,y)
+                | Wall (bottom, right) wallType -> createCollidableTile wallType (x, y)
 
-                | 5, 5 -> createEntityOn (GoToLevelButton L2) Grass time false (x,y)
+                | 5, 5 -> createEntityOn (GoToLevelButton L2) Grass time false (x, y)
                 //some kind of goal
-                | _ -> createNonCollidableTile FloorType.Grass (x,y))
+                | _ -> createNonCollidableTile FloorType.Grass (x, y))
 
         { PlayerStartsAtPos = Vector2(150f, 150f)
           PlayerStartsCarrying = []
@@ -184,13 +182,13 @@ let level2: LevelBuilder =
                       (5, 2) ]
 
                 match x, y with
-                | Corner (bottom, right) _ -> createCollidableTile Wall (x,y)
-                | Wall (bottom, right) wallType -> createCollidableTile wallType (x,y)
-                | xy when (List.contains xy rocks) -> createRockOnGrass time true (x,y)
+                | Corner (bottom, right) _ -> createCollidableTile Wall (x, y)
+                | Wall (bottom, right) wallType -> createCollidableTile wallType (x, y)
+                | xy when (List.contains xy rocks) -> createRockOnGrass time true (x, y)
 
-                | 5, 5 -> createEntityOn (GoToLevelButton L3) Grass time false (x,y)
+                | 5, 5 -> createEntityOn (GoToLevelButton L3) Grass time false (x, y)
 
-                | _ -> createNonCollidableTile FloorType.Grass (x,y))
+                | _ -> createNonCollidableTile FloorType.Grass (x, y))
 
         { PlayerStartsAtPos = (Vector2(200f, 100f))
           PlayerStartsCarrying = []
@@ -215,7 +213,7 @@ let level3: LevelBuilder =
                           Rock
                           Box
                               { Items =
-                                  [ Box { Items = []; IsOpen = true}
+                                  [ Box { Items = []; IsOpen = true }
                                     Box
                                         { Items = [ Rock; Rock; Rock; (GoToLevelButton L4) ]
                                           IsOpen = false } ]
@@ -243,43 +241,33 @@ let level3: LevelBuilder =
 
 let level4: LevelBuilder =
     fun time ->
-        let width = 10
-        let height = 10
+        let __ = createNonCollidableTile FloorType.Grass
+        let ww = createCollidableTile Wall
+        let wl = createCollidableTile FloorType.LeftWall
+        let wr = createCollidableTile FloorType.RightWall
+        let wb = createCollidableTile FloorType.BottomWall
+        let wt = createCollidableTile FloorType.TopWall
+        let ir = observerOnGrass time (observing Id true false) FacingRight true
+        let tu = observerOnGrass time (observing (Toggle true) true false) FacingUp false
+        let tl = observerOnGrass time (observing (Toggle true) true false) FacingLeft false
+        let bb = createButtonOnGrass time false
+        let xx = createEntityOn (GoToLevelButton L5) Grass time false
 
-        let tiles =
-            iterWorld (width, height) (fun (x, y) (fx, fy) (bottom, right) ->
-                let obs = [ (2, 4); (2, 5); (6, 5); (6, 4); (6, 3) ]
-                //TODO target just honors facing
-                let targetUp = (coordsToIndex (x, y - 1) (width, height))
-                let targetLeft = (coordsToIndex (x - 1, y) (width, height))
-
-                match x, y with
-                | Corner (bottom, right) _ -> createCollidableTile Wall (x,y)
-                | Wall (bottom, right) wallType -> createCollidableTile wallType (x,y)
-                | xy when (List.contains xy obs) ->
-                    observerOnGrass time (observing Id true false) FacingUp true (x,y)
-                | 2, 6
-                | 2, 7
-                | 2, 8
-                | 6, 7
-                | 6, 8
-                | 6, 6 ->
-                    observerOnGrass time (observing (Toggle true) true false) FacingUp false (x,y)
-                | 7, 6
-                | 8, 6 ->
-                    observerOnGrass
-                        time
-                        (observing (Toggle true) true false)
-                        FacingLeft
-                        false
-                        (x,y)
-
-                | 2, 3 -> createButtonOnGrass time false (x,y)
-                | 8, 8 -> createEntityOn (GoToLevelButton L5) Grass time false (x,y)
-                | _ -> createNonCollidableTile FloorType.Grass (x,y))
+        let tiles, width, height =
+            worldFromTemplate
+                [ [ ww; wt; wt; wt; wt; wt; wt; wt; wt; ww ]
+                  [ wl; __; __; __; __; __; __; __; __; wr ]
+                  [ wl; __; __; __; __; __; __; __; __; wr ]
+                  [ wl; __; __; __; __; __; __; __; __; wr ]
+                  [ wl; __; bb; __; __; __; __; __; __; wr ]
+                  [ wl; __; tu; __; __; __; __; __; __; wr ]
+                  [ wl; __; tu; ir; tl; tl; tl; tl; tl; wr ]
+                  [ wl; __; tu; __; __; __; tu; __; __; wr ]
+                  [ wl; __; tu; __; __; __; tu; __; xx; wr ]
+                  [ ww; wb; wb; wb; wb; wb; wb; wb; wb; ww ] ]
 
         { PlayerStartsAtPos = Vector2(200f, 100f)
-          PlayerStartsCarrying = [ (observerEntity (buildObserver Id)); (observerEntity (buildObserver Id)) ]
+          PlayerStartsCarrying = []
           Tiles = tiles
           Size = (width, height) }
 
@@ -297,29 +285,21 @@ let level5: LevelBuilder =
                 let targetLeft = (coordsToIndex (x - 1, y) (width, height))
 
                 match x, y with
-                | Corner (bottom, right) _ -> createCollidableTile Wall (x,y)
-                | Wall (bottom, right) wallType -> createCollidableTile wallType (x,y)
-                | xy when (List.contains xy obs) ->
-                    observerOnGrass time (observing Id true false) FacingUp true (x,y)
+                | Corner (bottom, right) _ -> createCollidableTile Wall (x, y)
+                | Wall (bottom, right) wallType -> createCollidableTile wallType (x, y)
+                | xy when (List.contains xy obs) -> observerOnGrass time (observing Id true false) FacingUp true (x, y)
                 | 2, 6
                 | 2, 7
                 | 2, 8
                 | 6, 7
                 | 6, 8
-                | 6, 6 ->
-                    observerOnGrass time (observing (Toggle true) true false) FacingUp false (x,y)
+                | 6, 6 -> observerOnGrass time (observing (Toggle true) true false) FacingUp false (x, y)
                 | 7, 6
-                | 8, 6 ->
-                    observerOnGrass
-                        time
-                        (observing (Toggle true) true false)
-                        FacingLeft
-                        false
-                        (x,y)
+                | 8, 6 -> observerOnGrass time (observing (Toggle true) true false) FacingLeft false (x, y)
 
-                | 2, 3 -> createTimerOnGrass time false (x,y)
-                | 8, 8 -> createEntityOn (GoToLevelButton L1) Grass time false (x,y)
-                | _ -> createNonCollidableTile FloorType.Grass (x,y))
+                | 2, 3 -> createTimerOnGrass time false (x, y)
+                | 8, 8 -> createEntityOn (GoToLevelButton L1) Grass time false (x, y)
+                | _ -> createNonCollidableTile FloorType.Grass (x, y))
 
         { PlayerStartsAtPos = Vector2(200f, 100f)
           PlayerStartsCarrying = [ (observerEntity (buildObserver Id)); (observerEntity (buildObserver Id)) ]
