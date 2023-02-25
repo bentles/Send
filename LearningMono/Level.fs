@@ -121,7 +121,9 @@ let worldFromTemplate (template: List<List<Vector2 -> Tile>>) =
                 let loc = Vector2(float32 x, float32 y)
                 tileBuilder loc
     }
-    |> PersistentVector.ofSeq, template.Head.Length, template.Length
+    |> PersistentVector.ofSeq,
+    template.Head.Length,
+    template.Length
 
 let (|Corner|_|) (bottom, right) (x, y) =
     match x, y with
@@ -205,21 +207,23 @@ let level3: LevelBuilder =
         let b = createCollidableTile FloorType.BottomWall
         let t = createCollidableTile FloorType.TopWall
 
-        let x = createEntityOn
-                        (Box
-                            { Items =
-                                [ Rock
-                                  Rock
-                                  Box
-                                      { Items =
-                                          [ Box
-                                                { Items = [ Rock; Rock; Rock; (GoToLevelButton L4) ]
-                                                  IsOpen = false } ]
-                                        IsOpen = false } ]
-                              IsOpen = false })
-                        Grass
-                        time
-                        true
+        let x =
+            createEntityOn
+                (Box
+                    { Items =
+                        [ Rock
+                          Rock
+                          Box
+                              { Items =
+                                  [ Box { Items = []; IsOpen = true}
+                                    Box
+                                        { Items = [ Rock; Rock; Rock; (GoToLevelButton L4) ]
+                                          IsOpen = false } ]
+                                IsOpen = false } ]
+                      IsOpen = false })
+                Grass
+                time
+                true
 
         let tiles, width, height =
             worldFromTemplate
