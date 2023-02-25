@@ -12,14 +12,29 @@ TODO:
 	- just use facing to determine observable target
 	- simplify interaction event stuffs - seems dumb
 	- make it easier to switch animations
-- make buttons work using same mechanic as box
+
 
 THINKING:
-- win condition for box level?
+
 
 DOING:
 
 DONE:
+- figure out a nicer way to create levels
+
+```fsharp
+let level = [
+	[xx;xx;xx;xx;xx];
+	[xx;as;as;as;xx];
+	[xx;as;as;as;xx];
+	[xx;as;as;as;xx];
+	[xx;xx;xx;xx;xx];
+]
+```
+- make buttons work using same mechanic as box?
+	- might be simpler to not do this and use button + map
+- win condition for box level?
+	- just put the button in nested boxes :P
 - make the box work :)
 	- place items into with place item button
 	- remove item with remove button
