@@ -1,4 +1,6 @@
-﻿
+﻿THINKING:
+
+
 TODO:
 - debug sprites with toggling
 - quick check for collision exclusion of far away objects
@@ -9,17 +11,16 @@ TODO:
 - use tile to show which entities are permanent
 - simplify all the things
 	- make it easier to create entities for carrying
-	- just use facing to determine observable target
 	- simplify interaction event stuffs - seems dumb
 	- make it easier to switch animations
-
-
-THINKING:
+- map and filter need activation objects
+- unit signal
 
 
 DOING:
 
 DONE:
+- just use facing to determine observable target
 - figure out a nicer way to create levels
 
 ```fsharp
