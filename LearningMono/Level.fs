@@ -85,7 +85,7 @@ let createTimerOnGrass time pickedUp (coords: Coords) =
         coords
 
 let createButtonOnGrass time pickedUp (coords: Coords) =
-    createSubjectOnGrass (Entity.Button Rock) time pickedUp coords
+    createSubjectOnGrass (Entity.Button Unit) time pickedUp coords
 
 let observerEntity observer =
     Entity.init observer Vector2.Zero 0 FacingLeft true

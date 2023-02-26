@@ -14,11 +14,12 @@ TODO:
 	- simplify interaction event stuffs - seems dumb
 	- make it easier to switch animations
 - map and filter need activation objects
-- unit signal
+- open close chest sounds
 
 DOING:
 
 DONE:
+- unit signal
 - just use facing to determine observable target
 - figure out a nicer way to create levels
 

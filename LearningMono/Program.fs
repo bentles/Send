@@ -76,7 +76,7 @@ let main _ =
               PipelineTexture("button", "./content/sprites/entity/Button")
               PipelineTexture("toggleOff", "./content/sprites/entity/ToggleOff")
               PipelineTexture("toggleOn", "./content/sprites/entity/ToggleOn")
-              PipelineTexture("empty", "./content/sprites/entity/Empty")
+              PipelineTexture("unit", "./content/sprites/entity/Unit")
               PipelineTexture("box", "./content/sprites/entity/Box")
 
               //music

@@ -27,7 +27,7 @@ let emptyImage =
     { SpriteSize = (50, 50)
       Rows = 1
       Columns = 1
-      TextureName = "empty"
+      TextureName = "unit"
       Offset = Vector2(0f, 0f) }
 
 let nextLevelImage = { emptyImage with TextureName = "nextLevel" }

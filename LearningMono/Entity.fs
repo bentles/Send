@@ -33,11 +33,10 @@ and ObservableType =
     | Toggle of bool
     | Map of EntityType
     | Filter of EntityType
-    //| Merge
     | Compare
 
 and EntityType =
-    | Empty
+    | Unit
     | Rock
     | GoToLevelButton of Level
     | Box of BoxType
@@ -67,7 +66,7 @@ type Model =
 
 let getSpriteConfig (eType: EntityType) : SpriteConfig =
     match eType with
-    | Empty -> emptySpriteConfig
+    | Unit -> emptySpriteConfig
     | Rock -> rockSpriteConfig
     | GoToLevelButton _ -> nextLevelSpriteConfig
     | Box _ -> boxSpriteConfig
@@ -86,7 +85,7 @@ let getSpriteConfig (eType: EntityType) : SpriteConfig =
 
 let getEmitImage (eType: EntityType) =
     match eType with
-    | Empty -> emptyImage
+    | Unit -> emptyImage
     | Rock -> rockImage
     | GoToLevelButton _ -> nextLevelImage
     | Box _ -> boxImage
@@ -105,7 +104,7 @@ let getEmitImage (eType: EntityType) =
 let rec entityEq (e1: EntityType) (e2: EntityType) =
     match (e1, e2) with
     | Rock, Rock -> true
-    | Empty, Empty -> true
+    | Unit, Unit -> true
     | Box _, Box _ -> true // check contents ??
     | Observable { Type = Id }, Observable { Type = Id } -> true
     | Observable { Type = Toggle _ }, Observable { Type = Toggle _ } -> true
@@ -117,7 +116,7 @@ let rec entityEq (e1: EntityType) (e2: EntityType) =
 
 let getCollider (eType: EntityType) (pos: Vector2) : AABB voption =
     match eType with
-    | Empty
+    | Unit
     | GoToLevelButton _ -> ValueNone
     | Rock
     | Subject _
