@@ -371,7 +371,7 @@ let level7: LevelBuilder =
         let wb = createCollidableTile FloorType.BottomWall
         let wt = createCollidableTile FloorType.TopWall
         let ir = observerOnGrass time (observing Id true false) FacingRight true
-        let mr = observerOnGrass time (observing Merge true true) FacingRight true
+        let me = observerOnGrass time (observing Merge true true) FacingDown false
         let tu = observerOnGrass time (observing (Toggle true) true false) FacingUp false
         let tl = observerOnGrass time (observing (Toggle true) true false) FacingLeft false
         let td = observerOnGrass time (observing (Toggle true) true false) FacingDown false
@@ -385,9 +385,9 @@ let level7: LevelBuilder =
         let fu =
             observerOnGrass time (observing (Filter(observing Id true false)) true false) FacingLeft false
 
-        let ml = observerOnGrass time (observing (Map Unit) true false) FacingLeft true
+        let ma = observerOnGrass time (observing (Map Unit) true false) FacingLeft true
         let bb = createButtonOnGrass time true
-        let xx = createEntityOn (GoToLevelButton L7) Grass time false
+        let xx = createEntityOn (GoToLevelButton L8) Grass time false
 
         let bx =
             createEntityOn
@@ -411,19 +411,160 @@ let level7: LevelBuilder =
         let tiles, width, height =
             worldFromTemplate
                 [ [ ww; wt; wt; wt; wt; wt; wt; wt; wt; ww ]
-                  [ wl; __; __; __; __; bx; __; __; __; wr ]
-                  [ wl; __; __; __; __; __; __; __; ml; wr ]
-                  [ wl; __; __; __; __; __; __; __; ml; wr ]
-                  [ wl; __; __; mr; __; __; bb; __; ml; wr ]
-                  [ wl; __; __; __; __; __; __; __; __; wr ]
-                  [ wl; __; __; __; __; __; __; __; __; wr ]
-                  [ wl; __; __; __; __; __; __; __; __; wr ]
+                  [ wl; __; __; __; td; me; Tl; __; __; wr ]
+                  [ wl; bb; __; __; td; __; Tu; __; __; wr ]
+                  [ wl; __; __; __; td; __; Tu; __; __; wr ]
+                  [ wl; rr; __; __; td; __; Tu; __; __; wr ]
+                  [ wl; __; __; __; td; __; Tu; __; __; wr ]
+                  [ wl; __; __; __; td; __; Tu; __; __; wr ]
+                  [ wl; __; __; __; tl; wb; Tu; __; xx; wr ]
                   [ ww; wb; wb; wb; wb; ww; wb; wb; wb; ww ] ]
 
-        { PlayerStartsAtPos = Vector2(200f, 100f)
+        { PlayerStartsAtPos = Vector2(150f, 100f)
           PlayerStartsCarrying = []
           Tiles = tiles
           Size = (width, height) }
+
+let sandBox: LevelBuilder =
+    fun time ->
+        let __ = createNonCollidableTile FloorType.Grass
+        let ww = createCollidableTile Wall
+        let wl = createCollidableTile FloorType.LeftWall
+        let rr = createRockOnGrass time true
+        let wr = createCollidableTile FloorType.RightWall
+        let wb = createCollidableTile FloorType.BottomWall
+        let wt = createCollidableTile FloorType.TopWall
+        let ir = observerOnGrass time (observing Id true false) FacingRight false
+        let il = observerOnGrass time (observing Id true false) FacingLeft false
+        let iu = observerOnGrass time (observing Id true false) FacingUp false
+        let id = observerOnGrass time (observing Id true false) FacingDown false
+        let me = observerOnGrass time (observing Merge true true) FacingDown false
+        let tu = observerOnGrass time (observing (Toggle true) true false) FacingUp false
+        let tl = observerOnGrass time (observing (Toggle true) true false) FacingLeft false
+        let td = observerOnGrass time (observing (Toggle true) true false) FacingDown false
+        let tr = observerOnGrass time (observing (Toggle true) true false) FacingRight false
+        let Tu = observerOnGrass time (observing (Toggle false) true false) FacingUp false
+        let Td = observerOnGrass time (observing (Toggle false) true false) FacingDown false
+        let Tl = observerOnGrass time (observing (Toggle false) true false) FacingLeft false
+
+        let fl = observerOnGrass time (observing (Filter Rock) true false) FacingLeft false
+
+        let fu =
+            observerOnGrass time (observing (Filter(observing Id true false)) true false) FacingLeft false
+
+        let ma = observerOnGrass time (observing (Map Unit) true false) FacingLeft true
+        let bb = createButtonOnGrass time true
+        let xx = createEntityOn (GoToLevelButton L7) Grass time false
+
+        let b0 =
+            createEntityOn
+                (Box
+                    { Items =
+                        [ (observing (Toggle true) true false)
+                          (observing (Toggle true) true false)
+                          (observing (Toggle true) true false)
+                          (observing (Toggle true) true false)
+                          (observing (Toggle true) true false)
+                          (observing (Toggle false) true false)
+                          (observing (Toggle false) true false)
+                          (observing (Toggle false) true false)
+                          (observing (Toggle false) true false)
+                          (observing (Toggle false) true false) ]
+                      IsOpen = false })
+                Grass
+                time
+                true
+
+        let b1 =
+            createEntityOn
+                (Box
+                    { Items =
+                        [ (observing Id true false)
+                          (observing Id true false)
+                          (observing Id true false)
+                          (observing Id true false)
+                          (observing Id true false)
+                          (observing Id true false)
+                          (observing Id true false)
+                          (observing Id true false)
+                          (observing Id true false)
+                          (observing Id true false) ]
+                      IsOpen = false })
+                Grass
+                time
+                true
+
+        let b2 =
+            createEntityOn
+                (Box
+                    { Items =
+                        [ (observing Merge true true)
+                          (observing Merge true true)
+                          (observing Merge true true)
+                          (observing Merge true true)
+                          (observing Merge true true)
+                          (observing Merge true true)
+                          (observing Merge true true)
+                          (observing Merge true true) ]
+                      IsOpen = false })
+                Grass
+                time
+                true
+
+        let b3 =
+            createEntityOn
+                (Box
+                    { Items =
+                        [ (observing (Map Unit) true false)
+                          (observing (Map Unit) true false)
+                          (observing (Map Unit) true false)
+                          (observing (Map Unit) true false)
+                          (observing (Map Unit) true false)
+                          (observing (Map Unit) true false)
+                          (observing (Map Unit) true false)
+                          (observing (Map Unit) true false) ]
+                      IsOpen = false })
+                Grass
+                time
+                true
+
+        let b4 =
+            createEntityOn
+                (Box
+                    { Items =
+                        [ (observing (Filter Unit) true false)
+                          (observing (Filter Unit) true false)
+                          (observing (Filter Unit) true false)
+                          (observing (Filter Unit) true false)
+                          (observing (Filter Unit) true false)
+                          (observing (Filter Unit) true false)
+                          (observing (Filter Unit) true false)
+                          (observing (Filter Unit) true false) ]
+                      IsOpen = false })
+                Grass
+                time
+                true
+
+        let tiles, width, height =
+            worldFromTemplate
+                [ [ id; il; il; il; il; il; il; il; il; il; il; il; il; il ]
+                  [ id; __; __; __; __; __; __; __; __; __; __; __; ww; iu ]
+                  [ id; bb; __; __; b0; b1; b2; b3; b4; __; __; __; wr; iu ]
+                  [ id; bb; __; __; __; __; __; __; __; __; __; __; wr; iu ]
+                  [ id; __; __; __; __; __; __; __; __; __; __; __; wr; iu ]
+                  [ id; __; __; __; __; __; __; __; __; __; __; __; wr; iu ]
+                  [ id; rr; __; __; __; __; __; __; __; __; __; __; wr; iu ]
+                  [ id; __; __; __; __; __; __; __; __; __; __; __; wr; iu ]
+                  [ id; __; __; __; __; __; __; bb; __; __; __; __; wr; iu ]
+                  [ id; __; __; __; __; __; __; iu; __; __; __; __; wr; iu ]
+                  [ id; __; __; __; __; __; __; iu; __; __; __; __; ir; iu ]
+                  [ ir; ir; ir; ir; ir; ir; ir; iu; wb; wb; wb; wb; wb; ww ] ]
+
+        { PlayerStartsAtPos = Vector2(150f, 100f)
+          PlayerStartsCarrying = []
+          Tiles = tiles
+          Size = (width, height) }
+
 
 
 let levelLookup (level: Level) : LevelBuilder =
@@ -435,3 +576,4 @@ let levelLookup (level: Level) : LevelBuilder =
     | L5 -> level5
     | L6 -> level6
     | L7 -> level7
+    | L8 -> sandBox
