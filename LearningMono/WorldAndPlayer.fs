@@ -21,7 +21,7 @@ type SongState =
     | Stopped
 
 type Model =
-    { Tiles: PersistentVector<Tile>
+    { Tiles: Tiles
       Song: SongState
 
       Size: Coords
@@ -51,7 +51,7 @@ let getCollidables (tiles: Tile seq) : AABB seq =
     }
 
 
-let getTileAtPos (pos: Vector2) (size: Coords) (tiles: PersistentVector<Tile>) : struct (Tile * int) voption =
+let getTileAtPos (pos: Vector2) (size: Coords) (tiles: Tiles) : struct (Tile * int) voption =
     let coords = offsetVectorToCoords pos
     let index = coordsToIndex coords size
     index |> ValueOption.map (fun index -> PersistentVector.nth index tiles, index)
@@ -79,7 +79,7 @@ type Message =
     | SongStarted of string
     | PhysicsTick of time: int64 * slow: bool
 
-let updateWorldReactive (tiles: PersistentVector<Tile>) ((width, height): Coords) : PersistentVector<Tile> =
+let updateWorldReactive (tiles: Tiles) ((width, height): Coords) : Tiles =
     tiles
     |> PersistentVector.map (fun tile ->
         let maybeEntity =
@@ -124,7 +124,7 @@ let updateWorldReactive (tiles: PersistentVector<Tile>) ((width, height): Coords
 
         { tile with Entity = maybeEntity })
 
-let updateWorldSprites (totalTime: int64) (tiles: PersistentVector<Tile>) : PersistentVector<Tile> =
+let updateWorldSprites (totalTime: int64) (tiles: Tiles) : Tiles =
     tiles
     |> PersistentVector.map (fun tile ->
         let entityy =
@@ -165,8 +165,8 @@ let pickUpEntity (model: Model) : Model =
             if targetEntity.CanBePickedUp then
                 let newTile, pickedUpEntity =
                     match targetEntity with
-                    | { Type = NonEmptyObservable(obData, entityType)} as targetEntity->
-                        let newTarget = { targetEntity with Type = Observable (takeOutOfObservable obData) }
+                    | { Type = NonEmptyObservable(obData, entityType) } as targetEntity ->
+                        let newTarget = { targetEntity with Type = Observable(takeOutOfObservable obData) }
                         let fromObserverEntity = Entity.init entityType Vector2.Zero 0 FacingRight true
                         let tile = { tile with Entity = ValueSome newTarget }
                         tile, fromObserverEntity
@@ -226,11 +226,13 @@ let placeEntity (model: Model) : Model =
                 { model with
                     Tiles = tiles
                     Player = { player with Carrying = rest } }
-            | ValueSome({ Entity = ValueSome({ Type = EmptyObservable(obData)} as targetEntity) } as tile , i) ->
+            | ValueSome({ Entity = ValueSome({ Type = EmptyObservable(obData) } as targetEntity) } as tile, i) ->
                 let newObData = placeIntoObservable obData placeEntity.Type
                 let newTarget = ValueSome { targetEntity with Type = Observable newObData }
+
                 let tiles =
                     model.Tiles |> PersistentVector.update i { tile with Entity = newTarget }
+
                 { model with
                     Tiles = tiles
                     Player = { player with Carrying = rest } }

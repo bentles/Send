@@ -30,10 +30,12 @@ let defaultTile =
       Coords = (0, 0)
       Entity = ValueNone }
 
+type Tiles = PersistentVector<Tile>
+
 type LevelData =
     { PlayerStartsAtPos: Vector2
       PlayerStartsCarrying: Entity.Model list
-      Tiles: PersistentVector<Tile>
+      Tiles: Tiles
       Size: Coords }
 
 type LevelBuilder = int64 -> LevelData
@@ -104,7 +106,7 @@ let worldVars x y height width =
 let iterWorld
     (width: int, height: int)
     (func: (int * int) -> (float32 * float32) -> (int * int) -> Tile)
-    : PersistentVector<Tile> =
+    : Tiles =
     seq {
         for y in 0 .. (height - 1) do
             for x in 0 .. (width - 1) do
