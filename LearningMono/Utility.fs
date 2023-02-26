@@ -6,7 +6,7 @@ open Xelmish.Viewables
 open Prelude
 open GameConfig
 
-let xAndYToOffsetVector ((x,y): CoordsF) (half: Vector2) =
+let CoordsFToOffsetVector ((x,y): CoordsF) (half: Vector2) =
     let startX = 0f
     let startY = 0f
 
@@ -51,7 +51,7 @@ let coordsToIndex (coords: Coords) ((width: int, height: int): Coords) : int vop
         ValueSome(toIndex coords width)
 
 let createColliderFromCoords (coordsF: CoordsF) (half: Vector2) =
-    { Pos = xAndYToOffsetVector coordsF half
+    { Pos = CoordsFToOffsetVector coordsF half
       Half = half }
 
 let imageWithSource

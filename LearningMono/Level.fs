@@ -53,7 +53,7 @@ let createNonCollidableTile t (coords: Coords) =
         Coords = coords }
 
 let createEntityOn (entityType: EntityType) (floor: FloorType) (time: int64) (canBePickedUp: bool) (coords: Coords) =
-    let pos = xAndYToOffsetVector (toCoordsF coords) half
+    let pos = CoordsFToOffsetVector (toCoordsF coords) half
 
     { defaultTile with
         Coords = coords
@@ -93,7 +93,7 @@ let observerEntity observer =
     Entity.init observer Vector2.Zero 0 FacingLeft true
 
 let observerOnGrass time observer facing canPickup (coords: Coords) : Tile =
-    let pos = xAndYToOffsetVector (toCoordsF coords) half
+    let pos = CoordsFToOffsetVector (toCoordsF coords) half
 
     { defaultTile with
         Coords = coords

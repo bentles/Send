@@ -115,7 +115,7 @@ let updateWorldReactive (tiles: Tiles) ((width, height): Coords) : Tiles =
                 let onEmit =
                     match newEntityType with
                     | EmittingObservable _ ->
-                        let pos = (xAndYToOffsetVector (toCoordsF tile.Coords) half)
+                        let pos = (CoordsFToOffsetVector (toCoordsF tile.Coords) half)
                         getOnEmit newEntityType pos
                     | _ -> id
 
@@ -471,8 +471,9 @@ let drawWorld (model: Model) loadedAssets (spriteBatch: SpriteBatch) =
 let draw model (dispatch: Message -> unit) loadedAssets _inputs spriteBatch =
     match model.Song with
     | PlaySong songName ->
-        // Media.MediaPlayer.Play(loaded.music[songName])
-        // Media.MediaPlayer.IsRepeating <- true
+        Media.MediaPlayer.Volume <- 0.5f
+        Media.MediaPlayer.Play(loadedAssets.music[songName])
+        Media.MediaPlayer.IsRepeating <- true
         dispatch (SongStarted songName)
     | Stopped -> Media.MediaPlayer.Stop()
     | _ -> ()

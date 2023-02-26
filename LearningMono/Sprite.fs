@@ -3,8 +3,6 @@ module Sprite
 
 open Microsoft.Xna.Framework
 open Xelmish.Model
-open Elmish
-open Xelmish.Viewables
 open GameConfig
 
 [<Struct>]
