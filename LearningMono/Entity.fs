@@ -34,6 +34,7 @@ and ObservableType =
     | Map of EntityType
     | Filter of EntityType
     | Compare
+    | Merge
 
 and EntityType =
     | Unit
@@ -80,12 +81,13 @@ let getSpriteConfig (eType: EntityType) : SpriteConfig =
         | Toggle true -> toggleOnSpriteConfig
         | Toggle false -> toggleOffSpriteConfig
         | Map _ -> mapSpriteConfig
+        | Merge -> mergeSpriteConfig
         | Filter _ -> filterSpriteConfig
         | Compare -> filterSpriteConfig
 
 let getEmitImage (eType: EntityType) =
     match eType with
-    | Unit -> emptyImage
+    | Unit -> unitImage
     | Rock -> rockImage
     | GoToLevelButton _ -> nextLevelImage
     | Box _ -> boxImage
@@ -98,6 +100,7 @@ let getEmitImage (eType: EntityType) =
         | Toggle _ -> toggleOnImage
         | Id -> idImage
         | Map _ -> mapImage
+        | Merge -> mergeImage
         | Filter _ -> filterImage
         | Compare -> filterImage
 
@@ -193,6 +196,12 @@ let private behaviorFunc (observable: ObservableData) (a: EntityType voption) (b
         match (a, b) with
         | (ValueSome e1), (ValueSome e2) when (entityEq e1 e2) -> WillEmit e1
         | _ -> Nothing
+    | Merge ->
+        match (a, b) with
+        | (ValueSome e1), (ValueSome e2) -> WillEmit (Box {Items = [e1; e2]; IsOpen = false } )
+        | (ValueSome e1), ValueNone -> WillEmit e1
+        | ValueNone, ValueSome e2 -> WillEmit e2
+        | _ -> Nothing
 
 let observerFunc (observable: ObservableData) (observing: EntityType voption) (observing2: EntityType voption) =
 
@@ -214,7 +223,7 @@ let observerFunc (observable: ObservableData) (observing: EntityType voption) (o
                 | _ -> ValueNone
 
             let observed2 =
-                match observing with
+                match observing2 with
                 | ValueSome(EmittingObservable(s, _)) -> ValueSome s
                 | _ -> ValueNone
 

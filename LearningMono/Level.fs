@@ -371,6 +371,7 @@ let level7: LevelBuilder =
         let wb = createCollidableTile FloorType.BottomWall
         let wt = createCollidableTile FloorType.TopWall
         let ir = observerOnGrass time (observing Id true false) FacingRight true
+        let mr = observerOnGrass time (observing Merge true true) FacingRight true
         let tu = observerOnGrass time (observing (Toggle true) true false) FacingUp false
         let tl = observerOnGrass time (observing (Toggle true) true false) FacingLeft false
         let td = observerOnGrass time (observing (Toggle true) true false) FacingDown false
@@ -396,6 +397,11 @@ let level7: LevelBuilder =
                           (observing Id true false)
                           (observing Id true false)
                           (observing Id true false)
+                          (observing Id true false)
+                          (observing Id true false)
+                          (observing Id true false)
+                          (observing Id true false)
+                          (observing Id true false)
                           (observing Id true false) ]
                       IsOpen = false })
                 Grass
@@ -405,12 +411,13 @@ let level7: LevelBuilder =
         let tiles, width, height =
             worldFromTemplate
                 [ [ ww; wt; wt; wt; wt; wt; wt; wt; wt; ww ]
-                  [ wl; __; __; __; __; __; bx; __; __; wr ]
-                  [ wl; __; bb; __; __; __; __; ml; __; wr ]
-                  [ wl; __; ml; __; td; tl; tl; tl; fu; wr ]
-                  [ wl; __; __; ir; __; __; tr; tr; tu; wr ]
-                  [ wl; __; rr; __; td; wb; tu; __; __; wr ]
-                  [ wl; __; __; __; fl; ww; tu; __; xx; wr ]
+                  [ wl; __; __; __; __; bx; __; __; __; wr ]
+                  [ wl; __; __; __; __; __; __; __; ml; wr ]
+                  [ wl; __; __; __; __; __; __; __; ml; wr ]
+                  [ wl; __; __; mr; __; __; bb; __; ml; wr ]
+                  [ wl; __; __; __; __; __; __; __; __; wr ]
+                  [ wl; __; __; __; __; __; __; __; __; wr ]
+                  [ wl; __; __; __; __; __; __; __; __; wr ]
                   [ ww; wb; wb; wb; wb; ww; wb; wb; wb; ww ] ]
 
         { PlayerStartsAtPos = Vector2(200f, 100f)

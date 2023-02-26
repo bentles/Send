@@ -106,7 +106,7 @@ let updateWorldReactive (tiles: Tiles) ((width, height): Coords) : Tiles =
                                 }
 
                         let eType1 = getObserved ob1 tile entity.Facing
-                        let eType2 = getObserved ob2 tile (rotateFacing entity.Facing false)
+                        let eType2 = getObserved ob2 tile (rotateFacing entity.Facing true)
 
                         Observable(observerFunc oData eType1 eType2)
                     | other -> other

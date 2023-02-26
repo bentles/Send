@@ -70,6 +70,7 @@ let main _ =
               PipelineTexture("rock", "./content/sprites/entity/Rock")
               PipelineTexture("id", "./content/sprites/entity/Id")
               PipelineTexture("map", "./content/sprites/entity/Map")
+              PipelineTexture("merge", "./content/sprites/entity/Merge")
               PipelineTexture("filter", "./content/sprites/entity/Filter")
               PipelineTexture("timer", "./content/sprites/entity/Timer")
               PipelineTexture("nextLevel", "./content/sprites/entity/NextLevel")

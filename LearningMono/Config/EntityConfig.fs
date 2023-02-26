@@ -18,26 +18,27 @@ let idImage =
       TextureName = "id"
       Offset = Vector2(0f, 0f) }
 
+let mergeImage = { idImage with TextureName = "merge" }
 let mapImage = { idImage with TextureName = "map" }
 let filterImage = { idImage with TextureName = "filter" }
 let toggleOnImage = { idImage with TextureName = "toggleOn" }
 let toggleOffImage = { idImage with TextureName = "toggleOff" }
 
-let emptyImage =
+let unitImage =
     { SpriteSize = (50, 50)
       Rows = 1
       Columns = 1
       TextureName = "unit"
       Offset = Vector2(0f, 0f) }
 
-let nextLevelImage = { emptyImage with TextureName = "nextLevel" }
+let nextLevelImage = { unitImage with TextureName = "nextLevel" }
 
-let buttonImage = { emptyImage with TextureName = "button" }
+let buttonImage = { unitImage with TextureName = "button" }
 
-let rockImage = { emptyImage with TextureName = "rock" }
+let rockImage = { unitImage with TextureName = "rock" }
 
 let boxImage =
-    { emptyImage with
+    { unitImage with
         TextureName = "box"
         Rows = 3 }
 
@@ -66,6 +67,7 @@ let idConfig =
       FrameLength = 300L }
 
 let idSpriteConfig = SingleSpriteConfig idConfig
+let mergeSpriteConfig = SingleSpriteConfig { idConfig with Image = mergeImage }
 let mapSpriteConfig = SingleSpriteConfig { idConfig with Image = mapImage }
 let filterSpriteConfig = SingleSpriteConfig { idConfig with Image = filterImage }
 
@@ -83,7 +85,7 @@ let rockSpriteConfig =
 
 let emptySpriteConfig =
     SingleSpriteConfig
-        { Image = emptyImage
+        { Image = unitImage
           Tint = Color.White
           FrameLength = 300L }
 
