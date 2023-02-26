@@ -57,7 +57,7 @@ let getTileAtPos (pos: Vector2) (size: Coords) (tiles: PersistentVector<Tile>) :
     index |> ValueOption.map (fun index -> PersistentVector.nth index tiles, index)
 
 let init time =
-    let level = level1 time
+    let level = level6 time
 
     { Tiles = level.Tiles
       Song = PlaySong "tutorial"
@@ -79,7 +79,7 @@ type Message =
     | SongStarted of string
     | PhysicsTick of time: int64 * slow: bool
 
-let updateWorldReactive (tiles: PersistentVector<Tile>) ((width,height):Coords) : PersistentVector<Tile> =
+let updateWorldReactive (tiles: PersistentVector<Tile>) ((width, height): Coords) : PersistentVector<Tile> =
     tiles
     |> PersistentVector.map (fun tile ->
         let maybeEntity =
@@ -92,12 +92,14 @@ let updateWorldReactive (tiles: PersistentVector<Tile>) ((width,height):Coords) 
                     | Observable({ Observing = ob1; Observing2 = ob2 } as oData) ->
 
                         // get what is being is observed if anything
-                        let getObserved (ob: bool) (tile:Tile) (facing:Facing) =
-                            if not ob then ValueNone else
+                        let getObserved (ob: bool) (tile: Tile) (facing: Facing) =
+                            if not ob then
+                                ValueNone
+                            else
                                 voption {
-                                    let struct (tx, ty) = facingToCoords(facing)
+                                    let struct (tx, ty) = facingToCoords (facing)
                                     let struct (x, y) = tile.Coords
-                                    let! targetIndex = (coordsToIndex(x + tx, y + ty) (width, height))
+                                    let! targetIndex = (coordsToIndex (x + tx, y + ty) (width, height))
                                     let tile = PersistentVector.nth targetIndex tiles
                                     let! e = tile.Entity
                                     return e.Type
@@ -163,6 +165,11 @@ let pickUpEntity (model: Model) : Model =
             if targetEntity.CanBePickedUp then
                 let newTile, pickedUpEntity =
                     match targetEntity with
+                    | { Type = NonEmptyObservable(obData, entityType)} as targetEntity->
+                        let newTarget = { targetEntity with Type = Observable (takeOutOfObservable obData) }
+                        let fromObserverEntity = Entity.init entityType Vector2.Zero 0 FacingRight true
+                        let tile = { tile with Entity = ValueSome newTarget }
+                        tile, fromObserverEntity
                     | { Type = Box({ Items = first :: rest; IsOpen = true } as box) } as boxEntity ->
                         let sprite =
                             match rest with
@@ -180,8 +187,7 @@ let pickUpEntity (model: Model) : Model =
                         let tile = { tile with Entity = ValueSome restOfBox }
                         let fromBoxEntity = Entity.init first Vector2.Zero 0 FacingRight true
                         tile, fromBoxEntity
-                    | _ ->
-                        { tile with Entity = ValueNone }, targetEntity
+                    | _ -> { tile with Entity = ValueNone }, targetEntity
 
                 return
                     { model with
@@ -199,20 +205,16 @@ let placeEntity (model: Model) : Model =
     match player.CharacterState with
     | Player.Small _ ->
         match player.Carrying with
-        | entity :: rest ->
+        | placeEntity :: rest ->
             let tileAndIndex = model.PlayerTarget
 
             match tileAndIndex with
             | ValueSome({ Entity = ValueNone } as tile, i) ->
                 //make a targeting function
                 let roundedPos = posRounded player.Target worldConfig
-                let struct (x, y) = offsetVectorToCoords roundedPos
-                let struct (xface, yface) = facingToCoords player.PlacementFacing
-                let at = (x + xface, y + yface)
-
                 let facing = player.PlacementFacing
 
-                let entityType = withTarget entity.Type
+                let entityType = withTarget placeEntity.Type
                 let entity = Entity.init entityType roundedPos model.TimeElapsed facing true
                 let sprite = Sprite.startAnimation entity.Sprite
                 let entity = { entity with Sprite = sprite }
@@ -224,6 +226,14 @@ let placeEntity (model: Model) : Model =
                 { model with
                     Tiles = tiles
                     Player = { player with Carrying = rest } }
+            | ValueSome({ Entity = ValueSome({ Type = EmptyObservable(obData)} as targetEntity) } as tile , i) ->
+                let newObData = placeIntoObservable obData placeEntity.Type
+                let newTarget = ValueSome { targetEntity with Type = Observable newObData }
+                let tiles =
+                    model.Tiles |> PersistentVector.update i { tile with Entity = newTarget }
+                { model with
+                    Tiles = tiles
+                    Player = { player with Carrying = rest } }
             | ValueSome({ Entity = ValueSome({ Type = Box { Items = contents; IsOpen = true } } as box) } as tile, i) ->
                 //can maybe replace this with new type and Entity init?
                 let sprite =
@@ -231,14 +241,16 @@ let placeEntity (model: Model) : Model =
                     | [] -> Sprite.switchAnimation ({ imageSpriteConfig with Index = 2 }, 0, false) box.Sprite
                     | _ -> box.Sprite
 
+                let newBoxType =
+                    Box
+                        { Items = placeEntity.Type :: contents
+                          IsOpen = true }
+
                 let appendedBox =
                     ValueSome(
                         { box with
                             Sprite = sprite
-                            Type =
-                                Box
-                                    { Items = entity.Type :: contents
-                                      IsOpen = true } }
+                            Type = newBoxType }
                     )
 
                 let tiles =

@@ -13,12 +13,13 @@ TODO:
 	- make it easier to create entities for carrying
 	- simplify interaction event stuffs - seems dumb
 	- make it easier to switch animations
-- map and filter need activation objects
 - open close chest sounds
 
 DOING:
+- map and filter need to convey to the user wtf is going on
 
 DONE:
+- map and filter need activation objects
 - unit signal
 - just use facing to determine observable target
 - figure out a nicer way to create levels

@@ -145,6 +145,33 @@ let (|EmittingObservable|_|) (emit: EntityType) =
                    TicksSinceEmit = t } -> Some(e, t)
     | _ -> None
 
+[<return: Struct>]
+let (|EmptyObservable|_|) (entityType: EntityType) : voption<ObservableData> =
+    match entityType with
+    | Observable({ Type = Map Unit } as o)
+    | Observable({ Type = Filter Unit } as o) -> ValueSome(o)
+    | _ -> ValueNone
+
+[<return: Struct>]
+let (|NonEmptyObservable|_|) (entityType: EntityType) : voption<ObservableData * EntityType> =
+    match entityType with
+    | Observable { Type = Map Unit }
+    | Observable { Type = Filter Unit } -> ValueNone
+    | Observable({ Type = Map e } as o)
+    | Observable({ Type = Filter e } as o) -> ValueSome (o, e)
+    | _ -> ValueNone
+
+let placeIntoObservable (observerData: ObservableData) (entityType: EntityType) =
+    match observerData with
+    | { Type = Map Unit } -> { observerData with Type = Map entityType }
+    | { Type = Filter Unit } -> { observerData with Type = Filter entityType }
+    | _ -> observerData
+
+let takeOutOfObservable (observerData: ObservableData) =
+    match observerData with
+    | { Type = Map _ } -> { observerData with Type = Map Unit }
+    | { Type = Filter _ } -> { observerData with Type = Filter Unit }
+    | _ -> observerData
 
 let private behaviorFunc (observable: ObservableData) (a: EntityType voption) (b: EntityType voption) =
     match observable.Type with

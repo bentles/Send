@@ -313,7 +313,51 @@ let level5: LevelBuilder =
           Tiles = tiles
           Size = (width, height) }
 
+let level6: LevelBuilder =
+    fun time ->
+        let __ = createNonCollidableTile FloorType.Grass
+        let ww = createCollidableTile Wall
+        let wl = createCollidableTile FloorType.LeftWall
+        let wr = createCollidableTile FloorType.RightWall
+        let wb = createCollidableTile FloorType.BottomWall
+        let wt = createCollidableTile FloorType.TopWall
+        let ir = observerOnGrass time (observing Id true false) FacingRight true
+        let tu = observerOnGrass time (observing (Toggle true) true false) FacingUp false
+        let tl = observerOnGrass time (observing (Toggle true) true false) FacingLeft false
+        let fl = observerOnGrass time (observing (Filter Unit) true false) FacingLeft true
+        let ml = observerOnGrass time (observing (Map Unit) true false) FacingLeft true
+        let bb = createButtonOnGrass time false
+        let xx = createEntityOn (GoToLevelButton L5) Grass time false
 
+        let bx =
+            createEntityOn
+                (Box
+                    { Items =
+                        [ (observing Id true false)
+                          (observing Id true false)
+                          (observing Id true false)
+                          (observing Id true false)
+                          (observing Id true false) ]
+                      IsOpen = false })
+                Grass
+                time
+                true
+
+        let tiles, width, height =
+            worldFromTemplate
+                [ [ ww; wt; wt; wt; wt; wt; wt; wt; wt; ww ]
+                  [ wl; __; __; __; __; __; bx; __; __; wr ]
+                  [ wl; __; bb; __; __; fl; __; ml; __; wr ]
+                  [ wl; __; __; __; __; __; __; __; __; wr ]
+                  [ wl; __; __; ir; __; __; tl; tl; tl; wr ]
+                  [ wl; __; __; __; __; __; tu; __; __; wr ]
+                  [ wl; __; __; __; __; __; tu; __; xx; wr ]
+                  [ ww; wb; wb; wb; wb; wb; wb; wb; wb; ww ] ]
+
+        { PlayerStartsAtPos = Vector2(200f, 100f)
+          PlayerStartsCarrying = []
+          Tiles = tiles
+          Size = (width, height) }
 
 
 
@@ -324,3 +368,4 @@ let levelLookup (level: Level) : LevelBuilder =
     | L3 -> level3
     | L4 -> level4
     | L5 -> level5
+    | L6 -> level6

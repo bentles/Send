@@ -29,6 +29,7 @@ type Level =
     | L3
     | L4
     | L5
+    | L6
 
 [<Struct>]
 type PlayerWorldInteraction =
