@@ -117,6 +117,7 @@ let rec entityEq (e1: EntityType) (e2: EntityType) =
 let getCollider (eType: EntityType) (pos: Vector2) : AABB voption =
     match eType with
     | Unit
+    | Observable {Type = Toggle false }
     | GoToLevelButton _ -> ValueNone
     | Rock
     | Subject _
@@ -244,9 +245,11 @@ let getOnEmit (obs: EntityType) (pos: Vector2) =
                  else
                      toggleOffSpriteConfig)
 
+            let newObs = Observable { obData with Type = (Toggle(not state)) }
+
             { entity with
-                Type = Observable { obData with Type = (Toggle(not state)) }
-                Collider = if not state then getCollider entity.Type pos else ValueNone
+                Type = newObs
+                Collider = if not state then getCollider newObs pos else ValueNone
                 Sprite = Sprite.reInit entity.Sprite newSprite }
     | _ -> (id)
 

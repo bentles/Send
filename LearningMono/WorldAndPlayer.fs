@@ -57,7 +57,7 @@ let getTileAtPos (pos: Vector2) (size: Coords) (tiles: Tiles) : struct (Tile * i
     index |> ValueOption.map (fun index -> PersistentVector.nth index tiles, index)
 
 let init time =
-    let level = level6 time
+    let level = level7 time
 
     { Tiles = level.Tiles
       Song = PlaySong "tutorial"
@@ -485,8 +485,10 @@ let drawWorld (model: Model) loadedAssets (spriteBatch: SpriteBatch) =
                 viewEmitting etype t (actualX, actualY) spriteBatch loadedAssets.textures[(getEmitImage etype).TextureName]
             | _ -> ()
 
-            match entity.Type with 
-            | NonEmptyObservable(_, eType) when maybeTargetColor.IsSome ->
+            match entity.Type, maybeTargetColor with 
+            | EmptyObservable(_), ValueSome _ -> 
+                viewObserverItem Unit 1 (actualX, actualY) spriteBatch loadedAssets.textures[(getEmitImage Unit).TextureName]
+            | NonEmptyObservable(_, eType), ValueSome _ ->
                 viewObserverItem eType 1 (actualX, actualY) spriteBatch loadedAssets.textures[(getEmitImage eType).TextureName]
             | _ -> ()
 
@@ -497,7 +499,7 @@ let draw model (dispatch: Message -> unit) loadedAssets _inputs spriteBatch =
     match model.Song with
     | PlaySong songName ->
         Media.MediaPlayer.Volume <- 0.5f
-        Media.MediaPlayer.Play(loadedAssets.music[songName])
+        //Media.MediaPlayer.Play(loadedAssets.music[songName])
         Media.MediaPlayer.IsRepeating <- true
         dispatch (SongStarted songName)
     | Stopped -> Media.MediaPlayer.Stop()

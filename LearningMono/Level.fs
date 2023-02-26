@@ -103,10 +103,7 @@ let observerOnGrass time observer facing canPickup (coords: Coords) : Tile =
 let worldVars x y height width =
     (float32 x, float32 y, height - 1, width - 1)
 
-let iterWorld
-    (width: int, height: int)
-    (func: (int * int) -> (float32 * float32) -> (int * int) -> Tile)
-    : Tiles =
+let iterWorld (width: int, height: int) (func: (int * int) -> (float32 * float32) -> (int * int) -> Tile) : Tiles =
     seq {
         for y in 0 .. (height - 1) do
             for x in 0 .. (width - 1) do
@@ -149,7 +146,7 @@ let level1: LevelBuilder =
         let height = 7
 
         let tiles =
-            iterWorld (width, height) (fun (x, y) (fx, fy) (bottom, right) ->
+            iterWorld (width, height) (fun (x, y) (_, _) (bottom, right) ->
                 match x, y with
                 | Corner (bottom, right) _ -> createCollidableTile Wall (x, y)
                 | Wall (bottom, right) wallType -> createCollidableTile wallType (x, y)
@@ -169,7 +166,7 @@ let level2: LevelBuilder =
         let height = 7
 
         let tiles =
-            iterWorld (width, height) (fun (x, y) (fx, fy) (bottom, right) ->
+            iterWorld (width, height) (fun (x, y) (_, _) (bottom, right) ->
                 let rocks =
                     [ (2, 2)
                       (3, 5)
@@ -267,7 +264,7 @@ let level4: LevelBuilder =
                   [ ww; wb; wb; wb; wb; wb; wb; wb; wb; ww ] ]
 
         { PlayerStartsAtPos = Vector2(200f, 100f)
-          PlayerStartsCarrying = [ ]
+          PlayerStartsCarrying = []
           Tiles = tiles
           Size = (width, height) }
 
@@ -326,10 +323,13 @@ let level6: LevelBuilder =
         let ir = observerOnGrass time (observing Id true false) FacingRight true
         let tu = observerOnGrass time (observing (Toggle true) true false) FacingUp false
         let tl = observerOnGrass time (observing (Toggle true) true false) FacingLeft false
-        let fl = observerOnGrass time (observing (Filter Unit) true false) FacingLeft true
+
+        let fl =
+            observerOnGrass time (observing (Filter(observing Id true false)) true false) FacingLeft false
+
         let ml = observerOnGrass time (observing (Map Unit) true false) FacingLeft true
         let bb = createButtonOnGrass time false
-        let xx = createEntityOn (GoToLevelButton L5) Grass time false
+        let xx = createEntityOn (GoToLevelButton L6) Grass time false
 
         let bx =
             createEntityOn
@@ -349,9 +349,9 @@ let level6: LevelBuilder =
             worldFromTemplate
                 [ [ ww; wt; wt; wt; wt; wt; wt; wt; wt; ww ]
                   [ wl; __; __; __; __; __; bx; __; __; wr ]
-                  [ wl; __; bb; __; __; fl; __; ml; __; wr ]
+                  [ wl; __; bb; __; __; __; __; ml; __; wr ]
                   [ wl; __; __; __; __; __; __; __; __; wr ]
-                  [ wl; __; __; ir; __; __; tl; tl; tl; wr ]
+                  [ wl; __; __; ir; __; __; fl; tl; tl; wr ]
                   [ wl; __; __; __; __; __; tu; __; __; wr ]
                   [ wl; __; __; __; __; __; tu; __; xx; wr ]
                   [ ww; wb; wb; wb; wb; wb; wb; wb; wb; ww ] ]
@@ -361,6 +361,62 @@ let level6: LevelBuilder =
           Tiles = tiles
           Size = (width, height) }
 
+let level7: LevelBuilder =
+    fun time ->
+        let __ = createNonCollidableTile FloorType.Grass
+        let ww = createCollidableTile Wall
+        let wl = createCollidableTile FloorType.LeftWall
+        let rr = createRockOnGrass time true
+        let wr = createCollidableTile FloorType.RightWall
+        let wb = createCollidableTile FloorType.BottomWall
+        let wt = createCollidableTile FloorType.TopWall
+        let ir = observerOnGrass time (observing Id true false) FacingRight true
+        let tu = observerOnGrass time (observing (Toggle true) true false) FacingUp false
+        let tl = observerOnGrass time (observing (Toggle true) true false) FacingLeft false
+        let td = observerOnGrass time (observing (Toggle true) true false) FacingDown false
+        let tr = observerOnGrass time (observing (Toggle true) true false) FacingRight false
+        let Tu = observerOnGrass time (observing (Toggle false) true false) FacingUp false
+        let Td = observerOnGrass time (observing (Toggle false) true false) FacingDown false
+        let Tl = observerOnGrass time (observing (Toggle false) true false) FacingLeft false
+
+        let fl = observerOnGrass time (observing (Filter Rock) true false) FacingLeft false
+
+        let fu =
+            observerOnGrass time (observing (Filter(observing Id true false)) true false) FacingLeft false
+
+        let ml = observerOnGrass time (observing (Map Unit) true false) FacingLeft true
+        let bb = createButtonOnGrass time true
+        let xx = createEntityOn (GoToLevelButton L7) Grass time false
+
+        let bx =
+            createEntityOn
+                (Box
+                    { Items =
+                        [ (observing Id true false)
+                          (observing Id true false)
+                          (observing Id true false)
+                          (observing Id true false)
+                          (observing Id true false) ]
+                      IsOpen = false })
+                Grass
+                time
+                true
+
+        let tiles, width, height =
+            worldFromTemplate
+                [ [ ww; wt; wt; wt; wt; wt; wt; wt; wt; ww ]
+                  [ wl; __; __; __; __; __; bx; __; __; wr ]
+                  [ wl; __; bb; __; __; __; __; ml; __; wr ]
+                  [ wl; __; ml; __; td; tl; tl; tl; fu; wr ]
+                  [ wl; __; __; ir; __; __; tr; tr; tu; wr ]
+                  [ wl; __; rr; __; td; wb; tu; __; __; wr ]
+                  [ wl; __; __; __; fl; ww; tu; __; xx; wr ]
+                  [ ww; wb; wb; wb; wb; ww; wb; wb; wb; ww ] ]
+
+        { PlayerStartsAtPos = Vector2(200f, 100f)
+          PlayerStartsCarrying = []
+          Tiles = tiles
+          Size = (width, height) }
 
 
 let levelLookup (level: Level) : LevelBuilder =
@@ -371,3 +427,4 @@ let levelLookup (level: Level) : LevelBuilder =
     | L4 -> level4
     | L5 -> level5
     | L6 -> level6
+    | L7 -> level7

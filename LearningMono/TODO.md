@@ -16,9 +16,10 @@ TODO:
 - open close chest sounds
 
 DOING:
-- map and filter need to convey to the user wtf is going on
 
 DONE:
+- map and filter need to convey to the user wtf is going on
+	- might need a better version of this
 - map and filter need activation objects
 - unit signal
 - just use facing to determine observable target
