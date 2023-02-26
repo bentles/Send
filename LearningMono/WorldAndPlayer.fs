@@ -352,7 +352,7 @@ let viewEmitting
     (ticksSinceLast: int)
     pos
     (spriteBatch: SpriteBatch)
-    (texture: Graphics.Texture2D)
+    (texture: Graphics.Texture2D): unit
     =
     let imageInfo = getEmitImage entityType
     let struct (width, height) = (imageInfo.SpriteSize)
@@ -368,9 +368,28 @@ let viewEmitting
             Rectangle(0, 0, width, height),
             (Color.FromNonPremultiplied(255, 255, 255, alpha))
         )
-    else
-        ()
 
+let viewObserverItem
+    (entityType: EntityType)
+    (ticksSinceLast: int)
+    pos
+    (spriteBatch: SpriteBatch)
+    (texture: Graphics.Texture2D): unit
+    =
+    let imageInfo = getEmitImage entityType
+    let struct (width, height) = (imageInfo.SpriteSize)
+
+    if ticksSinceLast < 20 then
+        let alpha = int ((float32 (30 - ticksSinceLast) / 20f) * 220f)
+        let dwidth, dheight = (int ((float width) / 1.5), int ((float height) / 1.5))
+        let x, y = pos
+
+        spriteBatch.Draw(
+            texture,
+            Rectangle(x + 20, y + 18, dwidth, dheight),
+            Rectangle(0, 0, width, height),
+            (Color.FromNonPremultiplied(255, 255, 255, alpha))
+        )
 
 let blockWidth = worldConfig.TileWidth
 let empty = "tile"
@@ -454,19 +473,25 @@ let drawWorld (model: Model) loadedAssets (spriteBatch: SpriteBatch) =
         | ValueNone -> ()
 
         match tile.Entity with
-        | ValueSome entity -> Sprite.drawSprite entity.Sprite -cameraOffset loadedAssets spriteBatch
-        | ValueNone -> ()
+        | ValueSome entity -> 
+            Sprite.drawSprite entity.Sprite -cameraOffset loadedAssets spriteBatch
+            match entity.Type with 
+            | EmittingObservable(_, _) ->
+                loadedAssets.sounds[ "click" ].Play(1f, 0.0f, 0.0f)  |> ignore
+            | _ -> ()
 
-        match tile.Entity with
-        | ValueSome({ Type = EmittingObservable(_, _) }) ->
-            loadedAssets.sounds[ "click" ].Play(1f, 0.0f, 0.0f) |> ignore
-        | _ -> ()
+            match entity.Type with 
+            | RenderEmittingObservable(etype, t) ->
+                viewEmitting etype t (actualX, actualY) spriteBatch loadedAssets.textures[(getEmitImage etype).TextureName]
+            | _ -> ()
 
-        match tile.Entity with
-        | ValueSome({ Type = RenderEmittingObservable(etype, t) }) ->
+            match entity.Type with 
+            | NonEmptyObservable(_, eType) when maybeTargetColor.IsSome ->
+                viewObserverItem eType 1 (actualX, actualY) spriteBatch loadedAssets.textures[(getEmitImage eType).TextureName]
+            | _ -> ()
 
-            viewEmitting etype t (actualX, actualY) spriteBatch loadedAssets.textures[(getEmitImage etype).TextureName]
-        | _ -> ())
+        | ValueNone -> ())
+
 
 let draw model (dispatch: Message -> unit) loadedAssets _inputs spriteBatch =
     match model.Song with
