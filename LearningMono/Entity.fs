@@ -296,20 +296,20 @@ let getSubjectFunc (sub: SubjectType) =
 let init (entityType: EntityType) (pos: Vector2) (time) (facing: Facing) (canBePickedUp: bool) =
     let config = (getSpriteConfig entityType)
 
-    let ypos, flipped =
+    let ypos =
         match entityType with
         | Observable _ ->
             match facing with
-            | FacingLeft -> 0, true
-            | FacingRight -> 0, false
-            | FacingUp -> 2, false
-            | FacingDown -> 1, false
-        | Box { IsOpen = false } -> 1, false
-        | Box { Items = _ :: _ } -> 2, false
-        | Box { Items = [] } -> 0, false
-        | _ -> 0, false
+            | FacingLeft -> 0
+            | FacingRight -> 1
+            | FacingDown -> 2
+            | FacingUp -> 3
+        | Box { IsOpen = false } -> 1
+        | Box { Items = _ :: _ } -> 2
+        | Box { Items = [] } -> 0
+        | _ -> 0
 
-    let sprite = Sprite.init pos time config (Some ypos) (Some flipped)
+    let sprite = Sprite.init pos time config (Some ypos) (Some false)
     let collider = getCollider entityType pos
 
     { Type = entityType

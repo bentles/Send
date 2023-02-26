@@ -13,7 +13,7 @@ let timerImage =
 
 let idImage =
     { SpriteSize = (50, 50)
-      Rows = 3
+      Rows = 4
       Columns = 1
       TextureName = "id"
       Offset = Vector2(0f, 0f) }
