@@ -348,13 +348,13 @@ let level6: LevelBuilder =
         let tiles, width, height =
             worldFromTemplate
                 [ [ ww; wt; wt; wt; wt; wt; wt; wt; wt; ww ]
-                  [ wl; __; __; __; __; __; bx; __; __; wr ]
-                  [ wl; __; bb; __; __; __; __; ml; __; wr ]
-                  [ wl; __; __; __; __; __; __; __; __; wr ]
-                  [ wl; __; __; ir; __; __; fl; tl; tl; wr ]
-                  [ wl; __; __; __; __; __; tu; __; __; wr ]
-                  [ wl; __; __; __; __; __; tu; __; xx; wr ]
-                  [ ww; wb; wb; wb; wb; wb; wb; wb; wb; ww ] ]
+                  [ ww; __; __; __; __; __; bx; __; __; ww ]
+                  [ ww; __; bb; __; __; __; __; ml; __; ww ]
+                  [ ww; __; __; __; __; __; __; __; __; ww ]
+                  [ ww; __; __; ir; __; __; fl; tl; tl; ww ]
+                  [ ww; __; __; __; __; __; tu; __; __; ww ]
+                  [ ww; __; __; __; __; __; tu; __; xx; ww ]
+                  [ wt; wt; wt; wt; wt; wt; wt; wt; wt; wt ] ]
 
         { PlayerStartsAtPos = Vector2(200f, 100f)
           PlayerStartsCarrying = []
