@@ -24,6 +24,7 @@ type Screen =
 Observable ideas:
 	- lets be real just copy rxjs marbles
 	- it does seem like i need multi observers
+	- set the type of observer using the other signal??
 
 Sinks:
 	- we need some way to test that the player has achieved the correct signal

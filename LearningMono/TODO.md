@@ -8,12 +8,13 @@ TODO:
 - use the stopped animation on characters
 - prevent transform if carrying limits exceeded
 - button goes down on key down
-- use tile to show which entities are permanent
 - simplify all the things
 	- make it easier to create entities for carrying
 	- simplify interaction event stuffs - seems dumb
 	- make it easier to switch animations
+	- some of my partial active patterns could probs just be complete patterns
 - open close chest sounds
+- use tile to show which entities are permanent
 
 DOING:
 

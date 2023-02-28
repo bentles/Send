@@ -356,9 +356,9 @@ let viewEmitting
     =
     let imageInfo = getEmitImage entityType
     let struct (width, height) = (imageInfo.SpriteSize)
-
-    if ticksSinceLast < 20 then
-        let alpha = int ((float32 (30 - ticksSinceLast) / 20f) * 220f)
+    let timeToGone = 10
+    if ticksSinceLast < timeToGone then
+        let alpha = int ((float32 (15 - ticksSinceLast) / (float32 timeToGone)) * 220f)
         let dwidth, dheight = (int ((float width) / 1.5), int ((float height) / 1.5))
         let x, y = pos
 
@@ -477,7 +477,7 @@ let drawWorld (model: Model) loadedAssets (spriteBatch: SpriteBatch) =
             Sprite.drawSprite entity.Sprite -cameraOffset loadedAssets spriteBatch
             match entity.Type with 
             | EmittingObservable(_, _) ->
-                loadedAssets.sounds[ "click" ].Play(1f, 0.0f, 0.0f)  |> ignore
+               ()// loadedAssets.sounds[ "click" ].Play(1f, 0.0f, 0.0f)  |> ignore
             | _ -> ()
 
             match entity.Type with 
