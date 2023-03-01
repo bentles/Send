@@ -83,7 +83,7 @@ let getSpriteConfig (eType: EntityType) : SpriteConfig =
         | Map _ -> mapSpriteConfig
         | Merge -> mergeSpriteConfig
         | Filter _ -> filterSpriteConfig
-        | Compare -> filterSpriteConfig
+        | Compare -> compareSpriteConfig
 
 let getEmitImage (eType: EntityType) =
     match eType with
@@ -102,7 +102,7 @@ let getEmitImage (eType: EntityType) =
         | Map _ -> mapImage
         | Merge -> mergeImage
         | Filter _ -> filterImage
-        | Compare -> filterImage
+        | Compare -> compareImage
 
 let rec entityEq (e1: EntityType) (e2: EntityType) =
     match (e1, e2) with
@@ -113,6 +113,8 @@ let rec entityEq (e1: EntityType) (e2: EntityType) =
     | Observable { Type = Toggle _ }, Observable { Type = Toggle _ } -> true
     | Observable { Type = Map _ }, Observable { Type = Map _ } -> true
     | Observable { Type = Filter _ }, Observable { Type = Filter _ } -> true
+    | Observable { Type = Compare }, Observable { Type = Compare } -> true
+    | Observable { Type = Merge }, Observable { Type = Merge } -> true
     | Subject { Type = Timer _ }, Subject { Type = Timer _ } -> true
     | Subject { Type = Button _ }, Subject { Type = Button _ } -> true
     | _, _ -> false

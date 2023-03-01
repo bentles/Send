@@ -545,11 +545,28 @@ let sandBox: LevelBuilder =
                 time
                 true
 
+        let b5 =
+            createEntityOn
+                (Box
+                    { Items =
+                        [ (observing (Compare) true true)
+                          (observing (Compare) true true)
+                          (observing (Compare) true true)
+                          (observing (Compare) true true)
+                          (observing (Compare) true true)
+                          (observing (Compare) true true)
+                          (observing (Compare) true true)
+                          (observing (Compare) true true) ]
+                      IsOpen = false })
+                Grass
+                time
+                true
+
         let tiles, width, height =
             worldFromTemplate
                 [ [ id; il; il; il; il; il; il; il; il; il; il; il; il; il ]
                   [ id; __; __; __; __; __; __; __; __; __; __; __; ww; iu ]
-                  [ id; bb; __; __; b0; b1; b2; b3; b4; __; __; __; wr; iu ]
+                  [ id; bb; __; __; b0; b1; b2; b3; b4; b5; __; __; wr; iu ]
                   [ id; bb; __; __; __; __; __; __; __; __; __; __; wr; iu ]
                   [ id; __; __; __; __; __; __; __; __; __; __; __; wr; iu ]
                   [ id; __; __; __; __; __; __; __; __; __; __; __; wr; iu ]

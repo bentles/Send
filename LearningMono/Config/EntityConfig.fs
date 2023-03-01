@@ -19,6 +19,7 @@ let idImage =
       Offset = Vector2(0f, 0f) }
 
 let mergeImage = { idImage with TextureName = "merge" }
+let compareImage = { idImage with TextureName = "compare" }
 let mapImage = { idImage with TextureName = "map" }
 let filterImage = { idImage with TextureName = "filter" }
 let toggleOnImage = { idImage with TextureName = "toggleOn" }
@@ -68,6 +69,7 @@ let idConfig =
 
 let idSpriteConfig = SingleSpriteConfig idConfig
 let mergeSpriteConfig = SingleSpriteConfig { idConfig with Image = mergeImage }
+let compareSpriteConfig = SingleSpriteConfig { idConfig with Image = compareImage }
 let mapSpriteConfig = SingleSpriteConfig { idConfig with Image = mapImage }
 let filterSpriteConfig = SingleSpriteConfig { idConfig with Image = filterImage }
 

@@ -70,15 +70,16 @@ let main _ =
               PipelineTexture("rock", "./content/sprites/entity/Rock")
               PipelineTexture("id", "./content/sprites/entity/Id")
               PipelineTexture("map", "./content/sprites/entity/Map")
-              PipelineTexture("merge", "./content/sprites/entity/Merge")
               PipelineTexture("filter", "./content/sprites/entity/Filter")
               PipelineTexture("timer", "./content/sprites/entity/Timer")
               PipelineTexture("nextLevel", "./content/sprites/entity/NextLevel")
               PipelineTexture("button", "./content/sprites/entity/Button")
               PipelineTexture("toggleOff", "./content/sprites/entity/ToggleOff")
               PipelineTexture("toggleOn", "./content/sprites/entity/ToggleOn")
-              PipelineTexture("unit", "./content/sprites/entity/Unit")
               PipelineTexture("box", "./content/sprites/entity/Box")
+              PipelineTexture("unit", "./content/sprites/entity/Unit")
+              PipelineTexture("merge", "./content/sprites/entity/Merge")
+              PipelineTexture("compare", "./content/sprites/entity/Compare")
 
               //music
               PipelineMusic("tutorial", "./content/music/tutorial")

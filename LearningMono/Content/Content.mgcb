@@ -80,6 +80,18 @@
 /processorParam:TextureFormat=Color
 /build:sprites/entity/Button.png
 
+#begin sprites/entity/Compare.png
+/importer:TextureImporter
+/processor:TextureProcessor
+/processorParam:ColorKeyColor=255,0,255,255
+/processorParam:ColorKeyEnabled=True
+/processorParam:GenerateMipmaps=False
+/processorParam:PremultiplyAlpha=True
+/processorParam:ResizeToPowerOfTwo=False
+/processorParam:MakeSquare=False
+/processorParam:TextureFormat=Color
+/build:sprites/entity/Compare.png
+
 #begin sprites/entity/Filter.png
 /importer:TextureImporter
 /processor:TextureProcessor
