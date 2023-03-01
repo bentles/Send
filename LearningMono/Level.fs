@@ -488,6 +488,18 @@ let sandBox: LevelBuilder =
                           (observing Id true false)
                           (observing Id true false)
                           (observing Id true false)
+                          (observing Id true false)
+                          (observing Id true false)
+                          (observing Id true false)
+                          (observing Id true false)
+                          (observing Id true false)
+                          (observing Id true false)
+                          (observing Id true false)
+                          (observing Id true false)
+                          (observing Id true false)
+                          (observing Id true false)
+                          (observing Id true false)
+                          (observing Id true false)
                           (observing Id true false) ]
                       IsOpen = false })
                 Grass
@@ -564,18 +576,18 @@ let sandBox: LevelBuilder =
 
         let tiles, width, height =
             worldFromTemplate
-                [ [ id; il; il; il; il; il; il; il; il; il; il; il; il; il ]
-                  [ id; __; __; __; __; __; __; __; __; __; __; __; ww; iu ]
-                  [ id; bb; __; __; b0; b1; b2; b3; b4; b5; __; __; wr; iu ]
-                  [ id; bb; __; __; __; __; __; __; __; __; __; __; wr; iu ]
-                  [ id; __; __; __; __; __; __; __; __; __; __; __; wr; iu ]
-                  [ id; __; __; __; __; __; __; __; __; __; __; __; wr; iu ]
-                  [ id; rr; __; __; __; __; __; __; __; __; __; __; wr; iu ]
-                  [ id; __; __; __; __; __; __; __; __; __; __; __; wr; iu ]
-                  [ id; __; __; __; __; __; __; bb; __; __; __; __; wr; iu ]
-                  [ id; __; __; __; __; __; __; iu; __; __; __; __; wr; iu ]
-                  [ id; __; __; __; __; __; __; iu; __; __; __; __; ir; iu ]
-                  [ ir; ir; ir; ir; ir; ir; ir; iu; wb; wb; wb; wb; wb; ww ] ]
+                [ [ ww; wt; wt; wt; wt; wt; wt; wt; wt; wt; wt; wt; wt; ww ]
+                  [ ww; __; __; __; __; __; __; __; __; __; __; __; __; ww ]
+                  [ ww; bb; __; __; b0; b1; b2; b3; b4; b5; __; __; __; ww ]
+                  [ ww; bb; __; __; __; __; __; __; __; __; __; __; __; ww ]
+                  [ ww; __; __; __; __; __; __; __; __; __; __; __; __; ww ]
+                  [ ww; __; __; __; __; __; __; __; __; __; __; __; __; ww ]
+                  [ ww; rr; __; __; __; __; __; __; __; __; __; __; __; ww ]
+                  [ ww; __; __; __; __; __; __; __; __; __; __; __; __; ww ]
+                  [ ww; __; __; __; __; __; __; bb; __; __; __; __; __; ww ]
+                  [ ww; __; __; __; __; __; __; iu; __; __; __; __; __; ww ]
+                  [ ww; __; __; __; __; __; __; iu; __; __; __; __; __; ww ]
+                  [ wt; wt; wt; wt; wt; wt; wt; wt; wt; wt; wt; wt; wt; wt ] ]
 
         { PlayerStartsAtPos = Vector2(150f, 100f)
           PlayerStartsCarrying = []
