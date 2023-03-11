@@ -34,6 +34,7 @@ type Model =
       PlayerAction: PlayerWorldInteraction
       Player: Player.Model
       PlayerTarget: struct (Tile * int) voption
+      PlayerFeet: int voption
       CameraPos: Vector2 }
 
 let halfScreenOffset (camPos: Vector2) : Vector2 =
@@ -50,10 +51,12 @@ let getCollidables (tiles: Tile seq) : AABB seq =
                 | _ -> ()
     }
 
+let getIndexAtPos (pos: Vector2) (size: Coords): int voption =
+    let coords = offsetVectorToCoords pos
+    coordsToIndex coords size
 
 let getTileAtPos (pos: Vector2) (size: Coords) (tiles: Tiles) : struct (Tile * int) voption =
-    let coords = offsetVectorToCoords pos
-    let index = coordsToIndex coords size
+    let index = getIndexAtPos pos size
     index |> ValueOption.map (fun index -> PersistentVector.nth index tiles, index)
 
 let init time =
@@ -67,6 +70,7 @@ let init time =
       Slow = false
       Dt = 0f
       PlayerTarget = ValueNone
+      PlayerFeet = ValueNone
       TimeElapsed = 0
       CameraPos = Vector2(0f, -0f) }
 
@@ -328,7 +332,8 @@ let update (message: Message) (model: Model) : Model =
               PossibleObstacles = getCollidables model.Tiles }
 
         let player = Player.tick info model.Player
-        let tileAndIndex = getTileAtPos player.Target model.Size model.Tiles
+        let maybeTarget = getTileAtPos player.Target model.Size model.Tiles
+        let maybeFeetIndex = getIndexAtPos player.Pos model.Size
 
         let tiles = updateWorldReactive model.Tiles model.Size
         //TODO: move this outside if update ticks < 60ps
@@ -343,7 +348,8 @@ let update (message: Message) (model: Model) : Model =
             Tiles = tiles
             CameraPos = newCameraPos
             Player = { player with CarryingDelta = isCarrying - wasCarrying }
-            PlayerTarget = tileAndIndex
+            PlayerTarget = maybeTarget
+            PlayerFeet = maybeFeetIndex
             PlayerAction = NoAction }
 
 // VIEW
@@ -402,7 +408,7 @@ let rightWall = "rightWall"
 let topWall = "topWall"
 let bottomWall = "bottomWall"
 
-let drawWorld (model: Model) loadedAssets (spriteBatch: SpriteBatch) =
+let viewWorld (model: Model) loadedAssets (spriteBatch: SpriteBatch) =
     let sourceRect = rect 0 0 blockWidth blockWidth
     let cameraOffset = -(halfScreenOffset model.CameraPos)
 
@@ -474,6 +480,20 @@ let drawWorld (model: Model) loadedAssets (spriteBatch: SpriteBatch) =
             )
         | ValueNone -> ()
 
+        match model.PlayerFeet with
+        | ValueSome index when index = i ->
+            spriteBatch.Draw(
+                    loadedAssets.textures["feet"],
+                    Rectangle(actualX, actualY, sourceRect.Width, sourceRect.Height),
+                    System.Nullable<Rectangle>(),
+                    Color.Green * alpha,
+                    0f,
+                    Vector2.Zero,
+                    effect,
+                    0f
+                )
+        | _ -> ()
+
         match tile.Entity with
         | ValueSome entity ->
             Sprite.drawSprite entity.Sprite -cameraOffset loadedAssets spriteBatch
@@ -522,7 +542,7 @@ let draw model (dispatch: Message -> unit) loadedAssets _inputs spriteBatch =
     | Stopped -> Media.MediaPlayer.Stop()
     | _ -> ()
 
-    drawWorld model loadedAssets spriteBatch
+    viewWorld model loadedAssets spriteBatch
     Player.drawPlayer model.Player (halfScreenOffset model.CameraPos) loadedAssets spriteBatch
 
 let inputs (inputs: Inputs) (dispatch: Message -> unit) =
