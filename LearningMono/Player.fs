@@ -41,8 +41,7 @@ type Model =
       Friction: float32
       Vel: Vector2
       IsMoving: bool
-
-      CollisionInfo: CollisionInfo }
+    }
 
 let init (pos: Vector2) (carrying: Entity.Model list) (playerConfig: PlayerConfig) (spriteConfig: SpriteConfig) time =
     { SpriteInfo = Sprite.init pos time spriteConfig None None
@@ -66,9 +65,7 @@ let init (pos: Vector2) (carrying: Entity.Model list) (playerConfig: PlayerConfi
       Friction = playerConfig.Slow
       Vel = Vector2.Zero
       IsMoving = false
-      CollisionInfo =
-        { Half = playerConfig.AABBConfig.Half
-          Offset = playerConfig.AABBConfig.Pos } }
+      }
 
 
 let getPlayerPickupLimit (characterState: State) =
@@ -147,7 +144,7 @@ let updatePhysics (model: Model) (info: PhysicsInfo) =
 
     // collide with walls
     let pos =
-        collide preCollisionPos model.Pos model.CollisionInfo info.PossibleObstacles
+        collide preCollisionPos model.Pos info.PossibleObstacles
 
     // record when last x and y were pressed
     let xinputTime, lastXDir = updateIfNotZero model.Input.X model.XInputTimeAndDir
@@ -308,7 +305,7 @@ let hearCarrying (carryingDelta: int) (loadedAssets: LoadedAssets) =
 
 let viewPlayer (model: Model) (cameraPos: Vector2) loadedAssets (spriteBatch: SpriteBatch) =
     Sprite.viewSprite model.SpriteInfo cameraPos loadedAssets spriteBatch
-    viewAABB (collider model.Pos model.CollisionInfo) cameraPos loadedAssets spriteBatch
+    viewAABB (collider model.Pos) cameraPos loadedAssets spriteBatch
     viewCarrying model.Carrying cameraPos model.CharacterState loadedAssets spriteBatch
     hearCarrying model.CarryingDelta loadedAssets
 

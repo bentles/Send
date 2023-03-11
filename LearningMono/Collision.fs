@@ -42,9 +42,9 @@ let renderAABB (aabb: AABB) (cameraPos: Vector2) =
         (int (aabb.Half.X * 2f), int (aabb.Half.Y * 2f))
         (int (aabb.Pos.X - aabb.Half.X - cameraPos.X), int (aabb.Pos.Y - aabb.Half.Y - cameraPos.Y))
 
-let collider (pos: Vector2) (collisionInfo: CollisionInfo) : AABB =
-    { Pos = pos + collisionInfo.Offset
-      Half = collisionInfo.Half }
+let collider (pos: Vector2) : AABB =
+    { Pos = pos + PlayerConfig.playerConfig.AABBConfig.Pos
+      Half = PlayerConfig.playerConfig.AABBConfig.Half }
 
 let intersectSegment (aabb: AABB) (pos: Vector2) (delta: Vector2) paddingX paddingY : Hit voption =
     let scaleX = 1.0f / delta.X
@@ -179,11 +179,11 @@ let sweepInto (aabb: AABB) (staticColliders: AABB seq) (delta: Vector2) : Sweep 
 
     Seq.fold nearestCollisionFn nearest staticColliders
 
-let collide pos oldPos colInfo obstacles =
+let collide pos oldPos obstacles =
     let sweepIntoWithOffset pos oldPos obstacles =
         let deltaPos = pos - oldPos
-        let sweepResult = sweepInto (collider oldPos colInfo) obstacles deltaPos
-        let result = { sweepResult with Pos = sweepResult.Pos - colInfo.Offset }
+        let sweepResult = sweepInto (collider oldPos) obstacles deltaPos
+        let result = { sweepResult with Pos = sweepResult.Pos - PlayerConfig.playerConfig.AABBConfig.Pos }
 
         //collision distance should be <= unadjusted distance
         assert ((result.Pos - oldPos).Length() <= deltaPos.Length() + AcceptableError)

@@ -21,7 +21,7 @@ let playerConfig =
       Slow = 40f
       AABBConfig =
         { Half = Vector2(25f, 25f)
-          Pos = Vector2(0f, 20f) } }
+          Pos = Vector2(0f, -25f) } }
 
 let bigCharImage =
     { SpriteSize = (100, 104)
