@@ -9,14 +9,14 @@ let timerImage =
       Rows = 1
       Columns = 4
       TextureName = "timer"
-      Offset = Vector2(0f, 0f) }
+      Offset = Vector2(0f, 10f) }
 
 let idImage =
     { SpriteSize = (50, 50)
       Rows = 4
       Columns = 1
       TextureName = "id"
-      Offset = Vector2(0f, 0f) }
+      Offset = Vector2(0f, 10f) }
 
 let mergeImage = { idImage with TextureName = "merge" }
 let compareImage = { idImage with TextureName = "compare" }
