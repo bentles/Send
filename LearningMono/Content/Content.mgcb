@@ -13,11 +13,17 @@
 
 #---------------------------------- Content ---------------------------------#
 
-#begin music/tutorial.mp3
-/importer:Mp3Importer
+#begin music/pewpew.wav
+/importer:WavImporter
 /processor:SongProcessor
 /processorParam:Quality=Best
-/build:music/tutorial.mp3
+/build:music/pewpew.wav
+
+#begin music/tutorial.wav
+/importer:WavImporter
+/processor:SongProcessor
+/processorParam:Quality=Best
+/build:music/tutorial.wav
 
 #begin soundfx/click2.mp3
 /importer:Mp3Importer

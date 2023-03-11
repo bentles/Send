@@ -1,5 +1,5 @@
 ﻿THINKING:
-
+- maybe the toggle bois give off their own state as their signal?
 
 TODO:
 - debug sprites with toggling

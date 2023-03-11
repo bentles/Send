@@ -246,9 +246,9 @@ let level4: LevelBuilder =
         let wr = createCollidableTile FloorType.RightWall
         let wb = createCollidableTile FloorType.BottomWall
         let wt = createCollidableTile FloorType.TopWall
-        let ir = observerOnGrass time (observing Id true false) FacingRight true
-        let tu = observerOnGrass time (observing (Toggle true) true false) FacingUp false
-        let tl = observerOnGrass time (observing (Toggle true) true false) FacingLeft false
+        let ir = observerOnGrass time (observing Id) FacingRight true
+        let tu = observerOnGrass time (observing (Toggle true)) FacingUp false
+        let tl = observerOnGrass time (observing (Toggle true)) FacingLeft false
         let bb = createButtonOnGrass time false
         let xx = createEntityOn (GoToLevelButton L5) Grass time false
 
@@ -276,9 +276,9 @@ let level5: LevelBuilder =
         let wr = createCollidableTile FloorType.RightWall
         let wb = createCollidableTile FloorType.BottomWall
         let wt = createCollidableTile FloorType.TopWall
-        let ir = observerOnGrass time (observing Id true false) FacingRight true
-        let tu = observerOnGrass time (observing (Toggle true) true false) FacingUp false
-        let tl = observerOnGrass time (observing (Toggle true) true false) FacingLeft false
+        let ir = observerOnGrass time (observing Id) FacingRight true
+        let tu = observerOnGrass time (observing (Toggle true)) FacingUp false
+        let tl = observerOnGrass time (observing (Toggle true)) FacingLeft false
         let bb = createButtonOnGrass time false
         let xx = createEntityOn (GoToLevelButton L5) Grass time false
 
@@ -286,11 +286,11 @@ let level5: LevelBuilder =
             createEntityOn
                 (Box
                     { Items =
-                        [ (observing Id true false)
-                          (observing Id true false)
-                          (observing Id true false)
-                          (observing Id true false)
-                          (observing Id true false) ]
+                        [ (observing Id)
+                          (observing Id)
+                          (observing Id)
+                          (observing Id)
+                          (observing Id) ]
                       IsOpen = false })
                 Grass
                 time
@@ -320,14 +320,13 @@ let level6: LevelBuilder =
         let wr = createCollidableTile FloorType.RightWall
         let wb = createCollidableTile FloorType.BottomWall
         let wt = createCollidableTile FloorType.TopWall
-        let ir = observerOnGrass time (observing Id true false) FacingRight true
-        let tu = observerOnGrass time (observing (Toggle true) true false) FacingUp false
-        let tl = observerOnGrass time (observing (Toggle true) true false) FacingLeft false
+        let ir = observerOnGrass time (observing Id) FacingRight true
+        let tu = observerOnGrass time (observing (Toggle true)) FacingUp false
+        let tl = observerOnGrass time (observing (Toggle true)) FacingLeft false
 
-        let fl =
-            observerOnGrass time (observing (Filter(observing Id true false)) true false) FacingLeft false
+        let fl = observerOnGrass time (observing (Filter(observing Id))) FacingLeft false
 
-        let ml = observerOnGrass time (observing (Map Unit) true false) FacingLeft true
+        let ml = observerOnGrass time (observing (Map Unit)) FacingLeft true
         let bb = createButtonOnGrass time false
         let xx = createEntityOn (GoToLevelButton L6) Grass time false
 
@@ -335,11 +334,11 @@ let level6: LevelBuilder =
             createEntityOn
                 (Box
                     { Items =
-                        [ (observing Id true false)
-                          (observing Id true false)
-                          (observing Id true false)
-                          (observing Id true false)
-                          (observing Id true false) ]
+                        [ (observing Id)
+                          (observing Id)
+                          (observing Id)
+                          (observing Id)
+                          (observing Id) ]
                       IsOpen = false })
                 Grass
                 time
@@ -370,22 +369,21 @@ let level7: LevelBuilder =
         let wr = createCollidableTile FloorType.RightWall
         let wb = createCollidableTile FloorType.BottomWall
         let wt = createCollidableTile FloorType.TopWall
-        let ir = observerOnGrass time (observing Id true false) FacingRight true
-        let me = observerOnGrass time (observing Merge true true) FacingDown false
-        let tu = observerOnGrass time (observing (Toggle true) true false) FacingUp false
-        let tl = observerOnGrass time (observing (Toggle true) true false) FacingLeft false
-        let td = observerOnGrass time (observing (Toggle true) true false) FacingDown false
-        let tr = observerOnGrass time (observing (Toggle true) true false) FacingRight false
-        let Tu = observerOnGrass time (observing (Toggle false) true false) FacingUp false
-        let Td = observerOnGrass time (observing (Toggle false) true false) FacingDown false
-        let Tl = observerOnGrass time (observing (Toggle false) true false) FacingLeft false
+        let ir = observerOnGrass time (observing Id) FacingRight true
+        let me = observerOnGrass time (observing Merge) FacingDown false
+        let tu = observerOnGrass time (observing (Toggle true)) FacingUp false
+        let tl = observerOnGrass time (observing (Toggle true)) FacingLeft false
+        let td = observerOnGrass time (observing (Toggle true)) FacingDown false
+        let tr = observerOnGrass time (observing (Toggle true)) FacingRight false
+        let Tu = observerOnGrass time (observing (Toggle false)) FacingUp false
+        let Td = observerOnGrass time (observing (Toggle false)) FacingDown false
+        let Tl = observerOnGrass time (observing (Toggle false)) FacingLeft false
 
-        let fl = observerOnGrass time (observing (Filter Rock) true false) FacingLeft false
+        let fl = observerOnGrass time (observing (Filter Rock)) FacingLeft false
 
-        let fu =
-            observerOnGrass time (observing (Filter(observing Id true false)) true false) FacingLeft false
+        let fu = observerOnGrass time (observing (Filter(observing Id))) FacingLeft false
 
-        let ma = observerOnGrass time (observing (Map Unit) true false) FacingLeft true
+        let ma = observerOnGrass time (observing (Map Unit)) FacingLeft true
         let bb = createButtonOnGrass time true
         let xx = createEntityOn (GoToLevelButton L8) Grass time false
 
@@ -393,16 +391,16 @@ let level7: LevelBuilder =
             createEntityOn
                 (Box
                     { Items =
-                        [ (observing Id true false)
-                          (observing Id true false)
-                          (observing Id true false)
-                          (observing Id true false)
-                          (observing Id true false)
-                          (observing Id true false)
-                          (observing Id true false)
-                          (observing Id true false)
-                          (observing Id true false)
-                          (observing Id true false) ]
+                        [ (observing Id)
+                          (observing Id)
+                          (observing Id)
+                          (observing Id)
+                          (observing Id)
+                          (observing Id)
+                          (observing Id)
+                          (observing Id)
+                          (observing Id)
+                          (observing Id) ]
                       IsOpen = false })
                 Grass
                 time
@@ -434,25 +432,24 @@ let sandBox: LevelBuilder =
         let wr = createCollidableTile FloorType.RightWall
         let wb = createCollidableTile FloorType.BottomWall
         let wt = createCollidableTile FloorType.TopWall
-        let ir = observerOnGrass time (observing Id true false) FacingRight false
-        let il = observerOnGrass time (observing Id true false) FacingLeft false
-        let iu = observerOnGrass time (observing Id true false) FacingUp false
-        let id = observerOnGrass time (observing Id true false) FacingDown false
-        let me = observerOnGrass time (observing Merge true true) FacingDown false
-        let tu = observerOnGrass time (observing (Toggle true) true false) FacingUp false
-        let tl = observerOnGrass time (observing (Toggle true) true false) FacingLeft false
-        let td = observerOnGrass time (observing (Toggle true) true false) FacingDown false
-        let tr = observerOnGrass time (observing (Toggle true) true false) FacingRight false
-        let Tu = observerOnGrass time (observing (Toggle false) true false) FacingUp false
-        let Td = observerOnGrass time (observing (Toggle false) true false) FacingDown false
-        let Tl = observerOnGrass time (observing (Toggle false) true false) FacingLeft false
+        let ir = observerOnGrass time (observing Id) FacingRight false
+        let il = observerOnGrass time (observing Id) FacingLeft false
+        let iu = observerOnGrass time (observing Id) FacingUp false
+        let id = observerOnGrass time (observing Id) FacingDown false
+        let me = observerOnGrass time (observing Merge) FacingDown false
+        let tu = observerOnGrass time (observing (Toggle true)) FacingUp false
+        let tl = observerOnGrass time (observing (Toggle true)) FacingLeft false
+        let td = observerOnGrass time (observing (Toggle true)) FacingDown false
+        let tr = observerOnGrass time (observing (Toggle true)) FacingRight false
+        let Tu = observerOnGrass time (observing (Toggle false)) FacingUp false
+        let Td = observerOnGrass time (observing (Toggle false)) FacingDown false
+        let Tl = observerOnGrass time (observing (Toggle false)) FacingLeft false
 
-        let fl = observerOnGrass time (observing (Filter Rock) true false) FacingLeft false
+        let fl = observerOnGrass time (observing (Filter Rock)) FacingLeft false
 
-        let fu =
-            observerOnGrass time (observing (Filter(observing Id true false)) true false) FacingLeft false
+        let fu = observerOnGrass time (observing (Filter(observing Id))) FacingLeft false
 
-        let ma = observerOnGrass time (observing (Map Unit) true false) FacingLeft true
+        let ma = observerOnGrass time (observing (Map Unit)) FacingLeft true
         let bb = createButtonOnGrass time true
         let xx = createEntityOn (GoToLevelButton L7) Grass time false
 
@@ -460,16 +457,16 @@ let sandBox: LevelBuilder =
             createEntityOn
                 (Box
                     { Items =
-                        [ (observing (Toggle true) true false)
-                          (observing (Toggle true) true false)
-                          (observing (Toggle true) true false)
-                          (observing (Toggle true) true false)
-                          (observing (Toggle true) true false)
-                          (observing (Toggle false) true false)
-                          (observing (Toggle false) true false)
-                          (observing (Toggle false) true false)
-                          (observing (Toggle false) true false)
-                          (observing (Toggle false) true false) ]
+                        [ (observing (Toggle true))
+                          (observing (Toggle true))
+                          (observing (Toggle true))
+                          (observing (Toggle true))
+                          (observing (Toggle true))
+                          (observing (Toggle false))
+                          (observing (Toggle false))
+                          (observing (Toggle false))
+                          (observing (Toggle false))
+                          (observing (Toggle false)) ]
                       IsOpen = false })
                 Grass
                 time
@@ -479,28 +476,28 @@ let sandBox: LevelBuilder =
             createEntityOn
                 (Box
                     { Items =
-                        [ (observing Id true false)
-                          (observing Id true false)
-                          (observing Id true false)
-                          (observing Id true false)
-                          (observing Id true false)
-                          (observing Id true false)
-                          (observing Id true false)
-                          (observing Id true false)
-                          (observing Id true false)
-                          (observing Id true false)
-                          (observing Id true false)
-                          (observing Id true false)
-                          (observing Id true false)
-                          (observing Id true false)
-                          (observing Id true false)
-                          (observing Id true false)
-                          (observing Id true false)
-                          (observing Id true false)
-                          (observing Id true false)
-                          (observing Id true false)
-                          (observing Id true false)
-                          (observing Id true false) ]
+                        [ (observing Id)
+                          (observing Id)
+                          (observing Id)
+                          (observing Id)
+                          (observing Id)
+                          (observing Id)
+                          (observing Id)
+                          (observing Id)
+                          (observing Id)
+                          (observing Id)
+                          (observing Id)
+                          (observing Id)
+                          (observing Id)
+                          (observing Id)
+                          (observing Id)
+                          (observing Id)
+                          (observing Id)
+                          (observing Id)
+                          (observing Id)
+                          (observing Id)
+                          (observing Id)
+                          (observing Id) ]
                       IsOpen = false })
                 Grass
                 time
@@ -510,14 +507,14 @@ let sandBox: LevelBuilder =
             createEntityOn
                 (Box
                     { Items =
-                        [ (observing Merge true true)
-                          (observing Merge true true)
-                          (observing Merge true true)
-                          (observing Merge true true)
-                          (observing Merge true true)
-                          (observing Merge true true)
-                          (observing Merge true true)
-                          (observing Merge true true) ]
+                        [ (observing Merge)
+                          (observing Merge)
+                          (observing Merge)
+                          (observing Merge)
+                          (observing Merge)
+                          (observing Merge)
+                          (observing Merge)
+                          (observing Merge) ]
                       IsOpen = false })
                 Grass
                 time
@@ -527,14 +524,14 @@ let sandBox: LevelBuilder =
             createEntityOn
                 (Box
                     { Items =
-                        [ (observing (Map Unit) true false)
-                          (observing (Map Unit) true false)
-                          (observing (Map Unit) true false)
-                          (observing (Map Unit) true false)
-                          (observing (Map Unit) true false)
-                          (observing (Map Unit) true false)
-                          (observing (Map Unit) true false)
-                          (observing (Map Unit) true false) ]
+                        [ (observing (Map Unit))
+                          (observing (Map Unit))
+                          (observing (Map Unit))
+                          (observing (Map Unit))
+                          (observing (Map Unit))
+                          (observing (Map Unit))
+                          (observing (Map Unit))
+                          (observing (Map Unit)) ]
                       IsOpen = false })
                 Grass
                 time
@@ -544,14 +541,14 @@ let sandBox: LevelBuilder =
             createEntityOn
                 (Box
                     { Items =
-                        [ (observing (Filter Unit) true false)
-                          (observing (Filter Unit) true false)
-                          (observing (Filter Unit) true false)
-                          (observing (Filter Unit) true false)
-                          (observing (Filter Unit) true false)
-                          (observing (Filter Unit) true false)
-                          (observing (Filter Unit) true false)
-                          (observing (Filter Unit) true false) ]
+                        [ (observing (Filter Unit))
+                          (observing (Filter Unit))
+                          (observing (Filter Unit))
+                          (observing (Filter Unit))
+                          (observing (Filter Unit))
+                          (observing (Filter Unit))
+                          (observing (Filter Unit))
+                          (observing (Filter Unit)) ]
                       IsOpen = false })
                 Grass
                 time
@@ -561,14 +558,14 @@ let sandBox: LevelBuilder =
             createEntityOn
                 (Box
                     { Items =
-                        [ (observing (Compare) true true)
-                          (observing (Compare) true true)
-                          (observing (Compare) true true)
-                          (observing (Compare) true true)
-                          (observing (Compare) true true)
-                          (observing (Compare) true true)
-                          (observing (Compare) true true)
-                          (observing (Compare) true true) ]
+                        [ (observing (Compare))
+                          (observing (Compare))
+                          (observing (Compare))
+                          (observing (Compare))
+                          (observing (Compare))
+                          (observing (Compare))
+                          (observing (Compare))
+                          (observing (Compare)) ]
                       IsOpen = false })
                 Grass
                 time

@@ -60,7 +60,7 @@ let init time =
     let level = sandBox time
 
     { Tiles = level.Tiles
-      Song = PlaySong "tutorial"
+      Song = PlaySong "pewpew"
       Size = level.Size
       PlayerAction = NoAction
       Player = Player.init level.PlayerStartsAtPos level.PlayerStartsCarrying playerConfig charSprite time
@@ -89,24 +89,26 @@ let updateWorldReactive (tiles: Tiles) ((width, height): Coords) : Tiles =
                 let newEntityType =
                     match entity.Type with
                     | Subject subject -> Subject((getSubjectFunc subject.Type) subject)
-                    | Observable({ Observing = ob1; Observing2 = ob2 } as oData) ->
+                    | Observable({ Type = oType } as oData) ->
 
                         // get what is being is observed if anything
-                        let getObserved (ob: bool) (tile: Tile) (facing: Facing) =
-                            if not ob then
-                                ValueNone
-                            else
-                                voption {
-                                    let struct (tx, ty) = facingToCoords (facing)
-                                    let struct (x, y) = tile.Coords
-                                    let! targetIndex = (coordsToIndex (x + tx, y + ty) (width, height))
-                                    let tile = PersistentVector.nth targetIndex tiles
-                                    let! e = tile.Entity
-                                    return e.Type
-                                }
+                        let getObserved (tile: Tile) (facing: Facing) =
+                            voption {
+                                let struct (tx, ty) = facingToCoords (facing)
+                                let struct (x, y) = tile.Coords
+                                let! targetIndex = (coordsToIndex (x + tx, y + ty) (width, height))
+                                let tile = PersistentVector.nth targetIndex tiles
+                                let! e = tile.Entity
+                                return e.Type
+                            }
 
-                        let eType1 = getObserved ob1 tile entity.Facing
-                        let eType2 = getObserved ob2 tile (rotateFacing entity.Facing true)
+                        let observerType = getObserverType oType
+
+                        let eType1, eType2 =
+                            match observerType with
+                            | SingleObserver -> (getObserved tile entity.Facing), ValueNone
+                            | DoubleObserver ->
+                                (getObserved tile entity.Facing), (getObserved tile (rotateFacing entity.Facing true))
 
                         Observable(observerFunc oData eType1 eType2)
                     | other -> other
@@ -214,8 +216,7 @@ let placeEntity (model: Model) : Model =
                 let roundedPos = posRounded player.Target worldConfig
                 let facing = player.PlacementFacing
 
-                let entityType = withTarget placeEntity.Type
-                let entity = Entity.init entityType roundedPos model.TimeElapsed facing true
+                let entity = Entity.init placeEntity.Type roundedPos model.TimeElapsed facing true
                 let sprite = Sprite.startAnimation entity.Sprite
                 let entity = { entity with Sprite = sprite }
 
@@ -352,11 +353,12 @@ let viewEmitting
     (ticksSinceLast: int)
     pos
     (spriteBatch: SpriteBatch)
-    (texture: Graphics.Texture2D): unit
-    =
+    (texture: Graphics.Texture2D)
+    : unit =
     let imageInfo = getEmitImage entityType
     let struct (width, height) = (imageInfo.SpriteSize)
     let timeToGone = 10
+
     if ticksSinceLast < timeToGone then
         let alpha = int ((float32 (15 - ticksSinceLast) / (float32 timeToGone)) * 220f)
         let dwidth, dheight = (int ((float width) / 1.5), int ((float height) / 1.5))
@@ -374,8 +376,8 @@ let viewObserverItem
     (ticksSinceLast: int)
     pos
     (spriteBatch: SpriteBatch)
-    (texture: Graphics.Texture2D): unit
-    =
+    (texture: Graphics.Texture2D)
+    : unit =
     let imageInfo = getEmitImage entityType
     let struct (width, height) = (imageInfo.SpriteSize)
 
@@ -473,23 +475,38 @@ let drawWorld (model: Model) loadedAssets (spriteBatch: SpriteBatch) =
         | ValueNone -> ()
 
         match tile.Entity with
-        | ValueSome entity -> 
+        | ValueSome entity ->
             Sprite.drawSprite entity.Sprite -cameraOffset loadedAssets spriteBatch
-            match entity.Type with 
-            | EmittingObservable(_, _) ->
-               ()// loadedAssets.sounds[ "click" ].Play(1f, 0.0f, 0.0f)  |> ignore
+
+            match entity.Type with
+            | EmittingObservable(_, _) -> () // loadedAssets.sounds[ "click" ].Play(1f, 0.0f, 0.0f)  |> ignore
             | _ -> ()
 
-            match entity.Type with 
+            match entity.Type with
             | RenderEmittingObservable(etype, t) ->
-                viewEmitting etype t (actualX, actualY) spriteBatch loadedAssets.textures[(getEmitImage etype).TextureName]
+                viewEmitting
+                    etype
+                    t
+                    (actualX, actualY)
+                    spriteBatch
+                    loadedAssets.textures[(getEmitImage etype).TextureName]
             | _ -> ()
 
-            match entity.Type, maybeTargetColor with 
-            | EmptyObservable(_), ValueSome _ -> 
-                viewObserverItem Unit 1 (actualX, actualY) spriteBatch loadedAssets.textures[(getEmitImage Unit).TextureName]
+            match entity.Type, maybeTargetColor with
+            | EmptyObservable(_), ValueSome _ ->
+                viewObserverItem
+                    Unit
+                    1
+                    (actualX, actualY)
+                    spriteBatch
+                    loadedAssets.textures[(getEmitImage Unit).TextureName]
             | NonEmptyObservable(_, eType), ValueSome _ ->
-                viewObserverItem eType 1 (actualX, actualY) spriteBatch loadedAssets.textures[(getEmitImage eType).TextureName]
+                viewObserverItem
+                    eType
+                    1
+                    (actualX, actualY)
+                    spriteBatch
+                    loadedAssets.textures[(getEmitImage eType).TextureName]
             | _ -> ()
 
         | ValueNone -> ())
@@ -498,7 +515,7 @@ let drawWorld (model: Model) loadedAssets (spriteBatch: SpriteBatch) =
 let draw model (dispatch: Message -> unit) loadedAssets _inputs spriteBatch =
     match model.Song with
     | PlaySong songName ->
-        Media.MediaPlayer.Volume <- 0.5f
+        Media.MediaPlayer.Volume <- 0.4f
         //Media.MediaPlayer.Play(loadedAssets.music[songName])
         Media.MediaPlayer.IsRepeating <- true
         dispatch (SongStarted songName)

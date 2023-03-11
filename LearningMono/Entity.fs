@@ -19,6 +19,10 @@ type InteractionEvent =
 //  | Menu for to configure the things
 //  | Change the state of the thing
 
+
+[<Struct>]
+type ObserverType = SingleObserver | DoubleObserver
+
 [<Struct>]
 type SubjectType =
     | Timer of BoxType * int
@@ -38,6 +42,8 @@ and ObservableType =
 
 and EntityType =
     | Unit
+    | True
+    | False
     | Rock
     | GoToLevelButton of Level
     | Box of BoxType
@@ -48,8 +54,7 @@ and ObservableData =
     { Type: ObservableType
       ToEmit: Emit<EntityType>
       TicksSinceEmit: int
-      Observing: bool
-      Observing2: bool }
+    }
 
 and SubjectData =
     { Type: SubjectType
@@ -128,6 +133,12 @@ let getCollider (eType: EntityType) (pos: Vector2) : AABB voption =
     | Subject _
     | Box _
     | Observable _ -> ValueSome { Pos = pos; Half = Vector2(10f, 10f) }
+
+let getObserverType (obs: ObservableType): ObserverType =
+    match obs with
+    | Merge
+    | Compare -> DoubleObserver
+    | _ -> SingleObserver
 
 let (|RenderEmitting|_|) (emit: Emit<'a>) =
     match emit with
@@ -327,11 +338,6 @@ let initNoCollider (entityType: EntityType) (pos: Vector2) time (facing: Facing)
       CanBePickedUp = canBePickedUp
       Collider = ValueNone }
 
-let withTarget (entityType: EntityType) =
-    match entityType with
-    | Observable obs -> Observable { obs with Observing = true }
-    | other -> other
-
 let buildRepeatItemEmitEvery (every: int) (item: EntityType) =
     buildRepeatListEmittingEvery { Items = [ item ]; IsOpen = false } every
 
@@ -344,16 +350,14 @@ let buildRockTimer =
 
 let rockTimer: EntityType = buildRockTimer
 
-let observing (oType: ObservableType) (target: bool) (target2: bool) : EntityType =
+let observing (oType: ObservableType): EntityType =
     Observable(
         { Type = oType
           ToEmit = Nothing
-          TicksSinceEmit = 0
-          Observing = target
-          Observing2 = target2 }
+          TicksSinceEmit = 0 }
     )
 
-let buildObserver (oType: ObservableType) = observing oType false false
+let buildObserver (oType: ObservableType) = observing oType
 
 let tileHalf = float32 (worldConfig.TileWidth / 2)
 let half = Vector2(tileHalf)

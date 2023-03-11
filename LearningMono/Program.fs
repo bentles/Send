@@ -37,14 +37,6 @@ let view (model: Model) (dispatch: Message -> unit) =
             )
     ]
 
-    // seq { 
-    //   yield! World.view model.World (WorldMessage >> dispatch)
-
-    //   yield onupdate (fun input -> dispatch (Tick input.totalGameTime))
-
-    //   //input
-    //   yield onkeydown Keys.Escape exit } |> Seq.toList
-
 [<EntryPoint>]
 let main _ =
     let config: GameConfig =
@@ -83,6 +75,7 @@ let main _ =
 
               //music
               PipelineMusic("tutorial", "./content/music/tutorial")
+              PipelineMusic("pewpew", "./content/music/pewpew")
 
               //soundfx
               PipelineSound("click", "./content/soundfx/click2")

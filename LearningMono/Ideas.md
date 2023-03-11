@@ -49,4 +49,19 @@ Door:
 
 Can I separate state out so that some changes every frame and some does not???
 
+Toggle:
+	- should I use this as a kind of NOT gate??
+		- either with T and F or with (Toggle true) and (Toggle false)
+		- this begs a broader question about how "normal" things in the world emit events and what those events look like?
+			- like open and close events
+			- or this thing grew 1 step event etc.
+		- are events ethereal?
+			- unit kind of already is
+			- could possibly have T and F events
+			- it feels like possibly the role of big centure guy is to bridge the gap between signals and the real world somehow
+			- BUT unit is the default signal so we can get away with this in the
+		- maybe Map is underpowered?
+			- but you still can't get a toggle from the same input
+
+
 
