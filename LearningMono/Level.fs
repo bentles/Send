@@ -35,6 +35,7 @@ type Tiles = PersistentVector<Tile>
 type LevelData =
     { PlayerStartsAtPos: Vector2
       PlayerStartsCarrying: Entity.Model list
+      LevelText: string
       Tiles: Tiles
       Size: Coords }
 
@@ -100,6 +101,22 @@ let observerOnGrass time observer facing canPickup (coords: Coords) : Tile =
         FloorType = FloorType.Grass
         Entity = ValueSome(Entity.init observer pos time facing canPickup) }
 
+let observerCanPick time observer facing (coords: Coords) : Tile =
+    let pos = CoordsFToOffsetVector (toCoordsF coords) half
+
+    { defaultTile with
+        Coords = coords
+        FloorType = FloorType.Grass
+        Entity = ValueSome(Entity.init observer pos time facing true) }
+
+let observerCannotPick time observer facing (coords: Coords) : Tile =
+    let pos = CoordsFToOffsetVector (toCoordsF coords) half
+
+    { defaultTile with
+        Coords = coords
+        FloorType = FloorType.Wall
+        Entity = ValueSome(Entity.init observer pos time facing false) }
+
 let worldVars x y height width =
     (float32 x, float32 y, height - 1, width - 1)
 
@@ -157,6 +174,7 @@ let level1: LevelBuilder =
 
         { PlayerStartsAtPos = Vector2(150f, 150f)
           PlayerStartsCarrying = []
+          LevelText= "Press the arrow keys to move and Z to interact"
           Tiles = tiles
           Size = (width, height) }
 
@@ -191,6 +209,7 @@ let level2: LevelBuilder =
 
         { PlayerStartsAtPos = (Vector2(200f, 100f))
           PlayerStartsCarrying = []
+          LevelText= "Press X to pick up an item and C to place an item down"
           Tiles = tiles
           Size = (width, height) }
 
@@ -235,7 +254,38 @@ let level3: LevelBuilder =
 
         { PlayerStartsAtPos = (Vector2(200f, 100f))
           PlayerStartsCarrying = []
+          LevelText= "Boxes store items. Try using Z (interact), X (pick up) and C (place) on a box"
           Tiles = tiles
+          Size = (width, height) }
+
+let levelSelectTutorial: LevelBuilder =
+    fun time ->
+        let __ = createNonCollidableTile FloorType.Grass
+        let ww = createCollidableTile Wall
+        let wl = createCollidableTile FloorType.LeftWall
+        let wr = createCollidableTile FloorType.RightWall
+        let wb = createCollidableTile FloorType.BottomWall
+        let wt = createCollidableTile FloorType.TopWall
+        let ir = observerCanPick time (observing Id) FacingRight
+        let il = observerCannotPick time (observing Id) FacingUp
+        let bb = createButtonOnGrass time false
+        let xx = createEntityOn (GoToLevelButton L5) Grass time false
+
+        let tiles, width, height =
+            worldFromTemplate
+                [ [ ww; wt; wt; wt; wt; wt; wt; wt; wt; ww ]
+                  [ wl; __; __; __; __; __; __; __; __; wr ]
+                  [ wl; __; bb; __; __; __; __; __; __; wr ]
+                  [ wl; __; __; __; __; __; __; __; __; wr ]
+                  [ wl; __; __; ir; il; il; il; il; il; wr ]
+                  [ wl; __; __; __; __; __; __; __; __; wr ]
+                  [ wl; __; __; __; __; __; __; __; xx; wr ]
+                  [ ww; wb; wb; wb; wb; wb; wb; wb; wb; ww ] ]
+
+        { PlayerStartsAtPos = Vector2(200f, 100f)
+          PlayerStartsCarrying = []
+          Tiles = tiles
+          LevelText= ""
           Size = (width, height) }
 
 let level4: LevelBuilder =
@@ -266,6 +316,7 @@ let level4: LevelBuilder =
         { PlayerStartsAtPos = Vector2(200f, 100f)
           PlayerStartsCarrying = []
           Tiles = tiles
+          LevelText= ""
           Size = (width, height) }
 
 let level5: LevelBuilder =
@@ -310,6 +361,7 @@ let level5: LevelBuilder =
         { PlayerStartsAtPos = Vector2(200f, 100f)
           PlayerStartsCarrying = []
           Tiles = tiles
+          LevelText= "You may have noticed the "
           Size = (width, height) }
 
 let level6: LevelBuilder =
@@ -358,6 +410,7 @@ let level6: LevelBuilder =
         { PlayerStartsAtPos = Vector2(200f, 100f)
           PlayerStartsCarrying = []
           Tiles = tiles
+          LevelText= ""
           Size = (width, height) }
 
 let level7: LevelBuilder =
@@ -421,9 +474,10 @@ let level7: LevelBuilder =
         { PlayerStartsAtPos = Vector2(150f, 100f)
           PlayerStartsCarrying = []
           Tiles = tiles
+          LevelText= ""
           Size = (width, height) }
 
-let sandBox: LevelBuilder =
+let levelSandBox: LevelBuilder =
     fun time ->
         let __ = createNonCollidableTile FloorType.Grass
         let ww = createCollidableTile Wall
@@ -588,6 +642,7 @@ let sandBox: LevelBuilder =
 
         { PlayerStartsAtPos = Vector2(150f, 100f)
           PlayerStartsCarrying = []
+          LevelText= "Hello there this is a test"
           Tiles = tiles
           Size = (width, height) }
 
@@ -598,8 +653,8 @@ let levelLookup (level: Level) : LevelBuilder =
     | L1 -> level1
     | L2 -> level2
     | L3 -> level3
-    | L4 -> level4
+    | L4 -> levelSelectTutorial
     | L5 -> level5
     | L6 -> level6
     | L7 -> level7
-    | L8 -> sandBox
+    | L8 -> levelSandBox
