@@ -77,6 +77,8 @@ let getPlayerPickupLimit (characterState: State) =
     | Small false -> 15
     | _ -> 0
 
+let playerFeetPos (pos: Vector2) =
+    pos + playerConfig.FeetOffset
 
 type Message =
     | Input of dir: Vector2
@@ -157,7 +159,8 @@ let updatePhysics (model: Model) (info: PhysicsInfo) =
     let milisSinceY = millisSince yinputTime
 
     let facing = calcFacing (milisSinceX, lastXDir) (milisSinceY, lastYDir)
-    let target = pos + (60f * facing) + Vector2(0f, 20f)
+    let feetPos = pos + playerConfig.FeetOffset
+    let target = feetPos + (60f * facing)
 
     let (vel, pos, isMoving) =
         if model.MovementFrozen then

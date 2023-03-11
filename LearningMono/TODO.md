@@ -2,7 +2,6 @@
 - maybe the toggle bois give off their own state as their signal?
 
 TODO:
-- debug sprites with toggling
 - quick check for collision exclusion of far away objects
 - simplify away the pre-sending potential collider objects since world+player are now one
 - use the stopped animation on characters
@@ -15,6 +14,9 @@ TODO:
 	- some of my partial active patterns could probs just be complete patterns
 - open close chest sounds
 - use tile to show which entities are permanent
+- fix player offset madness
+- fix player behind entity redering wrong
+- add debug collision rendering back
 
 DOING:
 

@@ -336,7 +336,7 @@ let update (message: Message) (model: Model) : Model =
 
         let player = Player.tick info model.Player
         let maybeTarget = getTileAtPos player.Target model.Size model.Tiles
-        let maybeFeetIndex = getIndexAtPos player.Pos model.Size
+        let maybeFeetIndex = getIndexAtPos (Player.playerFeetPos player.Pos) model.Size
 
         let tiles = updateWorldReactive model.Tiles model.Size
         //TODO: move this outside if update ticks < 60ps

@@ -11,6 +11,7 @@ type PlayerConfig =
       SmallMaxVelocity: float32
       Acc: float32
       Slow: float32
+      FeetOffset: Vector2
       AABBConfig: AABB }
 
 
@@ -19,6 +20,7 @@ let playerConfig =
       SmallMaxVelocity = 4.5f
       Acc = 30f
       Slow = 40f
+      FeetOffset = Vector2(0f, 32f + 18f)
       AABBConfig =
         { Half = Vector2(25f, 25f)
           Pos = Vector2(0f, 20f) } }
