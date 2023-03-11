@@ -501,7 +501,7 @@ let viewWorld (model: Model) loadedAssets (spriteBatch: SpriteBatch) =
 
         match tile.Entity with
         | ValueSome entity ->
-            Sprite.drawSprite entity.Sprite -cameraOffset loadedAssets spriteBatch
+            Sprite.viewSprite entity.Sprite -cameraOffset loadedAssets spriteBatch
 
             match entity.Type with
             | EmittingObservable(_, _) -> () // loadedAssets.sounds[ "click" ].Play(1f, 0.0f, 0.0f)  |> ignore
@@ -537,7 +537,7 @@ let viewWorld (model: Model) loadedAssets (spriteBatch: SpriteBatch) =
         | ValueNone -> ())
 
 
-let draw model (dispatch: Message -> unit) loadedAssets _inputs spriteBatch =
+let view model (dispatch: Message -> unit) loadedAssets _inputs spriteBatch =
     match model.Song with
     | PlaySong songName ->
         Media.MediaPlayer.Volume <- 0.4f

@@ -5,6 +5,7 @@ open System
 open Xelmish.Viewables
 open Prelude
 open GameConfig
+open Xelmish.Model
 
 let EPSILON = 1e-8f
 
@@ -211,3 +212,11 @@ let collide pos oldPos colInfo obstacles =
                 | ValueNone -> sweep1.Pos + deltaParallel
 
         | ValueNone -> pos
+
+let viewAABB (aabb: AABB) (cameraPos:Vector2) (loadedAssets: LoadedAssets) (spriteBatch: SpriteBatch) =
+    if worldConfig.ShowCollisions then
+        spriteBatch.Draw(
+            loadedAssets.textures["tile"],
+            Rectangle(int (aabb.Pos.X - aabb.Half.X - cameraPos.X), int (aabb.Pos.Y - aabb.Half.Y - cameraPos.Y), int (aabb.Half.X * 2f), int (aabb.Half.Y * 2f)),
+            Color.Red
+            )

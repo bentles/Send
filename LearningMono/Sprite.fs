@@ -118,7 +118,7 @@ let spriteSourceRect (spriteInfo: ImageConfig) (aniState: AnimationState) pos =
     rect x y width height
 
 
-let drawSprite (model: Model) (cameraPos: Vector2) (loadedAssets: LoadedAssets) (spriteBatch: SpriteBatch) =
+let viewSprite (model: Model) (cameraPos: Vector2) (loadedAssets: LoadedAssets) (spriteBatch: SpriteBatch) =
 
     let texture = loadedAssets.textures[model.CurrentImage.TextureName]
     //by convention the flipped sprite will be above the unflipped one

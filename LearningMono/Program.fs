@@ -28,7 +28,7 @@ let update message (model: Model) =
 let view (model: Model) (dispatch: Message -> unit) =
     [
         OnDraw(fun loadedAssets inputs spriteBatch -> 
-            World.draw model.World (WorldMessage >> dispatch) loadedAssets inputs spriteBatch
+            World.view model.World (WorldMessage >> dispatch) loadedAssets inputs spriteBatch
         )
         OnUpdate(fun inputs -> 
             World.inputs inputs (WorldMessage >> dispatch)
