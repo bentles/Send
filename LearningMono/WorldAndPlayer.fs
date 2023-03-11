@@ -23,6 +23,7 @@ type SongState =
 type Model =
     { Tiles: Tiles
       Song: SongState
+      LevelText: string
 
       Size: Coords
 
@@ -57,11 +58,12 @@ let getTileAtPos (pos: Vector2) (size: Coords) (tiles: Tiles) : struct (Tile * i
     index |> ValueOption.map (fun index -> PersistentVector.nth index tiles, index)
 
 let init time =
-    let level = sandBox time
+    let level = levelSandBox time
 
     { Tiles = level.Tiles
       Song = PlaySong "pewpew"
       Size = level.Size
+      LevelText = level.LevelText
       PlayerAction = NoAction
       Player = Player.init level.PlayerStartsAtPos level.PlayerStartsCarrying playerConfig charSprite time
       Slow = false
@@ -272,6 +274,7 @@ let changeLevel (model: Model) (levelBuilder: LevelBuilder) : Model =
     { model with
         Size = newLevel.Size
         Tiles = newLevel.Tiles
+        LevelText = newLevel.LevelText
         Player =
             { model.Player with
                 Pos = newLevel.PlayerStartsAtPos
@@ -405,6 +408,8 @@ let bottomWall = "bottomWall"
 let drawWorld (model: Model) loadedAssets (spriteBatch: SpriteBatch) =
     let sourceRect = rect 0 0 blockWidth blockWidth
     let cameraOffset = -(halfScreenOffset model.CameraPos)
+
+    spriteBatch.DrawString(loadedAssets.fonts["defaultFont"], model.LevelText, Vector2(0f, 0f), Color.White)
 
     model.Tiles
     |> PersistentVector.toSeq
