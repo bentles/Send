@@ -9,7 +9,7 @@ let AcceptableError = 0.001f
 type WorldConfig =
     { TileWidth: int; ShowCollisions: bool }
 
-let worldConfig = { TileWidth = 50; ShowCollisions = true }
+let worldConfig = { TileWidth = 50; ShowCollisions = false }
 
 type ImageConfig =
     { SpriteSize: struct (int * int)
