@@ -218,5 +218,5 @@ let viewAABB (aabb: AABB) (cameraPos:Vector2) (loadedAssets: LoadedAssets) (spri
         spriteBatch.Draw(
             loadedAssets.textures["tile"],
             Rectangle(int (aabb.Pos.X - aabb.Half.X - cameraPos.X), int (aabb.Pos.Y - aabb.Half.Y - cameraPos.Y), int (aabb.Half.X * 2f), int (aabb.Half.Y * 2f)),
-            Color.Red
+            Color.Yellow
             )

@@ -14,13 +14,14 @@ TODO:
 	- some of my partial active patterns could probs just be complete patterns
 - open close chest sounds
 - use tile to show which entities are permanent
-- fix player offset madness
 - fix player behind entity redering wrong
-- add debug collision rendering back
+- move entities to their own list
 
 DOING:
+- add debug collision rendering back
 
 DONE:
+- fix player offset madness
 - map and filter need to convey to the user wtf is going on
 	- might need a better version of this
 - map and filter need activation objects
