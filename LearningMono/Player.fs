@@ -77,9 +77,6 @@ let getPlayerPickupLimit (characterState: State) =
     | Small false -> 15
     | _ -> 0
 
-let playerFeetPos (pos: Vector2) =
-    pos + playerConfig.FeetOffset
-
 type Message =
     | Input of dir: Vector2
     | TransformCharacter
@@ -159,8 +156,7 @@ let updatePhysics (model: Model) (info: PhysicsInfo) =
     let milisSinceY = millisSince yinputTime
 
     let facing = calcFacing (milisSinceX, lastXDir) (milisSinceY, lastYDir)
-    let feetPos = pos + playerConfig.FeetOffset
-    let target = feetPos + (60f * facing)
+    let target = pos + (60f * facing)
 
     let (vel, pos, isMoving) =
         if model.MovementFrozen then
@@ -310,13 +306,10 @@ let hearCarrying (carryingDelta: int) (loadedAssets: LoadedAssets) =
     | -1 -> loadedAssets.sounds[ "place" ].Play(0.5f, 0f, 0f) |> ignore
     | _ -> ()
 
-let drawPlayer (model: Model) (cameraPos: Vector2) loadedAssets (spriteBatch: SpriteBatch) =
+let viewPlayer (model: Model) (cameraPos: Vector2) loadedAssets (spriteBatch: SpriteBatch) =
     Sprite.drawSprite model.SpriteInfo cameraPos loadedAssets spriteBatch
     viewCarrying model.Carrying cameraPos model.CharacterState loadedAssets spriteBatch
     hearCarrying model.CarryingDelta loadedAssets
-
-let viewPlayer (model: Model) (cameraPos: Vector2) =
-    OnDraw(fun loadedAssets _ (spriteBatch: SpriteBatch) -> drawPlayer model cameraPos loadedAssets spriteBatch)
 
 let inputs (inputs: Inputs) (dispatch: Message -> unit) =
     let currentInputsAsVector =
