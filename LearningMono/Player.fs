@@ -40,8 +40,7 @@ type Model =
       MaxVelocity: float32
       Friction: float32
       Vel: Vector2
-      IsMoving: bool
-    }
+      IsMoving: bool }
 
 let init (pos: Vector2) (carrying: Entity.Model list) (playerConfig: PlayerConfig) (spriteConfig: SpriteConfig) time =
     { SpriteInfo = Sprite.init pos time spriteConfig None None
@@ -64,8 +63,7 @@ let init (pos: Vector2) (carrying: Entity.Model list) (playerConfig: PlayerConfi
       Acc = playerConfig.Acc
       Friction = playerConfig.Slow
       Vel = Vector2.Zero
-      IsMoving = false
-      }
+      IsMoving = false }
 
 
 let getPlayerPickupLimit (characterState: State) =
@@ -122,8 +120,7 @@ let updatePhysics (model: Model) (info: PhysicsInfo) =
 
         Vector2.Normalize(facing)
 
-    let millisSince eventTime =
-        (currentTime - eventTime)
+    let millisSince eventTime = (currentTime - eventTime)
 
     // acceleration and velocity
     let acc =
@@ -143,8 +140,7 @@ let updatePhysics (model: Model) (info: PhysicsInfo) =
     let preCollisionPos = model.Pos + (vel * dt) * pixelsPerMeter
 
     // collide with walls
-    let pos =
-        collide preCollisionPos model.Pos info.PossibleObstacles
+    let pos = collide preCollisionPos model.Pos info.PossibleObstacles
 
     // record when last x and y were pressed
     let xinputTime, lastXDir = updateIfNotZero model.Input.X model.XInputTimeAndDir
@@ -285,17 +281,18 @@ let viewCarrying
     (charState: State)
     (loadedAssets: LoadedAssets)
     (spriteBatch: Graphics.SpriteBatch)
+    (depth: float32)
     =
     let offsetStart =
         match charState with
-        | Small true -> Vector2(0f, 40f)
-        | Small false -> Vector2(0f, 70f)
+        | Small true -> Vector2(0f, 90f)
+        | Small false -> Vector2(0f, 100f)
         | _ -> Vector2(0f, 55f)
 
     carrying
     |> Seq.iteri (fun i item ->
         let offSetPos = cameraPos + offsetStart + (Vector2(0f, 25f) * (float32 i))
-        Sprite.viewSprite item.Sprite offSetPos loadedAssets spriteBatch 0f) 
+        Sprite.viewSprite item.Sprite offSetPos loadedAssets spriteBatch (depth + (float32 i) * DepthSubFactor))
 
 let hearCarrying (carryingDelta: int) (loadedAssets: LoadedAssets) =
     match carryingDelta with
@@ -304,9 +301,16 @@ let hearCarrying (carryingDelta: int) (loadedAssets: LoadedAssets) =
     | _ -> ()
 
 let viewPlayer (model: Model) (cameraPos: Vector2) loadedAssets (spriteBatch: SpriteBatch) =
-    Sprite.viewSprite model.SpriteInfo cameraPos loadedAssets spriteBatch (model.Pos.X * DepthFactor)
+    let playerDepth = (model.Pos.Y * DepthFactor + Depth_Entities_And_Player)
+    Sprite.viewSprite
+        model.SpriteInfo
+        cameraPos
+        loadedAssets
+        spriteBatch
+        playerDepth
+
     viewAABB (collider model.Pos) cameraPos loadedAssets spriteBatch
-    viewCarrying model.Carrying cameraPos model.CharacterState loadedAssets spriteBatch
+    viewCarrying model.Carrying cameraPos model.CharacterState loadedAssets spriteBatch playerDepth
     hearCarrying model.CarryingDelta loadedAssets
 
 let inputs (inputs: Inputs) (dispatch: Message -> unit) =

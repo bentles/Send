@@ -14,6 +14,8 @@ Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Solution Items", "Solution 
 		LearningMono\TODO.md = LearningMono\TODO.md
 	EndProjectSection
 EndProject
+Project("{6EC3EE1D-3C4E-46DD-8F32-0CC8E7565705}") = "Xelmish", "..\Xelmish\src\Xelmish.fsproj", "{E03C5917-B17D-43C6-AB71-680F1178C4AB}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -48,6 +50,18 @@ Global
 		{8199CDD2-482E-49AC-9A01-BF25470C0EC4}.Release|x64.Build.0 = Release|Any CPU
 		{8199CDD2-482E-49AC-9A01-BF25470C0EC4}.Release|x86.ActiveCfg = Release|Any CPU
 		{8199CDD2-482E-49AC-9A01-BF25470C0EC4}.Release|x86.Build.0 = Release|Any CPU
+		{E03C5917-B17D-43C6-AB71-680F1178C4AB}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{E03C5917-B17D-43C6-AB71-680F1178C4AB}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{E03C5917-B17D-43C6-AB71-680F1178C4AB}.Debug|x64.ActiveCfg = Debug|Any CPU
+		{E03C5917-B17D-43C6-AB71-680F1178C4AB}.Debug|x64.Build.0 = Debug|Any CPU
+		{E03C5917-B17D-43C6-AB71-680F1178C4AB}.Debug|x86.ActiveCfg = Debug|Any CPU
+		{E03C5917-B17D-43C6-AB71-680F1178C4AB}.Debug|x86.Build.0 = Debug|Any CPU
+		{E03C5917-B17D-43C6-AB71-680F1178C4AB}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{E03C5917-B17D-43C6-AB71-680F1178C4AB}.Release|Any CPU.Build.0 = Release|Any CPU
+		{E03C5917-B17D-43C6-AB71-680F1178C4AB}.Release|x64.ActiveCfg = Release|Any CPU
+		{E03C5917-B17D-43C6-AB71-680F1178C4AB}.Release|x64.Build.0 = Release|Any CPU
+		{E03C5917-B17D-43C6-AB71-680F1178C4AB}.Release|x86.ActiveCfg = Release|Any CPU
+		{E03C5917-B17D-43C6-AB71-680F1178C4AB}.Release|x86.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE

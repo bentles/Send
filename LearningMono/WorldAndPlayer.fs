@@ -52,7 +52,7 @@ let getCollidables (tiles: Tile seq) : AABB seq =
                 | _ -> ()
     }
 
-let getIndexAtPos (pos: Vector2) (size: Coords): int voption =
+let getIndexAtPos (pos: Vector2) (size: Coords) : int voption =
     let coords = offsetVectorToCoords pos
     coordsToIndex coords size
 
@@ -377,7 +377,11 @@ let viewEmitting
             texture,
             Rectangle(x + 20, y - 5, dwidth, dheight),
             Rectangle(0, 0, width, height),
-            (Color.FromNonPremultiplied(255, 255, 255, alpha))
+            Color.FromNonPremultiplied(255, 255, 255, alpha),
+            0f,
+            Vector2.Zero,
+            SpriteEffects.None,
+            Depth_Emitting
         )
 
 let viewObserverItem
@@ -399,7 +403,11 @@ let viewObserverItem
             texture,
             Rectangle(x + 20, y + 18, dwidth, dheight),
             Rectangle(0, 0, width, height),
-            (Color.FromNonPremultiplied(255, 255, 255, alpha))
+            (Color.FromNonPremultiplied(255, 255, 255, alpha)),
+            0f,
+            Vector2.Zero,
+            SpriteEffects.None,
+            Depth_Emitting
         )
 
 let blockWidth = worldConfig.TileWidth
@@ -481,30 +489,32 @@ let viewWorld (model: Model) loadedAssets (spriteBatch: SpriteBatch) =
                 0f,
                 Vector2.Zero,
                 effect,
-                0f
+                Depth_Target
             )
         | ValueNone -> ()
 
         match model.PlayerFeet with
         | ValueSome index when index = i ->
             spriteBatch.Draw(
-                    loadedAssets.textures["feet"],
-                    Rectangle(actualX, actualY, sourceRect.Width, sourceRect.Height),
-                    System.Nullable<Rectangle>(),
-                    Color.Green * alpha,
-                    0f,
-                    Vector2.Zero,
-                    effect,
-                    0f
-                )
+                loadedAssets.textures["feet"],
+                Rectangle(actualX, actualY, sourceRect.Width, sourceRect.Height),
+                System.Nullable<Rectangle>(),
+                Color.Green * alpha,
+                0f,
+                Vector2.Zero,
+                effect,
+                Depth_Target
+            )
         | _ -> ()
 
         match tile.Entity with
         | ValueSome entity ->
-            let depth = match entity.Collider with
-                        | ValueSome coll -> (coll.Pos.Y * DepthFactor)
-                        | ValueNone -> 0f
-            Sprite.viewSprite entity.Sprite -cameraOffset loadedAssets spriteBatch depth
+            let depth =
+                match entity.Collider with
+                | ValueSome coll -> (coll.Pos.Y * DepthFactor)
+                | ValueNone -> 0f
+
+            Sprite.viewSprite entity.Sprite -cameraOffset loadedAssets spriteBatch (depth + Depth_Entities_And_Player)
 
             match entity.Type with
             | EmittingObservable(_, _) -> () // loadedAssets.sounds[ "click" ].Play(1f, 0.0f, 0.0f)  |> ignore
@@ -540,7 +550,8 @@ let viewWorld (model: Model) loadedAssets (spriteBatch: SpriteBatch) =
         | ValueNone -> ()
 
         match tile.Entity with
-        | ValueSome { Collider = ValueSome collider } -> Collision.viewAABB collider (-cameraOffset) loadedAssets spriteBatch
+        | ValueSome { Collider = ValueSome collider } ->
+            Collision.viewAABB collider (-cameraOffset) loadedAssets spriteBatch
         | _ -> ())
 
 
