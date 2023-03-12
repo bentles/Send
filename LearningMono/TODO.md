@@ -15,9 +15,9 @@ TODO:
 - open close chest sounds
 - use tile to show which entities are permanent
 - move entities to their own list
-- fix player behind entity redering order
 
 DOING:
+- fix player behind entity redering order
 
 DONE:
 - add debug collision rendering back

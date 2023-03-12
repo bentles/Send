@@ -501,7 +501,10 @@ let viewWorld (model: Model) loadedAssets (spriteBatch: SpriteBatch) =
 
         match tile.Entity with
         | ValueSome entity ->
-            Sprite.viewSprite entity.Sprite -cameraOffset loadedAssets spriteBatch            
+            let depth = match entity.Collider with
+                        | ValueSome coll -> (coll.Pos.Y * DepthFactor)
+                        | ValueNone -> 0f
+            Sprite.viewSprite entity.Sprite -cameraOffset loadedAssets spriteBatch depth
 
             match entity.Type with
             | EmittingObservable(_, _) -> () // loadedAssets.sounds[ "click" ].Play(1f, 0.0f, 0.0f)  |> ignore

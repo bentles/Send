@@ -295,7 +295,7 @@ let viewCarrying
     carrying
     |> Seq.iteri (fun i item ->
         let offSetPos = cameraPos + offsetStart + (Vector2(0f, 25f) * (float32 i))
-        Sprite.viewSprite item.Sprite offSetPos loadedAssets spriteBatch)
+        Sprite.viewSprite item.Sprite offSetPos loadedAssets spriteBatch 0f) 
 
 let hearCarrying (carryingDelta: int) (loadedAssets: LoadedAssets) =
     match carryingDelta with
@@ -304,7 +304,7 @@ let hearCarrying (carryingDelta: int) (loadedAssets: LoadedAssets) =
     | _ -> ()
 
 let viewPlayer (model: Model) (cameraPos: Vector2) loadedAssets (spriteBatch: SpriteBatch) =
-    Sprite.viewSprite model.SpriteInfo cameraPos loadedAssets spriteBatch
+    Sprite.viewSprite model.SpriteInfo cameraPos loadedAssets spriteBatch (model.Pos.X * DepthFactor)
     viewAABB (collider model.Pos) cameraPos loadedAssets spriteBatch
     viewCarrying model.Carrying cameraPos model.CharacterState loadedAssets spriteBatch
     hearCarrying model.CarryingDelta loadedAssets
