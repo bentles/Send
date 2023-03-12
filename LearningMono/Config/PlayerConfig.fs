@@ -28,12 +28,12 @@ let bigCharImage =
       Rows = 7
       Columns = 8
       TextureName = "bigChar"
-      Offset = Vector2(0f, 52f)
+      Offset = Vector2(0f, 50f)
       
     }
 
 let smallCharImage =
-    { SpriteSize = (52, 64)
+    { SpriteSize = (52, 62)
       Rows = 4
       Columns = 8
       TextureName = "smallChar"
