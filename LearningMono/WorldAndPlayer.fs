@@ -61,7 +61,7 @@ let getTileAtPos (pos: Vector2) (size: Coords) (tiles: Tiles) : struct (Tile * i
     index |> ValueOption.map (fun index -> PersistentVector.nth index tiles, index)
 
 let init time =
-    let level = levelSandBox time
+    let level = levelPlaceDirections time
 
     { Tiles = level.Tiles
       Song = PlaySong "pewpew"
@@ -418,6 +418,7 @@ let leftWall = "leftWall"
 let rightWall = "rightWall"
 let topWall = "topWall"
 let bottomWall = "bottomWall"
+let floor = "floor"
 
 let viewWorld (model: Model) loadedAssets (spriteBatch: SpriteBatch) =
     let sourceRect = rect 0 0 blockWidth blockWidth
@@ -438,6 +439,7 @@ let viewWorld (model: Model) loadedAssets (spriteBatch: SpriteBatch) =
             | FloorType.RightWall -> rightWall
             | FloorType.TopWall -> topWall
             | FloorType.BottomWall -> bottomWall
+            | FloorType.Floor -> floor
 
         let startX = 0
         let startY = 0
@@ -517,7 +519,7 @@ let viewWorld (model: Model) loadedAssets (spriteBatch: SpriteBatch) =
             Sprite.viewSprite entity.Sprite -cameraOffset loadedAssets spriteBatch (depth + Depth_Entities_And_Player)
 
             match entity.Type with
-            | EmittingObservable(_, _) -> () // loadedAssets.sounds[ "click" ].Play(1f, 0.0f, 0.0f)  |> ignore
+            | EmittingObservable(_, _) -> loadedAssets.sounds[ "click" ].Play(0.3f, 0.0f, 0.0f)  |> ignore
             | _ -> ()
 
             match entity.Type with

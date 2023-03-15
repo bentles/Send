@@ -12,6 +12,7 @@ let Depth_Tile = 0f;
 let Depth_Target = 0.1f;
 let Depth_Entities_And_Player = 0.2f;
 let Depth_Emitting = 0.3f;
+let Depth_Debug = 1f;
 
 type WorldConfig =
     { TileWidth: int; ShowCollisions: bool }

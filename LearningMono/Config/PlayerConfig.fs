@@ -21,15 +21,14 @@ let playerConfig =
       Slow = 40f
       AABBConfig =
         { Half = Vector2(25f, 25f)
-          Pos = Vector2(0f, -25f) } }
+          Pos = Vector2(0f, -23f) } }
 
 let bigCharImage =
     { SpriteSize = (100, 104)
       Rows = 7
       Columns = 8
       TextureName = "bigChar"
-      Offset = Vector2(0f, 50f)
-      
+      Offset = Vector2(0f, 48f)      
     }
 
 let smallCharImage =
@@ -37,7 +36,7 @@ let smallCharImage =
       Rows = 4
       Columns = 8
       TextureName = "smallChar"
-      Offset = Vector2(0f, 32f) }
+      Offset = Vector2(0f, 30f) }
 
 let CharConfig = {| BigFrames = 50; SmallFrames = 90 |}
 

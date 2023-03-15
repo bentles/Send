@@ -278,6 +278,18 @@
 /processorParam:TextureFormat=Color
 /build:sprites/tile/Feet.png
 
+#begin sprites/tile/Floor.png
+/importer:TextureImporter
+/processor:TextureProcessor
+/processorParam:ColorKeyColor=255,0,255,255
+/processorParam:ColorKeyEnabled=True
+/processorParam:GenerateMipmaps=False
+/processorParam:PremultiplyAlpha=True
+/processorParam:ResizeToPowerOfTwo=False
+/processorParam:MakeSquare=False
+/processorParam:TextureFormat=Color
+/build:sprites/tile/Floor.png
+
 #begin sprites/tile/Grass.png
 /importer:TextureImporter
 /processor:TextureProcessor

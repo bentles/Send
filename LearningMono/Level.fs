@@ -16,6 +16,7 @@ type FloorType =
     | BottomWall
     | LeftWall
     | RightWall
+    | Floor
 
 [<Struct>]
 type Tile =
@@ -114,7 +115,7 @@ let observerCannotPick time observer facing (coords: Coords) : Tile =
 
     { defaultTile with
         Coords = coords
-        FloorType = FloorType.Wall
+        FloorType = FloorType.Floor
         Entity = ValueSome(Entity.init observer pos time facing false) }
 
 let worldVars x y height width =
@@ -209,7 +210,7 @@ let level2: LevelBuilder =
 
         { PlayerStartsAtPos = (Vector2(200f, 100f))
           PlayerStartsCarrying = []
-          LevelText= "Press X to pick up an item and C to place an item down"
+          LevelText= "Press X on an item to pick it up! Press C to place an item down. You can pick up multiple items."
           Tiles = tiles
           Size = (width, height) }
 
@@ -258,9 +259,10 @@ let level3: LevelBuilder =
           Tiles = tiles
           Size = (width, height) }
 
-let levelSelectTutorial: LevelBuilder =
+let levelPlaceDirections: LevelBuilder =
     fun time ->
         let __ = createNonCollidableTile FloorType.Grass
+        let _f = createNonCollidableTile FloorType.Floor
         let ww = createCollidableTile Wall
         let wl = createCollidableTile FloorType.LeftWall
         let wr = createCollidableTile FloorType.RightWall
@@ -278,14 +280,14 @@ let levelSelectTutorial: LevelBuilder =
                   [ wl; __; bb; __; __; __; __; __; __; wr ]
                   [ wl; __; __; __; __; __; __; __; __; wr ]
                   [ wl; __; __; ir; il; il; il; il; il; wr ]
-                  [ wl; __; __; __; __; __; __; __; __; wr ]
-                  [ wl; __; __; __; __; __; __; __; xx; wr ]
+                  [ wl; __; __; __; il; _f; _f; _f; _f; wr ]
+                  [ wl; __; __; __; il; _f; _f; _f; xx; wr ]
                   [ ww; wb; wb; wb; wb; wb; wb; wb; wb; ww ] ]
 
         { PlayerStartsAtPos = Vector2(200f, 100f)
           PlayerStartsCarrying = []
           Tiles = tiles
-          LevelText= ""
+          LevelText= "Shift + arrow keys will change your placement direction. Try placing items in different orientations!"
           Size = (width, height) }
 
 let level4: LevelBuilder =
@@ -653,7 +655,7 @@ let levelLookup (level: Level) : LevelBuilder =
     | L1 -> level1
     | L2 -> level2
     | L3 -> level3
-    | L4 -> levelSelectTutorial
+    | L4 -> levelPlaceDirections
     | L5 -> level5
     | L6 -> level6
     | L7 -> level7

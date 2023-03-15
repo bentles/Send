@@ -17,9 +17,9 @@ TODO:
 - move entities to their own list
 
 DOING:
-- define ordering groups 0 = tile 0.1 = target 0.2 = entities, 0.3 = emitting etc.
 
 DONE:
+- define ordering groups 0 = tile 0.1 = target 0.2 = entities, 0.3 = emitting etc.
 - fix player behind entity redering order
 - add debug collision rendering back
 - fix player offset madness

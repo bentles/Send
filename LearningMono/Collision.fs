@@ -9,7 +9,7 @@ open Xelmish.Model
 
 let EPSILON = 1e-8f
 
-let clamp (value:float32) (min:float32) (max:float32) =
+let clamp (value: float32) (min: float32) (max: float32) =
     if value < min then min
     elif value > max then max
     else value
@@ -132,7 +132,10 @@ let sweepAABB (aabb: AABB) (box: AABB) (delta: Vector2) : Sweep =
             { Pos = box.Pos
               Hit = ValueSome { hit with Time = 0f }
               Time = 0f }
-        | ValueNone -> { Pos = box.Pos; Hit = ValueNone; Time = 1f }
+        | ValueNone ->
+            { Pos = box.Pos
+              Hit = ValueNone
+              Time = 1f }
     else
         let hit = intersectSegment aabb box.Pos delta box.Half.X box.Half.Y
 
@@ -183,7 +186,9 @@ let collide pos oldPos obstacles =
     let sweepIntoWithOffset pos oldPos obstacles =
         let deltaPos = pos - oldPos
         let sweepResult = sweepInto (collider oldPos) obstacles deltaPos
-        let result = { sweepResult with Pos = sweepResult.Pos - PlayerConfig.playerConfig.AABBConfig.Pos }
+
+        let result =
+            { sweepResult with Pos = sweepResult.Pos - PlayerConfig.playerConfig.AABBConfig.Pos }
 
         //collision distance should be <= unadjusted distance
         assert ((result.Pos - oldPos).Length() <= deltaPos.Length() + AcceptableError)
@@ -213,10 +218,20 @@ let collide pos oldPos obstacles =
 
         | ValueNone -> pos
 
-let viewAABB (aabb: AABB) (cameraPos:Vector2) (loadedAssets: LoadedAssets) (spriteBatch: SpriteBatch) =
+let viewAABB (aabb: AABB) (cameraPos: Vector2) (loadedAssets: LoadedAssets) (spriteBatch: SpriteBatch) =
     if worldConfig.ShowCollisions then
         spriteBatch.Draw(
             loadedAssets.textures["tile"],
-            Rectangle(int (aabb.Pos.X - aabb.Half.X - cameraPos.X), int (aabb.Pos.Y - aabb.Half.Y - cameraPos.Y), int (aabb.Half.X * 2f), int (aabb.Half.Y * 2f)),
-            Color.Yellow
-            )
+            Rectangle(
+                int (aabb.Pos.X - aabb.Half.X - cameraPos.X),
+                int (aabb.Pos.Y - aabb.Half.Y - cameraPos.Y),
+                int (aabb.Half.X * 2f),
+                int (aabb.Half.Y * 2f)
+            ),
+            Nullable<Rectangle>(),
+            Color.Yellow,
+            0f,
+            Vector2.Zero,
+            Graphics.SpriteEffects.None,
+            Depth_Debug
+        )
