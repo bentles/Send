@@ -215,24 +215,28 @@ let placeEntity (model: Model) : Model =
         match player.Carrying with
         | placeEntity :: rest ->
             let tileAndIndex = model.PlayerTarget
+            let feetIndex = model.PlayerFeet
 
             match tileAndIndex with
             | ValueSome({ Entity = ValueNone } as tile, i) ->
-                //make a targeting function
-                let roundedPos = posRounded player.Target
-                let facing = player.PlacementFacing
+                match feetIndex with
+                | ValueSome feet when feet <> i ->
+                    //make a targeting function
+                    let roundedPos = posRounded player.Target
+                    let facing = player.PlacementFacing
 
-                let entity = Entity.init placeEntity.Type roundedPos model.TimeElapsed facing true
-                let sprite = Sprite.startAnimation entity.Sprite
-                let entity = { entity with Sprite = sprite }
+                    let entity = Entity.init placeEntity.Type roundedPos model.TimeElapsed facing true
+                    let sprite = Sprite.startAnimation entity.Sprite
+                    let entity = { entity with Sprite = sprite }
 
-                let tiles =
-                    model.Tiles
-                    |> PersistentVector.update i { tile with Entity = ValueSome(entity) }
+                    let tiles =
+                        model.Tiles
+                        |> PersistentVector.update i { tile with Entity = ValueSome(entity) }
 
-                { model with
-                    Tiles = tiles
-                    Player = { player with Carrying = rest } }
+                    { model with
+                        Tiles = tiles
+                        Player = { player with Carrying = rest } }
+                | _ -> model
             | ValueSome({ Entity = ValueSome({ Type = EmptyObservable(obData) } as targetEntity) } as tile, i) ->
                 let newObData = placeIntoObservable obData placeEntity.Type
                 let newTarget = ValueSome { targetEntity with Type = Observable newObData }

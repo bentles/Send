@@ -42,8 +42,6 @@ and ObservableType =
 
 and EntityType =
     | Unit
-    | True
-    | False
     | Rock
     | GoToLevelButton of Level
     | Box of BoxType

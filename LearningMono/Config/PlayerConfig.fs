@@ -13,7 +13,6 @@ type PlayerConfig =
       Slow: float32
       AABBConfig: AABB }
 
-
 let playerConfig =
     { BigMaxVelocity = 2f
       SmallMaxVelocity = 4.5f
@@ -21,14 +20,14 @@ let playerConfig =
       Slow = 40f
       AABBConfig =
         { Half = Vector2(25f, 25f)
-          Pos = Vector2(0f, -23f) } }
+          Pos = Vector2(0f, 0f) } }
 
 let bigCharImage =
     { SpriteSize = (100, 104)
       Rows = 7
       Columns = 8
       TextureName = "bigChar"
-      Offset = Vector2(0f, 48f)      
+      Offset = Vector2(0f, 27f)      
     }
 
 let smallCharImage =
@@ -36,7 +35,7 @@ let smallCharImage =
       Rows = 4
       Columns = 8
       TextureName = "smallChar"
-      Offset = Vector2(0f, 30f) }
+      Offset = Vector2(0f, 6f) }
 
 let CharConfig = {| BigFrames = 50; SmallFrames = 90 |}
 

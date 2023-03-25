@@ -57,7 +57,7 @@ let init (pos: Vector2) (carrying: Entity.Model list) (playerConfig: PlayerConfi
       CarryingDelta = 0
 
       Facing = Vector2(1f, 0f)
-      Target = pos + 60f * Vector2(1f, 0f)
+      Target = pos + 55f * Vector2(1f, 0f)
       Pos = pos
       MaxVelocity = playerConfig.SmallMaxVelocity
       Acc = playerConfig.Acc
@@ -149,7 +149,7 @@ let updatePhysics (model: Model) (info: PhysicsInfo) =
     let milisSinceY = millisSince yinputTime
 
     let facing = calcFacing (milisSinceX, lastXDir) (milisSinceY, lastYDir)
-    let target = pos + (-25f * Vector2.UnitY) + (35f * facing)
+    let target = pos + (55f * facing)
 
     let (vel, pos, isMoving) =
         if model.MovementFrozen then
@@ -285,9 +285,9 @@ let viewCarrying
     =
     let offsetStart =
         match charState with
-        | Small true -> Vector2(0f, 90f)
-        | Small false -> Vector2(0f, 100f)
-        | _ -> Vector2(0f, 55f)
+        | Small true -> Vector2(0f, 60f)
+        | Small false -> Vector2(0f, 90f)
+        | _ -> Vector2(0f, 75f)
 
     carrying
     |> Seq.iteri (fun i item ->

@@ -16,7 +16,7 @@ let depthConfig = {|
     Debug = 1f;
 |}
 
-let worldConfig = {| TileWidth = 50; ShowCollisions = false |}
+let worldConfig = {| TileWidth = 50; ShowCollisions = true |}
 
 type ImageConfig =
     { SpriteSize: struct (int * int)
