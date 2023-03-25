@@ -26,7 +26,7 @@ let offsetVectorToCoords (pos: Vector2) : Coords =
 
 let toCoordsF ((x, y): Coords) : CoordsF = (float32 x, float32 y)
 
-let posRounded (pos: Vector2) (worldConfig: WorldConfig) =
+let posRounded (pos: Vector2) =
     let x =
         (floor (pos.X / float32 worldConfig.TileWidth)) * float32 worldConfig.TileWidth
 

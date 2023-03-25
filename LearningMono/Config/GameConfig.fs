@@ -8,16 +8,15 @@ let AcceptableError = 0.001f
 let DepthFactor = 0.0001f;
 let DepthSubFactor = 0.00001f;
 
-let Depth_Tile = 0f;
-let Depth_Target = 0.1f;
-let Depth_Entities_And_Player = 0.2f;
-let Depth_Emitting = 0.3f;
-let Depth_Debug = 1f;
+let depthConfig = {|
+    Tile = 0f;
+    Target = 0.1f;
+    Entities_And_Player = 0.2f;
+    Emitting = 0.3f;
+    Debug = 1f;
+|}
 
-type WorldConfig =
-    { TileWidth: int; ShowCollisions: bool }
-
-let worldConfig = { TileWidth = 50; ShowCollisions = true }
+let worldConfig = {| TileWidth = 50; ShowCollisions = false |}
 
 type ImageConfig =
     { SpriteSize: struct (int * int)

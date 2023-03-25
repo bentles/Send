@@ -219,7 +219,7 @@ let placeEntity (model: Model) : Model =
             match tileAndIndex with
             | ValueSome({ Entity = ValueNone } as tile, i) ->
                 //make a targeting function
-                let roundedPos = posRounded player.Target worldConfig
+                let roundedPos = posRounded player.Target
                 let facing = player.PlacementFacing
 
                 let entity = Entity.init placeEntity.Type roundedPos model.TimeElapsed facing true
@@ -381,7 +381,7 @@ let viewEmitting
             0f,
             Vector2.Zero,
             SpriteEffects.None,
-            Depth_Emitting
+            depthConfig.Emitting
         )
 
 let viewObserverItem
@@ -407,7 +407,7 @@ let viewObserverItem
             0f,
             Vector2.Zero,
             SpriteEffects.None,
-            Depth_Emitting
+            depthConfig.Emitting
         )
 
 let blockWidth = worldConfig.TileWidth
@@ -491,7 +491,7 @@ let viewWorld (model: Model) loadedAssets (spriteBatch: SpriteBatch) =
                 0f,
                 Vector2.Zero,
                 effect,
-                Depth_Target
+                depthConfig.Target
             )
         | ValueNone -> ()
 
@@ -505,7 +505,7 @@ let viewWorld (model: Model) loadedAssets (spriteBatch: SpriteBatch) =
                 0f,
                 Vector2.Zero,
                 effect,
-                Depth_Target
+                depthConfig.Target
             )
         | _ -> ()
 
@@ -516,7 +516,7 @@ let viewWorld (model: Model) loadedAssets (spriteBatch: SpriteBatch) =
                 | ValueSome coll -> (coll.Pos.Y * DepthFactor)
                 | ValueNone -> 0f
 
-            Sprite.viewSprite entity.Sprite -cameraOffset loadedAssets spriteBatch (depth + Depth_Entities_And_Player)
+            Sprite.viewSprite entity.Sprite -cameraOffset loadedAssets spriteBatch (depth + depthConfig.Entities_And_Player)
 
             match entity.Type with
             | EmittingObservable(_, _) -> loadedAssets.sounds[ "click" ].Play(0.3f, 0.0f, 0.0f)  |> ignore

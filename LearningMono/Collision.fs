@@ -233,5 +233,5 @@ let viewAABB (aabb: AABB) (cameraPos: Vector2) (loadedAssets: LoadedAssets) (spr
             0f,
             Vector2.Zero,
             Graphics.SpriteEffects.None,
-            Depth_Debug
+            depthConfig.Debug
         )

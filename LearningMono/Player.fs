@@ -301,7 +301,7 @@ let hearCarrying (carryingDelta: int) (loadedAssets: LoadedAssets) =
     | _ -> ()
 
 let viewPlayer (model: Model) (cameraPos: Vector2) loadedAssets (spriteBatch: SpriteBatch) =
-    let playerDepth = (model.Pos.Y * DepthFactor + Depth_Entities_And_Player)
+    let playerDepth = (model.Pos.Y * DepthFactor + depthConfig.Entities_And_Player)
     Sprite.viewSprite
         model.SpriteInfo
         cameraPos
