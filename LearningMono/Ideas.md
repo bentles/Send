@@ -64,4 +64,3 @@ Toggle:
 			- but you still can't get a toggle from the same input
 
 
-

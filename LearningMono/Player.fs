@@ -149,7 +149,7 @@ let updatePhysics (model: Model) (info: PhysicsInfo) =
     let milisSinceY = millisSince yinputTime
 
     let facing = calcFacing (milisSinceX, lastXDir) (milisSinceY, lastYDir)
-    let target = pos + (60f * facing)
+    let target = pos + (-25f * Vector2.UnitY) + (35f * facing)
 
     let (vel, pos, isMoving) =
         if model.MovementFrozen then

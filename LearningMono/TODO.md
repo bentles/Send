@@ -15,6 +15,19 @@ TODO:
 - open close chest sounds
 - use tile to show which entities are permanent
 - move entities to their own list
+- figure out if i can make placement direction into a level
+	- should it affect AABB??? (probably)
+- feedback from session with ash
+	- shift and arrows to change directions
+	- lag spikes
+	- boxes too many levels deep
+	- pick up multiple things more obvious
+	- more smaller obvious levels
+	- more box levels
+	- pick up some things still confusing
+	- fix placements
+		- add the player AABB to the can place check
+
 
 DOING:
 

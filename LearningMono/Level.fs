@@ -655,7 +655,7 @@ let levelLookup (level: Level) : LevelBuilder =
     | L1 -> level1
     | L2 -> level2
     | L3 -> level3
-    | L4 -> levelPlaceDirections
+    | L4 -> level4
     | L5 -> level5
     | L6 -> level6
     | L7 -> level7
