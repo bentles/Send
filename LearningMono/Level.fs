@@ -682,7 +682,7 @@ let levelSandBox: LevelBuilder =
 
         { PlayerStartsAtPos = Vector2(150f, 100f)
           PlayerStartsCarrying = []
-          LevelText= "Hello there this is a test"
+          LevelText= "This is the sandbox level. Go nuts!"
           Tiles = tiles
           Size = (width, height) }
 

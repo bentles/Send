@@ -25,11 +25,11 @@ TODO:
 
 DOING:
 - fix placements
-	- add the player AABB to the can place check
-	- placements should go red on some blocks
+	- placements should go red when cannot be placed?
 	- preview with greyed out?
 
 DONE:
+- add the player AABB to the can place check
 - more box levels
 - boxes too many levels deep
 - shift and arrows to change directions

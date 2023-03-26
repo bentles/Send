@@ -157,8 +157,6 @@ let updateCameraPos (playerPos: Vector2) (oldCamPos: Vector2) : Vector2 =
     else
         oldCamPos + halfDiff
 
-
-
 let mutable lastTick = 0L // we use a mutable tick counter here in order to ensure precision
 
 let pickUpEntity (model: Model) : Model =
@@ -205,21 +203,25 @@ let placeEntity (model: Model) : Model =
             | ValueSome({ Entity = ValueNone } as tile, i) ->
                 match feetIndex with
                 | ValueSome feet when feet <> i ->
-                    //make a targeting function
                     let roundedPos = posRounded player.Target
-                    let facing = player.PlacementFacing
+                    let entity = Entity.init placeEntity.Type roundedPos model.TimeElapsed player.PlacementFacing true
+                    let collided =
+                        voption {
+                            let! col = entity.Collider
+                            return! Collision.intersectAABB (Collision.playerCollider player.Pos) col
+                        }
 
-                    let entity = Entity.init placeEntity.Type roundedPos model.TimeElapsed facing true
-                    let sprite = Sprite.startAnimation entity.Sprite
-                    let entity = { entity with Sprite = sprite }
+                    // can't place if the block will intersect with the player
+                    match collided with
+                    | ValueNone ->
+                        let tiles =
+                            model.Tiles
+                            |> PersistentVector.update i { tile with Entity = ValueSome(entity) }
 
-                    let tiles =
-                        model.Tiles
-                        |> PersistentVector.update i { tile with Entity = ValueSome(entity) }
-
-                    { model with
-                        Tiles = tiles
-                        Player = { player with Carrying = rest } }
+                        { model with
+                            Tiles = tiles
+                            Player = { player with Carrying = rest } }
+                    | ValueSome _ -> model
                 | _ -> model
             | ValueSome({ Entity = ValueSome({ Type = CanPlaceIntoEntity placeEntity.Type (newEntity) } as targetEntity) } as tile,
                         i) ->

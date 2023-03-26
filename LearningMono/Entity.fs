@@ -322,7 +322,7 @@ let init (entityType: EntityType) (pos: Vector2) (time) (facing: Facing) (canBeP
     let config = (getSpriteConfig entityType)
 
     let ypos = getYpos entityType facing
-    let sprite = Sprite.init pos time config (Some ypos) (Some false)
+    let sprite = Sprite.startAnimation (Sprite.init pos time config (Some ypos) (Some false))
     let collider = getCollider entityType pos
 
     { Type = entityType

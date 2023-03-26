@@ -7,9 +7,7 @@ open Collision
 open Entity
 open GameConfig
 open PlayerConfig
-open Elmish
 open Utility
-open Xelmish.Viewables
 open Xelmish.Model
 
 type State =
@@ -309,7 +307,7 @@ let viewPlayer (model: Model) (cameraPos: Vector2) loadedAssets (spriteBatch: Sp
         spriteBatch
         playerDepth
 
-    viewAABB (collider model.Pos) cameraPos loadedAssets spriteBatch
+    viewAABB (playerCollider model.Pos) cameraPos loadedAssets spriteBatch
     viewCarrying model.Carrying cameraPos model.CharacterState loadedAssets spriteBatch playerDepth
     hearCarrying model.CarryingDelta loadedAssets
 

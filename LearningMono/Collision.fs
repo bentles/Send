@@ -42,7 +42,7 @@ let renderAABB (aabb: AABB) (cameraPos: Vector2) =
         (int (aabb.Half.X * 2f), int (aabb.Half.Y * 2f))
         (int (aabb.Pos.X - aabb.Half.X - cameraPos.X), int (aabb.Pos.Y - aabb.Half.Y - cameraPos.Y))
 
-let collider (pos: Vector2) : AABB =
+let playerCollider (pos: Vector2) : AABB =
     { Pos = pos + PlayerConfig.playerConfig.AABBConfig.Pos
       Half = PlayerConfig.playerConfig.AABBConfig.Half }
 
@@ -185,7 +185,7 @@ let sweepInto (aabb: AABB) (staticColliders: AABB seq) (delta: Vector2) : Sweep 
 let collide pos oldPos obstacles =
     let sweepIntoWithOffset pos oldPos obstacles =
         let deltaPos = pos - oldPos
-        let sweepResult = sweepInto (collider oldPos) obstacles deltaPos
+        let sweepResult = sweepInto (playerCollider oldPos) obstacles deltaPos
 
         let result =
             { sweepResult with Pos = sweepResult.Pos - PlayerConfig.playerConfig.AABBConfig.Pos }
