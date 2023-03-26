@@ -1,11 +1,9 @@
 ﻿module World
 
 open Xelmish.Model
-open Xelmish.Viewables
 open Microsoft.Xna.Framework
 open GameConfig
 open PlayerConfig
-open Elmish
 open FsToolkit.ErrorHandling
 open Utility
 open Level
@@ -62,8 +60,8 @@ let getTileAtPos (pos: Vector2) (size: Coords) (tiles: Tiles) : struct (Tile * i
     index |> ValueOption.map (fun index -> PersistentVector.nth index tiles, index)
 
 let init time =
-    let levelIndex = 2
-    let level = Level.levels[levelIndex] time
+    let levelIndex = Level.levels.Length - 1
+    let level = Level.levels[levelIndex]time
 
     { Tiles = level.Tiles
       Song = PlaySong "pewpew"
@@ -178,7 +176,7 @@ let pickUpEntity (model: Model) : Model =
                     match targetEntity with
                     | { Type = CanPickOutOfEntity(eData, entityType) } as targetEntity ->
                         let newTarget = Entity.updateSprite { targetEntity with Type = eData }
-                        let fromObserverEntity = Entity.init entityType Vector2.Zero 0 FacingRight true                        
+                        let fromObserverEntity = Entity.init entityType Vector2.Zero 0 FacingRight true
                         let tile = { tile with Entity = ValueSome newTarget }
                         tile, fromObserverEntity
                     | _ -> { tile with Entity = ValueNone }, targetEntity
@@ -223,11 +221,13 @@ let placeEntity (model: Model) : Model =
                         Tiles = tiles
                         Player = { player with Carrying = rest } }
                 | _ -> model
-            | ValueSome({ Entity = ValueSome({ Type = CanPlaceIntoEntity placeEntity.Type (newEntity) } as targetEntity) } as tile, i) ->
+            | ValueSome({ Entity = ValueSome({ Type = CanPlaceIntoEntity placeEntity.Type (newEntity) } as targetEntity) } as tile,
+                        i) ->
                 let newTarget = Entity.updateSprite { targetEntity with Type = newEntity }
 
                 let tiles =
-                    model.Tiles |> PersistentVector.update i { tile with Entity = ValueSome newTarget }
+                    model.Tiles
+                    |> PersistentVector.update i { tile with Entity = ValueSome newTarget }
 
                 { model with
                     Tiles = tiles
@@ -236,9 +236,26 @@ let placeEntity (model: Model) : Model =
         | _ -> model
     | _ -> model
 
+let orientEntity (model:Model) (facing:Facing) =
+    let player = model.Player
+
+    match player.CharacterState with
+    | Player.Small _ ->
+        let tileAndIndex = model.PlayerTarget
+        match tileAndIndex with 
+        | ValueSome ({ Entity = ValueSome(entityData)} as tile, i) -> 
+            let entity = Entity.updateSprite {entityData with Facing = facing} 
+            let tiles =
+                    model.Tiles
+                    |> PersistentVector.update i { tile with Entity = ValueSome entity }
+            { model with
+                Tiles = tiles }
+        | _ -> model        
+    | _ -> model
+
 let changeLevel (model: Model) : Model =
-    let levelIndex = (model.Level + 1) % Level.levels.Length 
-    let newLevel = Level.levels[levelIndex] model.TimeElapsed
+    let levelIndex = (model.Level + 1) % Level.levels.Length
+    let newLevel = Level.levels[levelIndex]model.TimeElapsed
 
     { model with
         Size = newLevel.Size
@@ -261,7 +278,17 @@ let update (message: Message) (model: Model) : Model =
     match message with
     | PlayerMessage playerMsg ->
         let (newPlayerModel) = Player.update playerMsg model.Player
-        { model with Player = newPlayerModel }
+        // intercept orientation messages
+        let playerAction = 
+            match playerMsg with 
+            | Player.Message.Input dir when model.Player.ArrowsControlPlacement -> 
+                let facing = vectorToFacing (Vector2(float32 dir.X, float32 dir.Y))
+                match facing with
+                | ValueSome facing -> TryOrient facing
+                | _ -> model.PlayerAction
+            | _ -> model.PlayerAction
+
+        { model with Player = newPlayerModel; PlayerAction = playerAction }
     | SongStarted name -> { model with Song = PlayingSong name }
     | PickUpEntity -> { model with PlayerAction = TryPickup }
     | PlaceEntity -> { model with PlayerAction = TryPlace }
@@ -290,6 +317,7 @@ let update (message: Message) (model: Model) : Model =
             match model.PlayerAction with
             | TryPickup -> pickUpEntity model
             | TryPlace -> placeEntity model
+            | TryOrient facing -> orientEntity model facing
             | NoAction -> model
 
         let isCarrying = model.Player.Carrying.Length
@@ -485,10 +513,15 @@ let viewWorld (model: Model) loadedAssets (spriteBatch: SpriteBatch) =
                 | ValueSome coll -> (coll.Pos.Y * DepthFactor)
                 | ValueNone -> 0f
 
-            Sprite.viewSprite entity.Sprite -cameraOffset loadedAssets spriteBatch (depth + depthConfig.Entities_And_Player)
+            Sprite.viewSprite
+                entity.Sprite
+                -cameraOffset
+                loadedAssets
+                spriteBatch
+                (depth + depthConfig.Entities_And_Player)
 
             match entity.Type with
-            | EmittingObservable(_, _) -> loadedAssets.sounds[ "click" ].Play(0.3f, 0.0f, 0.0f)  |> ignore
+            | EmittingObservable(_, _) -> loadedAssets.sounds[ "click" ].Play(0.3f, 0.0f, 0.0f) |> ignore
             | _ -> ()
 
             match entity.Type with

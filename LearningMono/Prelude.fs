@@ -26,6 +26,7 @@ type PhysicsInfo =
 type PlayerWorldInteraction =
     | TryPickup
     | TryPlace
+    | TryOrient of Facing
     | NoAction
 
 [<RequireQualifiedAccess>]

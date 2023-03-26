@@ -111,10 +111,10 @@ let facingToCoords (facing: Facing) : Coords =
     | FacingUp -> (0, -1)
     | FacingDown -> (0, 1)
 
-let vectorToFacing (vec: Vector2) : Facing option =
+let vectorToFacing (vec: Vector2) : Facing voption =
     match vec.X, vec.Y with
-    | 1f, 0f -> Some FacingRight
-    | -1f, 0f -> Some FacingLeft
-    | 0f, -1f -> Some FacingUp
-    | 0f, 1f -> Some FacingDown
-    | _ -> None
+    | 1f, 0f -> ValueSome FacingRight
+    | -1f, 0f -> ValueSome FacingLeft
+    | 0f, -1f -> ValueSome FacingUp
+    | 0f, 1f -> ValueSome FacingDown
+    | _ -> ValueNone

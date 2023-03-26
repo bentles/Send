@@ -158,7 +158,7 @@ let updatePhysics (model: Model) (info: PhysicsInfo) =
             (vel, pos, velLength > 0f)
 
     let placementFacing =
-        vectorToFacing model.Input |> Option.defaultValue model.PlacementFacing
+        vectorToFacing model.Input |> ValueOption.defaultValue model.PlacementFacing
 
     if model.ArrowsControlPlacement then
         { model with
