@@ -60,7 +60,7 @@ let getTileAtPos (pos: Vector2) (size: Coords) (tiles: Tiles) : struct (Tile * i
     index |> ValueOption.map (fun index -> PersistentVector.nth index tiles, index)
 
 let init time =
-    let levelIndex = Level.levels.Length - 1
+    let levelIndex = 0 // Level.levels.Length - 1
     let level = Level.levels[levelIndex]time
 
     { Tiles = level.Tiles
@@ -243,7 +243,7 @@ let orientEntity (model:Model) (facing:Facing) =
     | Player.Small _ ->
         let tileAndIndex = model.PlayerTarget
         match tileAndIndex with 
-        | ValueSome ({ Entity = ValueSome(entityData)} as tile, i) -> 
+        | ValueSome ({ Entity = ValueSome({CanBePickedUp = true } as entityData)} as tile, i) -> 
             let entity = Entity.updateSprite {entityData with Facing = facing} 
             let tiles =
                     model.Tiles
