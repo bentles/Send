@@ -23,15 +23,9 @@ type PhysicsInfo =
       Dt: float32 }
 
 [<Struct>]
-type Level =
-    | L1
-    | L2
-    | L3
-    | L4
-    | L5
-    | L6
-    | L7
-    | L8
+type L = Level of int
+
+let t:L = Level 22;
 
 [<Struct>]
 type PlayerWorldInteraction =

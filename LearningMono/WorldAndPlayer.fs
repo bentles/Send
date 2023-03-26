@@ -24,6 +24,7 @@ type Model =
     { Tiles: Tiles
       Song: SongState
       LevelText: string
+      Level: int
 
       Size: Coords
 
@@ -61,12 +62,14 @@ let getTileAtPos (pos: Vector2) (size: Coords) (tiles: Tiles) : struct (Tile * i
     index |> ValueOption.map (fun index -> PersistentVector.nth index tiles, index)
 
 let init time =
-    let level = levelPlaceDirections time
+    let levelIndex = 0
+    let level = Level.levels[levelIndex] time
 
     { Tiles = level.Tiles
       Song = PlaySong "pewpew"
       Size = level.Size
       LevelText = level.LevelText
+      Level = levelIndex
       PlayerAction = NoAction
       Player = Player.init level.PlayerStartsAtPos level.PlayerStartsCarrying playerConfig charSprite time
       Slow = false
@@ -276,13 +279,15 @@ let placeEntity (model: Model) : Model =
         | _ -> model
     | _ -> model
 
-let changeLevel (model: Model) (levelBuilder: LevelBuilder) : Model =
-    let newLevel = levelBuilder model.TimeElapsed
+let changeLevel (model: Model) : Model =
+    let levelIndex = (model.Level + 1) % Level.levels.Length 
+    let newLevel = Level.levels[levelIndex] model.TimeElapsed
 
     { model with
         Size = newLevel.Size
         Tiles = newLevel.Tiles
         LevelText = newLevel.LevelText
+        Level = levelIndex
         Player =
             { model.Player with
                 Pos = newLevel.PlayerStartsAtPos
@@ -290,7 +295,7 @@ let changeLevel (model: Model) (levelBuilder: LevelBuilder) : Model =
 
 let interactionEvent (event: Entity.InteractionEvent) (model: Model) : Model =
     match event with
-    | GoToLevel l -> changeLevel model (levelLookup l)
+    | NextLevel -> changeLevel model
     | NoEvent -> model
 
 

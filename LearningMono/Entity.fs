@@ -14,7 +14,7 @@ type Emit<'a> =
 
 [<Struct>]
 type InteractionEvent =
-    | GoToLevel of Level
+    | NextLevel
     | NoEvent
 //  | Menu for to configure the things
 //  | Change the state of the thing
@@ -43,7 +43,7 @@ and ObservableType =
 and EntityType =
     | Unit
     | Rock
-    | GoToLevelButton of Level
+    | GoToNextLevelButton
     | Box of BoxData
     | Subject of SubjectData
     | Observable of ObservableData
@@ -72,7 +72,7 @@ let getSpriteConfig (eType: EntityType) : SpriteConfig =
     match eType with
     | Unit -> emptySpriteConfig
     | Rock -> rockSpriteConfig
-    | GoToLevelButton _ -> nextLevelSpriteConfig
+    | GoToNextLevelButton _ -> nextLevelSpriteConfig
     | Box _ -> boxSpriteConfig
     | Subject { Type = sub } ->
         match sub with
@@ -92,7 +92,7 @@ let getEmitImage (eType: EntityType) =
     match eType with
     | Unit -> unitImage
     | Rock -> rockImage
-    | GoToLevelButton _ -> nextLevelImage
+    | GoToNextLevelButton _ -> nextLevelImage
     | Box _ -> boxImage
     | Subject { Type = sub } ->
         match sub with
@@ -126,7 +126,7 @@ let getCollider (eType: EntityType) (pos: Vector2) : AABB voption =
     match eType with
     | Unit
     | Observable {Type = Toggle false }
-    | GoToLevelButton _ -> ValueNone
+    | GoToNextLevelButton _ -> ValueNone
     | Rock
     | Subject _
     | Box _
@@ -366,7 +366,7 @@ let half = Vector2(tileHalf)
 
 let interact (entity: Model) : Model * InteractionEvent =
     match entity.Type with
-    | GoToLevelButton l -> entity, InteractionEvent.GoToLevel l
+    | GoToNextLevelButton -> entity, InteractionEvent.NextLevel
     | Subject({ Type = Button eType } as subData) ->
         { entity with
             Type =
