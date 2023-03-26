@@ -21,7 +21,9 @@ type InteractionEvent =
 
 
 [<Struct>]
-type ObserverType = SingleObserver | DoubleObserver
+type ObserverType =
+    | SingleObserver
+    | DoubleObserver
 
 [<Struct>]
 type SubjectType =
@@ -51,8 +53,7 @@ and EntityType =
 and ObservableData =
     { Type: ObservableType
       ToEmit: Emit<EntityType>
-      TicksSinceEmit: int
-    }
+      TicksSinceEmit: int }
 
 and SubjectData =
     { Type: SubjectType
@@ -125,14 +126,14 @@ let rec entityEq (e1: EntityType) (e2: EntityType) =
 let getCollider (eType: EntityType) (pos: Vector2) : AABB voption =
     match eType with
     | Unit
-    | Observable {Type = Toggle false }
+    | Observable { Type = Toggle false }
     | GoToNextLevelButton _ -> ValueNone
     | Rock
     | Subject _
     | Box _
     | Observable _ -> ValueSome { Pos = pos; Half = Vector2(10f, 10f) }
 
-let getObserverType (obs: ObservableType): ObserverType =
+let getObserverType (obs: ObservableType) : ObserverType =
     match obs with
     | Merge
     | Compare -> DoubleObserver
@@ -161,11 +162,13 @@ let (|EmittingObservable|_|) (emit: EntityType) =
     | _ -> None
 
 [<return: Struct>]
-let (|CanPlaceIntoEntity|_|) (entityType: EntityType) : voption<EntityType> =
+let (|CanPlaceIntoEntity|_|) (inputEntity: EntityType) (entityType: EntityType)  : voption<EntityType> =
     match entityType with
-    | Observable({ Type = Map Unit })
-    | Observable({ Type = Filter Unit }) -> ValueSome(entityType)
-    | Box { IsOpen = true }
+    | Observable({ Type = Map Unit } as oData) -> ValueSome(Observable { oData with Type = Map inputEntity })
+    | Observable({ Type = Filter Unit } as oData) -> ValueSome(Observable { oData with Type = Filter inputEntity })
+    | Box { IsOpen = true; Items = items } -> ValueSome(Box
+            { IsOpen = true
+              Items = inputEntity :: items })
     | _ -> ValueNone
 
 [<return: Struct>]
@@ -173,23 +176,17 @@ let (|CanPickOutOfEntity|_|) (entityType: EntityType) : voption<EntityType * Ent
     match entityType with
     | Observable { Type = Map Unit }
     | Observable { Type = Filter Unit } -> ValueNone
-    | Observable({ Type = Map e })
-    | Observable({ Type = Filter e }) 
-    | Box { IsOpen = true; Items = e::_ } -> ValueSome (entityType, e)
+    | Observable({ Type = Map e } as obs) -> ValueSome(Observable { obs with Type = Filter Unit }, e)
+    | Observable({ Type = Filter e } as obs) -> ValueSome(Observable { obs with Type = Filter Unit }, e)
+    | Box { IsOpen = true; Items = e :: rest } -> ValueSome(Box { IsOpen = true; Items = rest }, e)
     | _ -> ValueNone
 
-let placeInto (existingEntity: EntityType) (placedEntity: EntityType) =
-    match existingEntity with
-    | Observable ({ Type = Map Unit } as oData) -> Observable { oData with Type = Map placedEntity }
-    | Observable ({ Type = Filter Unit } as oData) -> Observable { oData with Type = Filter placedEntity }
-    | Box { IsOpen = true; Items = items } -> Box { IsOpen = true; Items = placedEntity :: items }
-    | _ -> existingEntity
 
 let takeOutOf (existingEntity: EntityType) =
     match existingEntity with
-    | Observable ({ Type = Map _ } as oData) -> Observable {oData with Type = Map Unit }
-    | Observable ({ Type = Filter _ } as oData) -> Observable {oData with Type = Filter Unit }
-    | Box { IsOpen = true; Items = _::rest } -> Box { IsOpen = true; Items = rest }
+    | Observable({ Type = Map _ } as oData) -> Observable { oData with Type = Map Unit }
+    | Observable({ Type = Filter _ } as oData) -> Observable { oData with Type = Filter Unit }
+    | Box { IsOpen = true; Items = _ :: rest } -> Box { IsOpen = true; Items = rest }
     | _ -> existingEntity
 
 let private behaviorFunc (observable: ObservableData) (a: EntityType voption) (b: EntityType voption) =
@@ -213,7 +210,7 @@ let private behaviorFunc (observable: ObservableData) (a: EntityType voption) (b
         | _ -> Nothing
     | Merge ->
         match (a, b) with
-        | (ValueSome e1), (ValueSome e2) -> WillEmit (Box {Items = [e1; e2]; IsOpen = false } )
+        | (ValueSome e1), (ValueSome e2) -> WillEmit(Box { Items = [ e1; e2 ]; IsOpen = false })
         | (ValueSome e1), ValueNone -> WillEmit e1
         | ValueNone, ValueSome e2 -> WillEmit e2
         | _ -> Nothing
@@ -308,22 +305,23 @@ let getSubjectFunc (sub: SubjectType) =
     | Timer(box, time) -> buildRepeatListEmittingEvery box time
     | Button _ -> subjectStep
 
+let getYpos (entityType: EntityType) (facing: Facing) =
+    match entityType with
+    | Observable _ ->
+        match facing with
+        | FacingLeft -> 0
+        | FacingRight -> 1
+        | FacingDown -> 2
+        | FacingUp -> 3
+    | Box { IsOpen = false } -> 1
+    | Box { Items = _ :: _ } -> 2
+    | Box { Items = [] } -> 0
+    | _ -> 0
+
 let init (entityType: EntityType) (pos: Vector2) (time) (facing: Facing) (canBePickedUp: bool) =
     let config = (getSpriteConfig entityType)
 
-    let ypos =
-        match entityType with
-        | Observable _ ->
-            match facing with
-            | FacingLeft -> 0
-            | FacingRight -> 1
-            | FacingDown -> 2
-            | FacingUp -> 3
-        | Box { IsOpen = false } -> 1
-        | Box { Items = _ :: _ } -> 2
-        | Box { Items = [] } -> 0
-        | _ -> 0
-
+    let ypos = getYpos entityType facing
     let sprite = Sprite.init pos time config (Some ypos) (Some false)
     let collider = getCollider entityType pos
 
@@ -340,6 +338,10 @@ let initNoCollider (entityType: EntityType) (pos: Vector2) time (facing: Facing)
       CanBePickedUp = canBePickedUp
       Collider = ValueNone }
 
+let updateSprite (entity: Model) =
+    let yPos = getYpos entity.Type entity.Facing
+    { entity with Sprite = Sprite.switchAnimation ({ imageSpriteConfig with Index = yPos }, 0, false) entity.Sprite }
+
 let buildRepeatItemEmitEvery (every: int) (item: EntityType) =
     buildRepeatListEmittingEvery { Items = [ item ]; IsOpen = false } every
 
@@ -352,7 +354,7 @@ let buildRockTimer =
 
 let rockTimer: EntityType = buildRockTimer
 
-let observing (oType: ObservableType): EntityType =
+let observing (oType: ObservableType) : EntityType =
     Observable(
         { Type = oType
           ToEmit = Nothing

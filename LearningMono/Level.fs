@@ -229,10 +229,7 @@ let level_box1: LevelBuilder =
                     { Items =
                         [ Rock
                           Rock
-                          Box
-                              { Items =
-                                  [ Rock; Rock; (GoToNextLevelButton) ]
-                                IsOpen = false } ]
+                          GoToNextLevelButton ]
                       IsOpen = false })
                 Grass
                 time
@@ -243,8 +240,8 @@ let level_box1: LevelBuilder =
                 [ [ w; t; t; t; t; t; w ]
                   [ l; g; g; g; g; g; r ]
                   [ l; g; g; g; g; g; r ]
-                  [ l; g; g; g; b; b; r ]
-                  [ l; g; g; g; t; t; r ]
+                  [ l; g; g; g; g; g; r ]
+                  [ l; g; g; g; g; g; r ]
                   [ l; g; g; g; g; g; r ]
                   [ l; g; g; g; x; g; r ]
                   [ w; b; b; b; b; b; w ] ]
@@ -288,8 +285,8 @@ let level_box2: LevelBuilder =
                 [ [ w; t; t; t; t; t; w ]
                   [ l; g; g; g; g; g; r ]
                   [ l; g; g; g; g; g; r ]
-                  [ l; g; g; g; b; b; r ]
-                  [ l; g; g; g; t; t; r ]
+                  [ l; g; g; g; g; g; r ]
+                  [ l; g; g; g; g; g; r ]
                   [ l; g; g; g; g; g; r ]
                   [ l; g; g; g; x; g; r ]
                   [ w; b; b; b; b; b; w ] ]
@@ -692,6 +689,7 @@ let levelSandBox: LevelBuilder =
 let levels:LevelBuilder[] = [|
     level_PlayerMoves
     level_PlayerPickUp
+    level_box1
     level_box2
     level4
     level5

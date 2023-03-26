@@ -62,7 +62,7 @@ let getTileAtPos (pos: Vector2) (size: Coords) (tiles: Tiles) : struct (Tile * i
     index |> ValueOption.map (fun index -> PersistentVector.nth index tiles, index)
 
 let init time =
-    let levelIndex = 0
+    let levelIndex = 2
     let level = Level.levels[levelIndex] time
 
     { Tiles = level.Tiles
@@ -177,27 +177,10 @@ let pickUpEntity (model: Model) : Model =
                 let newTile, pickedUpEntity =
                     match targetEntity with
                     | { Type = CanPickOutOfEntity(eData, entityType) } as targetEntity ->
-                        let newTarget = { targetEntity with Type = eData }
-                        let fromObserverEntity = Entity.init entityType Vector2.Zero 0 FacingRight true
+                        let newTarget = Entity.updateSprite { targetEntity with Type = eData }
+                        let fromObserverEntity = Entity.init entityType Vector2.Zero 0 FacingRight true                        
                         let tile = { tile with Entity = ValueSome newTarget }
                         tile, fromObserverEntity
-                    | { Type = Box({ Items = first :: rest; IsOpen = true } as box) } as boxEntity ->
-                        let sprite =
-                            match rest with
-                            | [] ->
-                                Sprite.switchAnimation
-                                    ({ imageSpriteConfig with Index = 0 }, 0, false)
-                                    targetEntity.Sprite
-                            | _ -> targetEntity.Sprite
-
-                        let restOfBox =
-                            { boxEntity with
-                                Type = Box { box with Items = rest }
-                                Sprite = sprite }
-
-                        let tile = { tile with Entity = ValueSome restOfBox }
-                        let fromBoxEntity = Entity.init first Vector2.Zero 0 FacingRight true
-                        tile, fromBoxEntity
                     | _ -> { tile with Entity = ValueNone }, targetEntity
 
                 return
@@ -240,37 +223,11 @@ let placeEntity (model: Model) : Model =
                         Tiles = tiles
                         Player = { player with Carrying = rest } }
                 | _ -> model
-            | ValueSome({ Entity = ValueSome({ Type = CanPlaceIntoEntity(eData) } as targetEntity) } as tile, i) ->
-                let newEntity = placeInto eData placeEntity.Type
-                let newTarget = ValueSome { targetEntity with Type = newEntity }
+            | ValueSome({ Entity = ValueSome({ Type = CanPlaceIntoEntity placeEntity.Type (newEntity) } as targetEntity) } as tile, i) ->
+                let newTarget = Entity.updateSprite { targetEntity with Type = newEntity }
 
                 let tiles =
-                    model.Tiles |> PersistentVector.update i { tile with Entity = newTarget }
-
-                { model with
-                    Tiles = tiles
-                    Player = { player with Carrying = rest } }
-            | ValueSome({ Entity = ValueSome({ Type = Box { Items = contents; IsOpen = true } } as box) } as tile, i) ->
-                //can maybe replace this with new type and Entity init?
-                let sprite =
-                    match contents with
-                    | [] -> Sprite.switchAnimation ({ imageSpriteConfig with Index = 2 }, 0, false) box.Sprite
-                    | _ -> box.Sprite
-
-                let newBoxType =
-                    Box
-                        { Items = placeEntity.Type :: contents
-                          IsOpen = true }
-
-                let appendedBox =
-                    ValueSome(
-                        { box with
-                            Sprite = sprite
-                            Type = newBoxType }
-                    )
-
-                let tiles =
-                    model.Tiles |> PersistentVector.update i { tile with Entity = appendedBox }
+                    model.Tiles |> PersistentVector.update i { tile with Entity = ValueSome newTarget }
 
                 { model with
                     Tiles = tiles
@@ -545,13 +502,6 @@ let viewWorld (model: Model) loadedAssets (spriteBatch: SpriteBatch) =
             | _ -> ()
 
             match entity.Type, maybeTargetColor with
-            | CanPlaceIntoEntity(_), ValueSome _ ->
-                viewObserverItem
-                    Unit
-                    1
-                    (actualX, actualY)
-                    spriteBatch
-                    loadedAssets.textures[(getEmitImage Unit).TextureName]
             | CanPickOutOfEntity(_, eType), ValueSome _ ->
                 viewObserverItem
                     eType
@@ -559,6 +509,13 @@ let viewWorld (model: Model) loadedAssets (spriteBatch: SpriteBatch) =
                     (actualX, actualY)
                     spriteBatch
                     loadedAssets.textures[(getEmitImage eType).TextureName]
+            | CanPlaceIntoEntity Unit (_), ValueSome _ ->
+                viewObserverItem
+                    Unit
+                    1
+                    (actualX, actualY)
+                    spriteBatch
+                    loadedAssets.textures[(getEmitImage Unit).TextureName]
             | _ -> ()
 
         | ValueNone -> ()
