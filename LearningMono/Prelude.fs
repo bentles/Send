@@ -23,11 +23,6 @@ type PhysicsInfo =
       Dt: float32 }
 
 [<Struct>]
-type L = Level of int
-
-let t:L = Level 22;
-
-[<Struct>]
 type PlayerWorldInteraction =
     | TryPickup
     | TryPlace
