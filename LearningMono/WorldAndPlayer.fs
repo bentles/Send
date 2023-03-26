@@ -173,8 +173,8 @@ let pickUpEntity (model: Model) : Model =
             if targetEntity.CanBePickedUp then
                 let newTile, pickedUpEntity =
                     match targetEntity with
-                    | { Type = NonEmptyObservable(obData, entityType) } as targetEntity ->
-                        let newTarget = { targetEntity with Type = Observable(takeOutOfObservable obData) }
+                    | { Type = CanPickOutOfEntity(eData, entityType) } as targetEntity ->
+                        let newTarget = { targetEntity with Type = eData }
                         let fromObserverEntity = Entity.init entityType Vector2.Zero 0 FacingRight true
                         let tile = { tile with Entity = ValueSome newTarget }
                         tile, fromObserverEntity
@@ -237,9 +237,9 @@ let placeEntity (model: Model) : Model =
                         Tiles = tiles
                         Player = { player with Carrying = rest } }
                 | _ -> model
-            | ValueSome({ Entity = ValueSome({ Type = EmptyObservable(obData) } as targetEntity) } as tile, i) ->
-                let newObData = placeIntoObservable obData placeEntity.Type
-                let newTarget = ValueSome { targetEntity with Type = Observable newObData }
+            | ValueSome({ Entity = ValueSome({ Type = CanPlaceIntoEntity(eData) } as targetEntity) } as tile, i) ->
+                let newEntity = placeInto eData placeEntity.Type
+                let newTarget = ValueSome { targetEntity with Type = newEntity }
 
                 let tiles =
                     model.Tiles |> PersistentVector.update i { tile with Entity = newTarget }
@@ -292,6 +292,8 @@ let interactionEvent (event: Entity.InteractionEvent) (model: Model) : Model =
     match event with
     | GoToLevel l -> changeLevel model (levelLookup l)
     | NoEvent -> model
+
+
 
 let update (message: Message) (model: Model) : Model =
     match message with
@@ -424,6 +426,7 @@ let topWall = "topWall"
 let bottomWall = "bottomWall"
 let floor = "floor"
 
+
 let viewWorld (model: Model) loadedAssets (spriteBatch: SpriteBatch) =
     let sourceRect = rect 0 0 blockWidth blockWidth
     let cameraOffset = -(halfScreenOffset model.CameraPos)
@@ -537,14 +540,14 @@ let viewWorld (model: Model) loadedAssets (spriteBatch: SpriteBatch) =
             | _ -> ()
 
             match entity.Type, maybeTargetColor with
-            | EmptyObservable(_), ValueSome _ ->
+            | CanPlaceIntoEntity(_), ValueSome _ ->
                 viewObserverItem
                     Unit
                     1
                     (actualX, actualY)
                     spriteBatch
                     loadedAssets.textures[(getEmitImage Unit).TextureName]
-            | NonEmptyObservable(_, eType), ValueSome _ ->
+            | CanPickOutOfEntity(_, eType), ValueSome _ ->
                 viewObserverItem
                     eType
                     1

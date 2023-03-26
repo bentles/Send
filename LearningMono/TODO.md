@@ -18,7 +18,6 @@ TODO:
 - figure out if i can make placement direction into a level
 	- should it affect AABB??? (probably)
 - feedback from session with ash
-	- shift and arrows to change directions
 	- lag spikes
 	- boxes too many levels deep
 	- pick up multiple things more obvious
@@ -26,12 +25,12 @@ TODO:
 	- more box levels
 	- pick up some things still confusing
 
-
 DOING:
-	- fix placements
-		- add the player AABB to the can place check
-		- placements should go red on some blocks
-		- preview with greyed out?
+- shift and arrows to change directions
+- fix placements
+	- add the player AABB to the can place check
+	- placements should go red on some blocks
+	- preview with greyed out?
 
 DONE:
 - define ordering groups 0 = tile 0.1 = target 0.2 = entities, 0.3 = emitting etc.

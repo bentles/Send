@@ -25,10 +25,10 @@ type ObserverType = SingleObserver | DoubleObserver
 
 [<Struct>]
 type SubjectType =
-    | Timer of BoxType * int
+    | Timer of BoxData * int
     | Button of EntityType
 
-and BoxType =
+and BoxData =
     { Items: (EntityType list)
       IsOpen: bool }
 
@@ -44,7 +44,7 @@ and EntityType =
     | Unit
     | Rock
     | GoToLevelButton of Level
-    | Box of BoxType
+    | Box of BoxData
     | Subject of SubjectData
     | Observable of ObservableData
 
@@ -161,32 +161,36 @@ let (|EmittingObservable|_|) (emit: EntityType) =
     | _ -> None
 
 [<return: Struct>]
-let (|EmptyObservable|_|) (entityType: EntityType) : voption<ObservableData> =
+let (|CanPlaceIntoEntity|_|) (entityType: EntityType) : voption<EntityType> =
     match entityType with
-    | Observable({ Type = Map Unit } as o)
-    | Observable({ Type = Filter Unit } as o) -> ValueSome(o)
+    | Observable({ Type = Map Unit })
+    | Observable({ Type = Filter Unit }) -> ValueSome(entityType)
+    | Box { IsOpen = true }
     | _ -> ValueNone
 
 [<return: Struct>]
-let (|NonEmptyObservable|_|) (entityType: EntityType) : voption<ObservableData * EntityType> =
+let (|CanPickOutOfEntity|_|) (entityType: EntityType) : voption<EntityType * EntityType> =
     match entityType with
     | Observable { Type = Map Unit }
     | Observable { Type = Filter Unit } -> ValueNone
-    | Observable({ Type = Map e } as o)
-    | Observable({ Type = Filter e } as o) -> ValueSome (o, e)
+    | Observable({ Type = Map e })
+    | Observable({ Type = Filter e }) 
+    | Box { IsOpen = true; Items = e::_ } -> ValueSome (entityType, e)
     | _ -> ValueNone
 
-let placeIntoObservable (observerData: ObservableData) (entityType: EntityType) =
-    match observerData with
-    | { Type = Map Unit } -> { observerData with Type = Map entityType }
-    | { Type = Filter Unit } -> { observerData with Type = Filter entityType }
-    | _ -> observerData
+let placeInto (existingEntity: EntityType) (placedEntity: EntityType) =
+    match existingEntity with
+    | Observable ({ Type = Map Unit } as oData) -> Observable { oData with Type = Map placedEntity }
+    | Observable ({ Type = Filter Unit } as oData) -> Observable { oData with Type = Filter placedEntity }
+    | Box { IsOpen = true; Items = items } -> Box { IsOpen = true; Items = placedEntity :: items }
+    | _ -> existingEntity
 
-let takeOutOfObservable (observerData: ObservableData) =
-    match observerData with
-    | { Type = Map _ } -> { observerData with Type = Map Unit }
-    | { Type = Filter _ } -> { observerData with Type = Filter Unit }
-    | _ -> observerData
+let takeOutOf (existingEntity: EntityType) =
+    match existingEntity with
+    | Observable ({ Type = Map _ } as oData) -> Observable {oData with Type = Map Unit }
+    | Observable ({ Type = Filter _ } as oData) -> Observable {oData with Type = Filter Unit }
+    | Box { IsOpen = true; Items = _::rest } -> Box { IsOpen = true; Items = rest }
+    | _ -> existingEntity
 
 let private behaviorFunc (observable: ObservableData) (a: EntityType voption) (b: EntityType voption) =
     match observable.Type with
@@ -283,7 +287,7 @@ let subjectStep (subject: SubjectData) =
             | Emitting t -> Emitted t
             | other -> other }
 
-let buildRepeatListEmittingEvery (box: BoxType) (every: int) =
+let buildRepeatListEmittingEvery (box: BoxData) (every: int) =
     let length = List.length box.Items
 
     fun (subject: SubjectData) ->
