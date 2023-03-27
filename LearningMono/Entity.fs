@@ -126,8 +126,8 @@ let rec entityEq (e1: EntityType) (e2: EntityType) =
 let getCollider (eType: EntityType) (pos: Vector2) : AABB voption =
     match eType with
     | Unit
-    | Observable { Type = Toggle false }
-    | GoToNextLevelButton _ -> ValueNone
+    | Observable { Type = Toggle false } -> ValueNone
+    | GoToNextLevelButton _
     | Rock
     | Subject _
     | Box _
