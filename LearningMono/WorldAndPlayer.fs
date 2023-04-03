@@ -255,7 +255,7 @@ let orientEntity (model:Model) (facing:Facing) =
         | _ -> model        
     | _ -> model
 
-let changeLevel (model: Model) : Model =
+let nextLevel (model: Model) : Model =
     let levelIndex = (model.Level + 1) % Level.levels.Length
     let newLevel = Level.levels[levelIndex]model.TimeElapsed
 
@@ -271,10 +271,8 @@ let changeLevel (model: Model) : Model =
 
 let interactionEvent (event: Entity.InteractionEvent) (model: Model) : Model =
     match event with
-    | NextLevel -> changeLevel model
+    | NextLevel -> nextLevel model
     | NoEvent -> model
-
-
 
 let update (message: Message) (model: Model) : Model =
     match message with
@@ -337,21 +335,30 @@ let update (message: Message) (model: Model) : Model =
         let maybeFeetIndex = getIndexAtPos player.Pos model.Size
 
         let tiles = updateWorldReactive model.Tiles model.Size
+
+        let goToNextLevel = tiles |> PersistentVector.fold (fun curr next -> 
+                                            curr || match next with 
+                                                    | { Entity = ValueSome{ Type = Unit }} -> true 
+                                                    | _ -> false)
+                                            false
         //TODO: move this outside if update ticks < 60ps
         let tiles = updateWorldSprites time tiles
 
         let newCameraPos = updateCameraPos player.Pos model.CameraPos
 
-        { model with
-            Dt = dt
-            Slow = slow
-            TimeElapsed = time
-            Tiles = tiles
-            CameraPos = newCameraPos
-            Player = { player with CarryingDelta = isCarrying - wasCarrying }
-            PlayerTarget = maybeTarget
-            PlayerFeet = maybeFeetIndex
-            PlayerAction = NoAction }
+        let model = { model with
+                        Dt = dt
+                        Slow = slow
+                        TimeElapsed = time
+                        Tiles = tiles
+                        CameraPos = newCameraPos
+                        Player = { player with CarryingDelta = isCarrying - wasCarrying }
+                        PlayerTarget = maybeTarget
+                        PlayerFeet = maybeFeetIndex
+                        PlayerAction = NoAction }
+
+        if goToNextLevel then nextLevel model else model
+
 
 // VIEW
 

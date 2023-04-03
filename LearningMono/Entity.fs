@@ -258,7 +258,6 @@ let observerFunc (observable: ObservableData) (observing: EntityType voption) (o
 let getOnEmit (obs: EntityType) (pos: Vector2) =
     match obs with
     | Observable({ Type = Toggle state } as obData) ->
-
         fun (entity: Model) ->
             let newSprite =
                 (if not state then
@@ -272,6 +271,12 @@ let getOnEmit (obs: EntityType) (pos: Vector2) =
                 Type = newObs
                 Collider = if not state then getCollider newObs pos else ValueNone
                 Sprite = Sprite.reInit entity.Sprite newSprite }
+    | Observable({ Type = GoToNextLevelButton }) ->
+        fun (entity: Model) ->
+            let newObs = Unit
+            { entity with
+                Type = newObs               
+                Sprite = Sprite.reInit entity.Sprite unitSpriteConfig }
     | _ -> (id)
 
 

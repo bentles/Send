@@ -72,6 +72,7 @@ let mergeSpriteConfig = SingleSpriteConfig { idConfig with Image = mergeImage }
 let compareSpriteConfig = SingleSpriteConfig { idConfig with Image = compareImage }
 let mapSpriteConfig = SingleSpriteConfig { idConfig with Image = mapImage }
 let filterSpriteConfig = SingleSpriteConfig { idConfig with Image = filterImage }
+let unitSpriteConfig = SingleSpriteConfig { idConfig with Image = unitImage }
 
 let toggleOffSpriteConfig =
     SingleSpriteConfig { idConfig with Image = toggleOffImage }
