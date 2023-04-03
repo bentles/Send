@@ -15,18 +15,19 @@ TODO:
 - open close chest sounds
 - use tile to show which entities are permanent
 - move entities to their own list
-- figure out if i can make placement direction into a level
-	- should it affect AABB??? (probably)
 - feedback from session with ash
 	- lag spikes
+		- only on laptop battery??
 	- pick up multiple things more obvious
 	- more smaller obvious levels
 	- pick up some things still confusing
-
-DOING:
 - fix placements
 	- placements should go red when cannot be placed?
 	- preview with greyed out?
+- maybe just tint non movables darker??
+
+DOING:
+- next level observer
 
 DONE:
 - add the player AABB to the can place check

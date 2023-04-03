@@ -24,6 +24,7 @@ let mapImage = { idImage with TextureName = "map" }
 let filterImage = { idImage with TextureName = "filter" }
 let toggleOnImage = { idImage with TextureName = "toggleOn" }
 let toggleOffImage = { idImage with TextureName = "toggleOff" }
+let nextLevelImage = { idImage with TextureName = "nextLevel" }
 
 let unitImage =
     { SpriteSize = (50, 50)
@@ -32,7 +33,6 @@ let unitImage =
       TextureName = "unit"
       Offset = Vector2(0f, 0f) }
 
-let nextLevelImage = { unitImage with TextureName = "nextLevel" }
 
 let buttonImage = { unitImage with TextureName = "button" }
 
@@ -59,7 +59,7 @@ let timerSpriteConfig =
 let buttonSpriteConfig =
     SingleSpriteConfig
         { Image = buttonImage
-          Tint = Color.LawnGreen
+          Tint = Color.White
           FrameLength = 300L }
 
 let idConfig =
@@ -100,5 +100,5 @@ let boxSpriteConfig =
 let nextLevelSpriteConfig =
     SingleSpriteConfig
         { Image = nextLevelImage
-          Tint = Color.LawnGreen
+          Tint = Color.White
           FrameLength = 300L }

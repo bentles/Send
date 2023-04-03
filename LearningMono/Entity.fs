@@ -36,6 +36,7 @@ and BoxData =
 
 and ObservableType =
     | Id
+    | GoToNextLevelButton
     | Toggle of bool
     | Map of EntityType
     | Filter of EntityType
@@ -45,7 +46,6 @@ and ObservableType =
 and EntityType =
     | Unit
     | Rock
-    | GoToNextLevelButton
     | Box of BoxData
     | Subject of SubjectData
     | Observable of ObservableData
@@ -73,7 +73,6 @@ let getSpriteConfig (eType: EntityType) : SpriteConfig =
     match eType with
     | Unit -> emptySpriteConfig
     | Rock -> rockSpriteConfig
-    | GoToNextLevelButton _ -> nextLevelSpriteConfig
     | Box _ -> boxSpriteConfig
     | Subject { Type = sub } ->
         match sub with
@@ -81,6 +80,7 @@ let getSpriteConfig (eType: EntityType) : SpriteConfig =
         | Button _ -> buttonSpriteConfig
     | Observable { Type = ob } ->
         match ob with
+        | GoToNextLevelButton _ -> nextLevelSpriteConfig
         | Id -> idSpriteConfig
         | Toggle true -> toggleOnSpriteConfig
         | Toggle false -> toggleOffSpriteConfig
@@ -93,7 +93,6 @@ let getEmitImage (eType: EntityType) =
     match eType with
     | Unit -> unitImage
     | Rock -> rockImage
-    | GoToNextLevelButton _ -> nextLevelImage
     | Box _ -> boxImage
     | Subject { Type = sub } ->
         match sub with
@@ -101,6 +100,7 @@ let getEmitImage (eType: EntityType) =
         | Button _ -> buttonImage
     | Observable { Type = ob } ->
         match ob with
+        | GoToNextLevelButton _ -> nextLevelImage
         | Toggle _ -> toggleOnImage
         | Id -> idImage
         | Map _ -> mapImage
@@ -127,7 +127,6 @@ let getCollider (eType: EntityType) (pos: Vector2) : AABB voption =
     match eType with
     | Unit
     | Observable { Type = Toggle false } -> ValueNone
-    | GoToNextLevelButton _
     | Rock
     | Subject _
     | Box _
@@ -192,6 +191,7 @@ let takeOutOf (existingEntity: EntityType) =
 let private behaviorFunc (observable: ObservableData) (a: EntityType voption) (b: EntityType voption) =
     match observable.Type with
     | Id
+    | GoToNextLevelButton
     | Toggle _ ->
         match a with
         | (ValueSome e1) -> WillEmit e1
@@ -368,7 +368,6 @@ let half = Vector2(tileHalf)
 
 let interact (entity: Model) : Model * InteractionEvent =
     match entity.Type with
-    | GoToNextLevelButton -> entity, InteractionEvent.NextLevel
     | Subject({ Type = Button eType } as subData) ->
         { entity with
             Type =

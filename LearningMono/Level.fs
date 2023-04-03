@@ -168,8 +168,8 @@ let level_PlayerMoves: LevelBuilder =
                 match x, y with
                 | Corner (bottom, right) _ -> createCollidableTile Wall (x, y)
                 | Wall (bottom, right) wallType -> createCollidableTile wallType (x, y)
-
-                | 5, 5 -> createEntityOn (GoToNextLevelButton) Grass time false (x, y)
+                | 5,4 -> createButtonOnGrass time false (x,y)
+                | 5, 5 -> observerCannotPick time (observing GoToNextLevelButton) FacingUp (x,y)
                 //some kind of goal
                 | _ -> createNonCollidableTile FloorType.Grass (x, y))
 
@@ -204,7 +204,7 @@ let level_PlayerPickUp: LevelBuilder =
                 | Wall (bottom, right) wallType -> createCollidableTile wallType (x, y)
                 | xy when (List.contains xy rocks) -> createRockOnGrass time true (x, y)
 
-                | 5, 5 -> createEntityOn (GoToNextLevelButton) Grass time false (x, y)
+                | 5, 5 -> observerCannotPick time (observing GoToNextLevelButton) FacingUp (x,y)
 
                 | _ -> createNonCollidableTile FloorType.Grass (x, y))
 
@@ -229,7 +229,7 @@ let level_box1: LevelBuilder =
                     { Items =
                         [ Rock
                           Rock
-                          GoToNextLevelButton ]
+                          (observing Id) ]
                       IsOpen = false })
                 Grass
                 time
@@ -272,7 +272,7 @@ let level_box2: LevelBuilder =
                               { Items =
                                   [ Box { Items = []; IsOpen = true }
                                     Box
-                                        { Items = [ Rock; Rock; Rock; (GoToNextLevelButton) ]
+                                        { Items = [ Rock; Rock; Rock; ( (observing Id)) ]
                                           IsOpen = false } ]
                                 IsOpen = false } ]
                       IsOpen = false })
@@ -309,7 +309,7 @@ let levelPlaceDirections: LevelBuilder =
         let ir = observerCanPick time (observing Id) FacingRight
         let il = observerCannotPick time (observing Id) FacingUp
         let bb = createButtonOnGrass time false
-        let xx = createEntityOn (GoToNextLevelButton) Grass time false
+        let xx = observerCannotPick time (observing GoToNextLevelButton) FacingUp
 
         let tiles, width, height =
             worldFromTemplate
@@ -340,7 +340,7 @@ let level4: LevelBuilder =
         let tu = observerOnGrass time (observing (Toggle true)) FacingUp false
         let tl = observerOnGrass time (observing (Toggle true)) FacingLeft false
         let bb = createButtonOnGrass time false
-        let xx = createEntityOn (GoToNextLevelButton) Grass time false
+        let xx = createEntityOn ( (observing Id)) Grass time false
 
         let tiles, width, height =
             worldFromTemplate
@@ -371,7 +371,7 @@ let level5: LevelBuilder =
         let tu = observerOnGrass time (observing (Toggle true)) FacingUp false
         let tl = observerOnGrass time (observing (Toggle true)) FacingLeft false
         let bb = createButtonOnGrass time false
-        let xx = createEntityOn (GoToNextLevelButton) Grass time false
+        let xx = createEntityOn ( (observing Id)) Grass time false
 
         let bx =
             createEntityOn
@@ -420,7 +420,7 @@ let level6: LevelBuilder =
 
         let ml = observerOnGrass time (observing (Map Unit)) FacingLeft true
         let bb = createButtonOnGrass time false
-        let xx = createEntityOn (GoToNextLevelButton) Grass time false
+        let xx = createEntityOn ( (observing Id)) Grass time false
 
         let bx =
             createEntityOn
@@ -478,7 +478,7 @@ let level7: LevelBuilder =
 
         let ma = observerOnGrass time (observing (Map Unit)) FacingLeft true
         let bb = createButtonOnGrass time true
-        let xx = createEntityOn (GoToNextLevelButton) Grass time false
+        let xx = createEntityOn ( (observing Id)) Grass time false
 
         let bx =
             createEntityOn
@@ -545,7 +545,7 @@ let levelSandBox: LevelBuilder =
 
         let ma = observerOnGrass time (observing (Map Unit)) FacingLeft true
         let bb = createButtonOnGrass time true
-        let xx = createEntityOn (GoToNextLevelButton) Grass time false
+        let xx = createEntityOn ( (observing Id)) Grass time false
 
         let b0 =
             createEntityOn
