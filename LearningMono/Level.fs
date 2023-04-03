@@ -168,8 +168,8 @@ let level_PlayerMoves: LevelBuilder =
                 match x, y with
                 | Corner (bottom, right) _ -> createCollidableTile Wall (x, y)
                 | Wall (bottom, right) wallType -> createCollidableTile wallType (x, y)
-                | 5,4 -> createButtonOnGrass time false (x,y)
-                | 5, 5 -> observerCannotPick time (observing GoToNextLevelButton) FacingUp (x,y)
+                | 5, 4 -> createButtonOnGrass time false (x,y)
+                | 5, 5 -> observerCannotPick time (observing GoToNextLevel) FacingUp (x,y)
                 //some kind of goal
                 | _ -> createNonCollidableTile FloorType.Grass (x, y))
 
@@ -196,15 +196,14 @@ let level_PlayerPickUp: LevelBuilder =
                       (3, 5)
                       (4, 5)
                       (4, 4)
-                      (5, 4)
                       (5, 2) ]
 
                 match x, y with
                 | Corner (bottom, right) _ -> createCollidableTile Wall (x, y)
                 | Wall (bottom, right) wallType -> createCollidableTile wallType (x, y)
                 | xy when (List.contains xy rocks) -> createRockOnGrass time true (x, y)
-
-                | 5, 5 -> observerCannotPick time (observing GoToNextLevelButton) FacingUp (x,y)
+                | 5, 4 -> createButtonOnGrass time false (x,y)
+                | 5, 5 -> observerCannotPick time (observing GoToNextLevel) FacingUp (x,y)
 
                 | _ -> createNonCollidableTile FloorType.Grass (x, y))
 
@@ -309,7 +308,7 @@ let levelPlaceDirections: LevelBuilder =
         let ir = observerCanPick time (observing Id) FacingRight
         let il = observerCannotPick time (observing Id) FacingUp
         let bb = createButtonOnGrass time false
-        let xx = observerCannotPick time (observing GoToNextLevelButton) FacingUp
+        let xx = observerCannotPick time (observing GoToNextLevel) FacingUp
 
         let tiles, width, height =
             worldFromTemplate

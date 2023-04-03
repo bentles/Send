@@ -36,7 +36,7 @@ and BoxData =
 
 and ObservableType =
     | Id
-    | GoToNextLevelButton
+    | GoToNextLevel
     | Toggle of bool
     | Map of EntityType
     | Filter of EntityType
@@ -80,7 +80,7 @@ let getSpriteConfig (eType: EntityType) : SpriteConfig =
         | Button _ -> buttonSpriteConfig
     | Observable { Type = ob } ->
         match ob with
-        | GoToNextLevelButton _ -> nextLevelSpriteConfig
+        | GoToNextLevel _ -> nextLevelSpriteConfig
         | Id -> idSpriteConfig
         | Toggle true -> toggleOnSpriteConfig
         | Toggle false -> toggleOffSpriteConfig
@@ -100,7 +100,7 @@ let getEmitImage (eType: EntityType) =
         | Button _ -> buttonImage
     | Observable { Type = ob } ->
         match ob with
-        | GoToNextLevelButton _ -> nextLevelImage
+        | GoToNextLevel _ -> nextLevelImage
         | Toggle _ -> toggleOnImage
         | Id -> idImage
         | Map _ -> mapImage
@@ -191,7 +191,7 @@ let takeOutOf (existingEntity: EntityType) =
 let private behaviorFunc (observable: ObservableData) (a: EntityType voption) (b: EntityType voption) =
     match observable.Type with
     | Id
-    | GoToNextLevelButton
+    | GoToNextLevel
     | Toggle _ ->
         match a with
         | (ValueSome e1) -> WillEmit e1
@@ -271,7 +271,7 @@ let getOnEmit (obs: EntityType) (pos: Vector2) =
                 Type = newObs
                 Collider = if not state then getCollider newObs pos else ValueNone
                 Sprite = Sprite.reInit entity.Sprite newSprite }
-    | Observable({ Type = GoToNextLevelButton }) ->
+    | Observable({ Type = GoToNextLevel }) ->
         fun (entity: Model) ->
             let newObs = Unit
             { entity with
