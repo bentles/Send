@@ -350,6 +350,18 @@
 /processorParam:TextureFormat=Color
 /build:sprites/tile/TopWall.png
 
+#begin sprites/tile/Void.png
+/importer:TextureImporter
+/processor:TextureProcessor
+/processorParam:ColorKeyColor=255,0,255,255
+/processorParam:ColorKeyEnabled=True
+/processorParam:GenerateMipmaps=False
+/processorParam:PremultiplyAlpha=True
+/processorParam:ResizeToPowerOfTwo=False
+/processorParam:MakeSquare=False
+/processorParam:TextureFormat=Color
+/build:sprites/tile/Void.png
+
 #begin sprites/tile/Wall.png
 /importer:TextureImporter
 /processor:TextureProcessor

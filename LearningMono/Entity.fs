@@ -28,7 +28,7 @@ type ObserverType =
 [<Struct>]
 type SubjectType =
     | Timer of BoxData * int
-    | Button of EntityType
+    | Button
 
 and BoxData =
     { Items: (EntityType list)
@@ -46,6 +46,7 @@ and ObservableType =
 and EntityType =
     | Unit
     | Rock
+   // | NextLevel
     | Box of BoxData
     | Subject of SubjectData
     | Observable of ObservableData
@@ -77,7 +78,7 @@ let getSpriteConfig (eType: EntityType) : SpriteConfig =
     | Subject { Type = sub } ->
         match sub with
         | Timer _ -> timerSpriteConfig
-        | Button _ -> buttonSpriteConfig
+        | Button -> buttonSpriteConfig
     | Observable { Type = ob } ->
         match ob with
         | GoToNextLevel _ -> nextLevelSpriteConfig
@@ -97,7 +98,7 @@ let getEmitImage (eType: EntityType) =
     | Subject { Type = sub } ->
         match sub with
         | Timer _ -> timerImage
-        | Button _ -> buttonImage
+        | Button -> buttonImage
     | Observable { Type = ob } ->
         match ob with
         | GoToNextLevel _ -> nextLevelImage
@@ -357,6 +358,13 @@ let buildRockTimer =
           TicksSinceEmit = 0
           GenerationNumber = 0 }
 
+let buildSubject (sType: SubjectType) =
+    Subject
+        { Type = sType
+          ToEmit = Nothing
+          TicksSinceEmit = 0
+          GenerationNumber = 0 }
+
 let rockTimer: EntityType = buildRockTimer
 
 let observing (oType: ObservableType) : EntityType =
@@ -373,12 +381,12 @@ let half = Vector2(tileHalf)
 
 let interact (entity: Model) : Model * InteractionEvent =
     match entity.Type with
-    | Subject({ Type = Button eType } as subData) ->
+    | Subject({ Type = Button } as subData) ->
         { entity with
             Type =
                 Subject
                     { subData with
-                        ToEmit = WillEmit eType
+                        ToEmit = WillEmit Unit
                         TicksSinceEmit = 0
                         GenerationNumber = subData.GenerationNumber + 1 } },
         InteractionEvent.NoEvent

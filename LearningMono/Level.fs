@@ -10,6 +10,7 @@ open FSharpx.Collections
 [<Struct>]
 type FloorType =
     | Empty
+    | Void
     | Grass
     | Wall
     | TopWall
@@ -72,7 +73,7 @@ let createSubjectOnGrass (subjectType: SubjectType) time pickedUp (coords: Coord
               TicksSinceEmit = 0
               GenerationNumber = 0
               ToEmit = Nothing })
-        Grass
+        (if pickedUp then Grass else Floor)
         time
         pickedUp
         coords
@@ -89,7 +90,7 @@ let createTimerOnGrass time pickedUp (coords: Coords) =
         coords
 
 let createButtonOnGrass time pickedUp (coords: Coords) =
-    createSubjectOnGrass (Entity.Button Unit) time pickedUp coords
+    createSubjectOnGrass Entity.Button time pickedUp coords
 
 let observerEntity observer =
     Entity.init observer Vector2.Zero 0 FacingLeft true
@@ -99,7 +100,7 @@ let observerOnGrass time observer facing canPickup (coords: Coords) : Tile =
 
     { defaultTile with
         Coords = coords
-        FloorType = FloorType.Grass
+        FloorType = (if canPickup then FloorType.Grass else FloorType.Floor)
         Entity = ValueSome(Entity.init observer pos time facing canPickup) }
 
 let observerCanPick time observer facing (coords: Coords) : Tile =
@@ -168,14 +169,14 @@ let level_PlayerMoves: LevelBuilder =
                 match x, y with
                 | Corner (bottom, right) _ -> createCollidableTile Wall (x, y)
                 | Wall (bottom, right) wallType -> createCollidableTile wallType (x, y)
-                | 5, 4 -> createButtonOnGrass time false (x,y)
-                | 5, 5 -> observerCannotPick time (observing GoToNextLevel) FacingUp (x,y)
+                | 5, 4 -> createButtonOnGrass time false (x, y)
+                | 5, 5 -> observerCannotPick time (observing GoToNextLevel) FacingUp (x, y)
                 //some kind of goal
                 | _ -> createNonCollidableTile FloorType.Grass (x, y))
 
         { PlayerStartsAtPos = Vector2(150f, 150f)
           PlayerStartsCarrying = []
-          LevelText= "Press the arrow keys to move and Z to interact"
+          LevelText = "Press the arrow keys to move and Z to interact"
           Tiles = tiles
           Size = (width, height) }
 
@@ -186,30 +187,225 @@ let level_PlayerPickUp: LevelBuilder =
 
         let tiles =
             iterWorld (width, height) (fun (x, y) (_, _) (bottom, right) ->
-                let rocks =
-                    [ (2, 2)
-                      (3, 5)
-                      (3, 3)
-                      (4, 3)
-                      (5, 3)
-                      (3, 4)
-                      (3, 5)
-                      (4, 5)
-                      (4, 4)
-                      (5, 2) ]
 
                 match x, y with
                 | Corner (bottom, right) _ -> createCollidableTile Wall (x, y)
                 | Wall (bottom, right) wallType -> createCollidableTile wallType (x, y)
-                | xy when (List.contains xy rocks) -> createRockOnGrass time true (x, y)
-                | 5, 4 -> createButtonOnGrass time false (x,y)
-                | 5, 5 -> observerCannotPick time (observing GoToNextLevel) FacingUp (x,y)
+                | 1, 1 -> createButtonOnGrass time true (x, y)
+                | 5, 5 -> observerCannotPick time (observing GoToNextLevel) FacingUp (x, y)
 
                 | _ -> createNonCollidableTile FloorType.Grass (x, y))
 
         { PlayerStartsAtPos = (Vector2(200f, 100f))
           PlayerStartsCarrying = []
-          LevelText= "Press X on an item to pick it up! Press C to place an item down. You can pick up multiple items."
+          LevelText = "Press X on an item to pick it up! Press C to place an item down. Z: Interact"
+          Tiles = tiles
+          Size = (width, height) }
+
+let level_left: LevelBuilder =
+    fun time ->
+        let __ = createNonCollidableTile FloorType.Grass
+        let ww = createCollidableTile Wall
+        let wt = createCollidableTile FloorType.TopWall
+        let bb = createButtonOnGrass time true
+        let rr = createRockOnGrass time true
+
+        let xu = observerCannotPick time (observing Id) FacingUp
+        let xl = observerCannotPick time (observing Id) FacingLeft
+        let xr = observerCannotPick time (observing Id) FacingRight
+        let NL = observerCannotPick time (observing GoToNextLevel) FacingLeft
+
+
+        let tiles, width, height =
+            worldFromTemplate
+                [ [ ww; wt; wt; wt; wt; wt; ww ]
+                  [ ww; bb; __; __; __; __; ww ]
+                  [ ww; __; __; __; __; __; ww ]
+                  [ ww; __; __; __; __; __; ww ]
+                  [ ww; __; __; __; __; __; ww ]
+                  [ ww; __; __; __; __; NL; ww ]
+                  [ wt; wt; wt; wt; wt; wt; wt ] ]
+
+        { PlayerStartsAtPos = (Vector2(200f, 100f))
+          PlayerStartsCarrying = []
+          LevelText = "X: Pick, C: Place, Z: Interact"
+          Tiles = tiles
+          Size = (width, height) }
+
+let level_dang_rocks: LevelBuilder =
+    fun time ->
+        let __ = createNonCollidableTile FloorType.Grass
+        let ww = createCollidableTile Wall
+        let wt = createCollidableTile FloorType.TopWall
+        let bb = createButtonOnGrass time true
+        let rr = createRockOnGrass time true
+
+        let NL = observerCannotPick time (observing GoToNextLevel) FacingLeft
+
+
+        let tiles, width, height =
+            worldFromTemplate
+                [ [ ww; wt; wt; wt; wt; wt; ww ]
+                  [ ww; bb; __; __; __; __; ww ]
+                  [ ww; __; __; __; __; __; ww ]
+                  [ ww; __; __; __; rr; rr; ww ]
+                  [ ww; __; __; rr; rr; rr; ww ]
+                  [ ww; rr; rr; rr; rr; NL; ww ]
+                  [ wt; wt; wt; wt; wt; wt; wt ] ]
+
+        { PlayerStartsAtPos = (Vector2(200f, 100f))
+          PlayerStartsCarrying = []
+          LevelText = "You can pick up multiple items"
+          Tiles = tiles
+          Size = (width, height) }
+
+let level_observers: LevelBuilder =
+    fun time ->
+        let __ = createNonCollidableTile FloorType.Grass
+        let ww = createCollidableTile Wall
+        let wt = createCollidableTile FloorType.TopWall
+        let bb = createButtonOnGrass time true
+
+        let xu = observerCannotPick time (observing Id) FacingUp
+        let xl = observerCannotPick time (observing Id) FacingLeft
+        let xr = observerCannotPick time (observing Id) FacingRight
+        let NL = observerCannotPick time (observing GoToNextLevel) FacingUp
+
+
+        let tiles, width, height =
+            worldFromTemplate
+                [ [ ww; wt; wt; wt; wt; wt; ww ]
+                  [ ww; __; __; __; __; __; ww ]
+                  [ ww; __; __; __; __; __; ww ]
+                  [ ww; __; bb; __; __; __; ww ]
+                  [ ww; __; xu; __; xu; __; ww ]
+                  [ ww; __; xu; __; NL; __; ww ]
+                  [ ww; __; __; __; __; __; ww ]
+                  [ wt; wt; wt; wt; wt; wt; wt ] ]
+
+        { PlayerStartsAtPos = (Vector2(200f, 100f))
+          PlayerStartsCarrying = []
+          LevelText = "Observers re-transmit whatever signal they observe"
+          Tiles = tiles
+          Size = (width, height) }
+
+let level_observers2: LevelBuilder =
+    fun time ->
+        let __ = createNonCollidableTile FloorType.Grass
+        let ww = createCollidableTile Wall
+        let wt = createCollidableTile FloorType.TopWall
+        let bb = createButtonOnGrass time false
+
+        let xu = observerCannotPick time (observing Id) FacingUp
+        let xl = observerCanPick time (observing Id) FacingLeft
+        let xr = observerCanPick time (observing Id) FacingRight
+        let NL = observerCannotPick time (observing GoToNextLevel) FacingRight
+
+
+        let tiles, width, height =
+            worldFromTemplate
+                [ [ ww; wt; wt; wt; wt; wt; ww ]
+                  [ ww; __; __; __; __; __; ww ]
+                  [ ww; __; __; __; __; __; ww ]
+                  [ ww; __; __; __; __; __; ww ]
+                  [ ww; __; NL; __; __; bb; ww ]
+                  [ ww; __; __; __; __; __; ww ]
+                  [ ww; __; xr; xr; xr; xr; ww ]
+                  [ wt; wt; wt; wt; wt; wt; wt ] ]
+
+        { PlayerStartsAtPos = (Vector2(200f, 100f))
+          PlayerStartsCarrying = []
+          LevelText = "X: Pick, C: Place, Z: Interact"
+          Tiles = tiles
+          Size = (width, height) }
+
+let level_observers3: LevelBuilder =
+    fun time ->
+        let __ = createNonCollidableTile FloorType.Grass
+        let ww = createCollidableTile Wall
+        let wt = createCollidableTile FloorType.TopWall
+        let bb = createButtonOnGrass time false
+
+        let xu = observerCannotPick time (observing Id) FacingUp
+        let xl = observerCanPick time (observing Id) FacingLeft
+        let xr = observerCanPick time (observing Id) FacingRight
+        let NL = observerCannotPick time (observing GoToNextLevel) FacingLeft
+
+
+        let tiles, width, height =
+            worldFromTemplate
+                [ [ ww; wt; wt; wt; wt; wt; ww ]
+                  [ ww; __; __; __; __; __; ww ]
+                  [ ww; __; __; __; __; __; ww ]
+                  [ ww; __; __; __; __; __; ww ]
+                  [ ww; __; bb; xr; xr; NL; ww ]
+                  [ ww; __; __; __; __; __; ww ]
+                  [ ww; __; __; __; __; __; ww ]
+                  [ wt; wt; wt; wt; wt; wt; wt ] ]
+
+        { PlayerStartsAtPos = (Vector2(200f, 100f))
+          PlayerStartsCarrying = []
+          LevelText = "Hold shift and press arrow keys to change the direction of a placed object"
+          Tiles = tiles
+          Size = (width, height) }
+
+let level_observers4: LevelBuilder =
+    fun time ->
+        let __ = createNonCollidableTile FloorType.Grass
+        let ww = createCollidableTile Wall
+        let wt = createCollidableTile FloorType.TopWall
+        let bb = createButtonOnGrass time false
+
+        let xu = observerCannotPick time (observing Id) FacingUp
+        let xl = observerCanPick time (observing Id) FacingLeft
+        let xr = observerCanPick time (observing Id) FacingRight
+        let NL = observerCannotPick time (observing GoToNextLevel) FacingLeft
+
+
+        let tiles, width, height =
+            worldFromTemplate
+                [ [ ww; wt; wt; wt; wt; wt; ww ]
+                  [ ww; __; __; __; __; __; ww ]
+                  [ ww; __; __; __; __; __; ww ]
+                  [ ww; __; __; __; __; NL; ww ]
+                  [ ww; __; bb; __; __; __; ww ]
+                  [ ww; __; __; __; __; __; ww ]
+                  [ ww; __; xr; xr; xr; xr; ww ]
+                  [ wt; wt; wt; wt; wt; wt; wt ] ]
+
+        { PlayerStartsAtPos = (Vector2(200f, 100f))
+          PlayerStartsCarrying = []
+          LevelText = "Hold shift and press arrow keys to change the placement direction"
+          Tiles = tiles
+          Size = (width, height) }
+
+let level_observers5: LevelBuilder =
+    fun time ->
+        let __ = createNonCollidableTile FloorType.Grass
+        let ww = createCollidableTile Wall
+        let wt = createCollidableTile FloorType.TopWall
+        let bb = createButtonOnGrass time false
+
+        let xu = observerCannotPick time (observing Id) FacingUp
+        let xl = observerCanPick time (observing Id) FacingLeft
+        let xr = observerCanPick time (observing Id) FacingRight
+        let NL = observerCannotPick time (observing GoToNextLevel) FacingUp
+
+
+        let tiles, width, height =
+            worldFromTemplate
+                [ [ ww; wt; wt; wt; wt; wt; ww ]
+                  [ ww; __; __; __; __; __; ww ]
+                  [ ww; __; __; __; __; NL; ww ]
+                  [ ww; __; __; __; __; __; ww ]
+                  [ ww; __; bb; __; __; __; ww ]
+                  [ ww; __; xr; xr; xr; xr; ww ]
+                  [ ww; xr; xr; xr; xr; xr; ww ]
+                  [ wt; wt; wt; wt; wt; wt; wt ] ]
+
+        { PlayerStartsAtPos = (Vector2(200f, 100f))
+          PlayerStartsCarrying = []
+          LevelText = "Press shift+arrow keys to change the direction an object is facing"
           Tiles = tiles
           Size = (width, height) }
 
@@ -221,14 +417,12 @@ let level_box1: LevelBuilder =
         let r = createCollidableTile FloorType.RightWall
         let b = createCollidableTile FloorType.BottomWall
         let t = createCollidableTile FloorType.TopWall
+        let N = observerCannotPick time (observing GoToNextLevel) FacingDown
 
         let x =
             createEntityOn
                 (Box
-                    { Items =
-                        [ Rock
-                          Rock
-                          (observing Id) ]
+                    { Items = [ Rock; Rock; (buildSubject Button) ]
                       IsOpen = false })
                 Grass
                 time
@@ -237,7 +431,7 @@ let level_box1: LevelBuilder =
         let tiles, width, height =
             worldFromTemplate
                 [ [ w; t; t; t; t; t; w ]
-                  [ l; g; g; g; g; g; r ]
+                  [ l; g; N; g; g; g; r ]
                   [ l; g; g; g; g; g; r ]
                   [ l; g; g; g; g; g; r ]
                   [ l; g; g; g; g; g; r ]
@@ -247,7 +441,7 @@ let level_box1: LevelBuilder =
 
         { PlayerStartsAtPos = (Vector2(200f, 100f))
           PlayerStartsCarrying = []
-          LevelText= "Boxes store items. Try using Z (interact), X (pick up) and C (place) on a box"
+          LevelText = "Boxes store items. Try using Z (interact), X (pick up) and C (place) on a box"
           Tiles = tiles
           Size = (width, height) }
 
@@ -266,12 +460,12 @@ let level_box2: LevelBuilder =
                 (Box
                     { Items =
                         [ Rock
-                          Rock
+                          buildObserver GoToNextLevel
                           Box
                               { Items =
                                   [ Box { Items = []; IsOpen = true }
                                     Box
-                                        { Items = [ Rock; Rock; Rock; ( (observing Id)) ]
+                                        { Items = [ Rock; Rock; Rock; (buildSubject Button) ]
                                           IsOpen = false } ]
                                 IsOpen = false } ]
                       IsOpen = false })
@@ -285,14 +479,14 @@ let level_box2: LevelBuilder =
                   [ l; g; g; g; g; g; r ]
                   [ l; g; g; g; g; g; r ]
                   [ l; g; g; g; g; g; r ]
+                  [ l; g; g; x; g; g; r ]
                   [ l; g; g; g; g; g; r ]
                   [ l; g; g; g; g; g; r ]
-                  [ l; g; g; g; x; g; r ]
                   [ w; b; b; b; b; b; w ] ]
 
         { PlayerStartsAtPos = (Vector2(200f, 100f))
           PlayerStartsCarrying = []
-          LevelText= "Boxes store items. Try using Z (interact), X (pick up) and C (place) on a box"
+          LevelText = "Boxes store items. Try using Z (interact), X (pick up) and C (place) on a box"
           Tiles = tiles
           Size = (width, height) }
 
@@ -324,10 +518,11 @@ let levelPlaceDirections: LevelBuilder =
         { PlayerStartsAtPos = Vector2(200f, 100f)
           PlayerStartsCarrying = []
           Tiles = tiles
-          LevelText= "Shift + arrow keys will change your placement direction. Try placing items in different orientations!"
+          LevelText =
+            "Shift + arrow keys will change your placement direction. Try placing items in different orientations!"
           Size = (width, height) }
 
-let level4: LevelBuilder =
+let level_toggles: LevelBuilder =
     fun time ->
         let __ = createNonCollidableTile FloorType.Grass
         let ww = createCollidableTile Wall
@@ -339,39 +534,7 @@ let level4: LevelBuilder =
         let tu = observerOnGrass time (observing (Toggle true)) FacingUp false
         let tl = observerOnGrass time (observing (Toggle true)) FacingLeft false
         let bb = createButtonOnGrass time false
-        let xx = createEntityOn ( (observing Id)) Grass time false
-
-        let tiles, width, height =
-            worldFromTemplate
-                [ [ ww; wt; wt; wt; wt; wt; wt; wt; wt; ww ]
-                  [ wl; __; __; __; __; __; __; __; __; wr ]
-                  [ wl; __; bb; __; __; __; __; __; __; wr ]
-                  [ wl; __; tu; __; __; __; __; __; __; wr ]
-                  [ wl; __; tu; ir; tl; tl; tl; tl; tl; wr ]
-                  [ wl; __; tu; __; __; __; tu; __; __; wr ]
-                  [ wl; __; tu; __; __; __; tu; __; xx; wr ]
-                  [ ww; wb; wb; wb; wb; wb; wb; wb; wb; ww ] ]
-
-        { PlayerStartsAtPos = Vector2(200f, 100f)
-          PlayerStartsCarrying = []
-          Tiles = tiles
-          LevelText= ""
-          Size = (width, height) }
-
-let level5: LevelBuilder =
-    fun time ->
-        let __ = createNonCollidableTile FloorType.Grass
-        let ww = createCollidableTile Wall
-        let wl = createCollidableTile FloorType.LeftWall
-        let wr = createCollidableTile FloorType.RightWall
-        let wb = createCollidableTile FloorType.BottomWall
-        let wt = createCollidableTile FloorType.TopWall
-        let ir = observerOnGrass time (observing Id) FacingRight true
-        let tu = observerOnGrass time (observing (Toggle true)) FacingUp false
-        let tl = observerOnGrass time (observing (Toggle true)) FacingLeft false
-        let bb = createButtonOnGrass time false
-        let xx = createEntityOn ( (observing Id)) Grass time false
-
+        let xx = createEntityOn (buildObserver GoToNextLevel) Grass time true
         let bx =
             createEntityOn
                 (Box
@@ -389,21 +552,21 @@ let level5: LevelBuilder =
         let tiles, width, height =
             worldFromTemplate
                 [ [ ww; wt; wt; wt; wt; wt; wt; wt; wt; ww ]
-                  [ wl; __; __; __; __; __; bx; __; __; wr ]
+                  [ wl; __; __; __; __; __; __; __; bx; wr ]
                   [ wl; __; bb; __; __; __; __; __; __; wr ]
-                  [ wl; __; __; __; __; __; __; __; __; wr ]
-                  [ wl; __; __; ir; __; __; tl; tl; tl; wr ]
-                  [ wl; __; __; __; __; __; tu; __; __; wr ]
-                  [ wl; __; __; __; __; __; tu; __; xx; wr ]
+                  [ wl; __; tu; __; __; __; __; __; __; wr ]
+                  [ wl; __; tu; __; __; tl; tl; tl; tl; wr ]
+                  [ wl; __; tu; __; __; __; tu; __; __; wr ]
+                  [ wl; __; tu; __; __; __; tu; __; xx; wr ]
                   [ ww; wb; wb; wb; wb; wb; wb; wb; wb; ww ] ]
 
         { PlayerStartsAtPos = Vector2(200f, 100f)
           PlayerStartsCarrying = []
           Tiles = tiles
-          LevelText= "You may have noticed the "
+          LevelText = ""
           Size = (width, height) }
 
-let level6: LevelBuilder =
+let level_map1: LevelBuilder =
     fun time ->
         let __ = createNonCollidableTile FloorType.Grass
         let ww = createCollidableTile Wall
@@ -411,15 +574,16 @@ let level6: LevelBuilder =
         let wr = createCollidableTile FloorType.RightWall
         let wb = createCollidableTile FloorType.BottomWall
         let wt = createCollidableTile FloorType.TopWall
-        let ir = observerOnGrass time (observing Id) FacingRight true
+        let iu = observerOnGrass time (observing Id) FacingUp true
+        let il = observerOnGrass time (observing Id) FacingLeft true
         let tu = observerOnGrass time (observing (Toggle true)) FacingUp false
         let tl = observerOnGrass time (observing (Toggle true)) FacingLeft false
 
         let fl = observerOnGrass time (observing (Filter(observing Id))) FacingLeft false
 
-        let ml = observerOnGrass time (observing (Map Unit)) FacingLeft true
+        let mu = observerOnGrass time (observing (Map Unit)) FacingUp true
         let bb = createButtonOnGrass time false
-        let xx = createEntityOn ( (observing Id)) Grass time false
+        let xx = createEntityOn ((observing GoToNextLevel)) Grass time false
 
         let bx =
             createEntityOn
@@ -439,17 +603,17 @@ let level6: LevelBuilder =
             worldFromTemplate
                 [ [ ww; wt; wt; wt; wt; wt; wt; wt; wt; ww ]
                   [ ww; __; __; __; __; __; bx; __; __; ww ]
-                  [ ww; __; bb; __; __; __; __; ml; __; ww ]
-                  [ ww; __; __; __; __; __; __; __; __; ww ]
-                  [ ww; __; __; ir; __; __; fl; tl; tl; ww ]
-                  [ ww; __; __; __; __; __; tu; __; __; ww ]
-                  [ ww; __; __; __; __; __; tu; __; xx; ww ]
+                  [ ww; __; bb; __; __; __; __; __; __; ww ]
+                  [ ww; __; iu; __; __; __; __; __; __; ww ]
+                  [ ww; __; iu; __; __; __; tl; tl; tl; ww ]
+                  [ ww; __; mu; __; __; __; tu; __; __; ww ]
+                  [ ww; __; iu; il; il; __; tu; __; xx; ww ]
                   [ wt; wt; wt; wt; wt; wt; wt; wt; wt; wt ] ]
 
         { PlayerStartsAtPos = Vector2(200f, 100f)
           PlayerStartsCarrying = []
           Tiles = tiles
-          LevelText= ""
+          LevelText = "The Map observer changes the signal to whatever object you place inside it"
           Size = (width, height) }
 
 let level7: LevelBuilder =
@@ -477,7 +641,7 @@ let level7: LevelBuilder =
 
         let ma = observerOnGrass time (observing (Map Unit)) FacingLeft true
         let bb = createButtonOnGrass time true
-        let xx = createEntityOn ( (observing Id)) Grass time false
+        let xx = createEntityOn ((observing Id)) Grass time false
 
         let bx =
             createEntityOn
@@ -513,11 +677,12 @@ let level7: LevelBuilder =
         { PlayerStartsAtPos = Vector2(150f, 100f)
           PlayerStartsCarrying = []
           Tiles = tiles
-          LevelText= ""
+          LevelText = ""
           Size = (width, height) }
 
 let levelSandBox: LevelBuilder =
     fun time ->
+        let _v = createNonCollidableTile FloorType.Void
         let __ = createNonCollidableTile FloorType.Grass
         let ww = createCollidableTile Wall
         let wl = createCollidableTile FloorType.LeftWall
@@ -544,7 +709,7 @@ let levelSandBox: LevelBuilder =
 
         let ma = observerOnGrass time (observing (Map Unit)) FacingLeft true
         let bb = createButtonOnGrass time true
-        let xx = createEntityOn ( (observing Id)) Grass time false
+        let xx = createEntityOn ((observing Id)) Grass time false
 
         let b0 =
             createEntityOn
@@ -670,29 +835,35 @@ let levelSandBox: LevelBuilder =
                   [ ww; __; __; __; __; __; __; __; __; __; __; __; __; ww ]
                   [ ww; bb; __; __; b0; b1; b2; b3; b4; b5; __; __; __; ww ]
                   [ ww; bb; __; __; __; __; __; __; __; __; __; __; __; ww ]
-                  [ ww; __; __; __; __; __; __; __; __; __; __; __; __; ww ]
-                  [ ww; __; __; __; __; __; __; __; __; __; __; __; __; ww ]
-                  [ ww; rr; __; __; __; __; __; __; __; __; __; __; __; ww ]
-                  [ ww; __; __; __; __; __; __; __; __; __; __; __; __; ww ]
-                  [ ww; __; __; __; __; __; __; __; __; __; __; __; __; ww ]
+                  [ ww; __; __; __; __; __; __; __; __; __; __; ww; wt; wt ]
+                  [ ww; __; __; __; __; __; __; __; __; __; __; ww; _v; _v ]
+                  [ ww; rr; __; __; __; __; __; __; __; __; __; ww; _v; _v ]
+                  [ ww; __; __; __; __; __; __; __; __; __; __; ww; _v; _v ]
+                  [ ww; __; __; __; __; __; __; __; __; __; __; wt; wt; ww ]
                   [ ww; __; __; __; __; __; __; __; __; __; __; __; __; ww ]
                   [ ww; __; __; __; __; __; __; __; __; __; __; __; __; ww ]
                   [ wt; wt; wt; wt; wt; wt; wt; wt; wt; wt; wt; wt; wt; wt ] ]
 
         { PlayerStartsAtPos = Vector2(150f, 100f)
           PlayerStartsCarrying = []
-          LevelText= "This is the sandbox level. Go nuts!"
+          LevelText = "This is the sandbox level. Go nuts!"
           Tiles = tiles
           Size = (width, height) }
 
-let levels:LevelBuilder[] = [|
-    level_PlayerMoves
-    level_PlayerPickUp
-    level_box1
-    level_box2
-    level4
-    level5
-    level6
-    level7
-    levelSandBox
-|]
+let levels: LevelBuilder[] =
+    [|     
+       level_PlayerMoves
+       level_PlayerPickUp
+       level_left
+       level_dang_rocks
+       level_observers
+       level_observers2
+       level_observers3
+       level_observers4
+       level_observers5
+       level_box1
+       level_box2
+       level_toggles
+       level_map1
+       level7
+       levelSandBox |]

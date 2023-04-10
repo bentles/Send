@@ -50,6 +50,7 @@ let main _ =
               PipelineTexture("facingRight", "./content/sprites/tile/FacingRight")
               PipelineTexture("feet", "./content/sprites/tile/Feet")
               PipelineTexture("tile", "./content/sprites/tile/Tile")
+              PipelineTexture("void", "./content/sprites/tile/Void")
               PipelineTexture("grass", "./content/sprites/tile/Grass")
               PipelineTexture("wall", "./content/sprites/tile/Wall")
               PipelineTexture("floor", "./content/sprites/tile/Floor")

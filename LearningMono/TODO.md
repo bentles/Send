@@ -1,5 +1,6 @@
 ﻿THINKING:
 - maybe the toggle bois give off their own state as their signal?
+- next level oberserver should turn into a button that can be interacted with??
 
 TODO:
 - quick check for collision exclusion of far away objects
@@ -25,11 +26,19 @@ TODO:
 	- placements should go red when cannot be placed?
 	- preview with greyed out?
 - maybe just tint non movables darker??
+- use an effect to show an entity can't be picked up 
+- tiles with different properties
+- perhaps boxes can be observed too?
+	- open empty, open non-empty, closed?
+- fix bug with mappers
 
 DOING:
-- next level observer
+- redo levels with next-level observer
+	- problem: game feel is not right
 
 DONE:
+- void tile for more interestingly shaped levels
+- next level observer
 - add the player AABB to the can place check
 - more box levels
 - boxes too many levels deep

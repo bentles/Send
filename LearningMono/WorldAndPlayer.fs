@@ -60,8 +60,8 @@ let getTileAtPos (pos: Vector2) (size: Coords) (tiles: Tiles) : struct (Tile * i
     index |> ValueOption.map (fun index -> PersistentVector.nth index tiles, index)
 
 let init time =
-    let levelIndex = 0//Level.levels.Length - 2
-    let level = Level.levels[levelIndex]time
+    let levelIndex = 12//Level.levels.Length - 1
+    let level = Level.levels[levelIndex] time
 
     { Tiles = level.Tiles
       Song = PlaySong "pewpew"
@@ -417,6 +417,7 @@ let viewObserverItem
 
 let blockWidth = worldConfig.TileWidth
 let empty = "tile"
+let _void = "void"
 let grass = "grass"
 let wall = "wall"
 let leftWall = "leftWall"
@@ -440,6 +441,7 @@ let viewWorld (model: Model) loadedAssets (spriteBatch: SpriteBatch) =
             match tile.FloorType with
             | FloorType.Grass -> grass
             | FloorType.Empty -> empty
+            | FloorType.Void -> _void
             | FloorType.Wall -> wall
             | FloorType.LeftWall -> leftWall
             | FloorType.RightWall -> rightWall
