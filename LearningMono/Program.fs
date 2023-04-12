@@ -33,7 +33,7 @@ let view (model: Model) (dispatch: Message -> unit) =
         OnUpdate(fun inputs -> 
             World.inputs inputs (WorldMessage >> dispatch)
             dispatch (Tick inputs.totalGameTime) //TODO: probs don't need this
-            if KeyBoard.iskeydown Keys.Escape inputs then exit()
+            if Keyboard.iskeydown Keys.Escape inputs then exit()
             )
     ]
 

@@ -1,6 +1,11 @@
 ﻿THINKING:
 - maybe the toggle bois give off their own state as their signal?
-- next level oberserver should turn into a button that can be interacted with??
+- place observer?? too OP?
+	- can only infinitely place itself
+	- can place a box in a box
+- boxes can also be observed like buttons and transmit their state as the signal
+	- empty | filled | closed | ??
+
 
 TODO:
 - quick check for collision exclusion of far away objects
@@ -31,12 +36,17 @@ TODO:
 - perhaps boxes can be observed too?
 	- open empty, open non-empty, closed?
 - fix bug with mappers
+- more toggle levels
+- the next block to be placed should also rotate???
+
+- should not be able to place on walls lol
 
 DOING:
-- redo levels with next-level observer
-	- problem: game feel is not right
 
 DONE:
+- redo levels with next-level observer
+	- problem: game feel is not right
+	- i think its ok but needs something 
 - void tile for more interestingly shaped levels
 - next level observer
 - add the player AABB to the can place check

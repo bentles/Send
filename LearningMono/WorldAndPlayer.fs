@@ -60,7 +60,7 @@ let getTileAtPos (pos: Vector2) (size: Coords) (tiles: Tiles) : struct (Tile * i
     index |> ValueOption.map (fun index -> PersistentVector.nth index tiles, index)
 
 let init time =
-    let levelIndex = 12//Level.levels.Length - 1
+    let levelIndex = Level.levels.Length - 5
     let level = Level.levels[levelIndex] time
 
     { Tiles = level.Tiles
@@ -584,13 +584,13 @@ let view model (dispatch: Message -> unit) loadedAssets _inputs spriteBatch =
     Player.viewPlayer model.Player (halfScreenOffset model.CameraPos) loadedAssets spriteBatch
 
 let inputs (inputs: Inputs) (dispatch: Message -> unit) =
-    if KeyBoard.iskeydown Keys.X inputs then
+    if Keyboard.iskeydown Keys.X inputs then
         (dispatch (PickUpEntity))
 
-    if KeyBoard.iskeydown Keys.C inputs then
+    if Keyboard.iskeydown Keys.C inputs then
         (dispatch (PlaceEntity))
 
-    if KeyBoard.iskeydown Keys.Z inputs then
+    if Keyboard.iskeydown Keys.Z inputs then
         (dispatch (Interact))
 
     Player.inputs inputs (PlayerMessage >> dispatch)

@@ -313,21 +313,21 @@ let viewPlayer (model: Model) (cameraPos: Vector2) loadedAssets (spriteBatch: Sp
 
 let inputs (inputs: Inputs) (dispatch: Message -> unit) =
     let currentInputsAsVector =
-        KeyBoard.directions Keys.Up Keys.Down Keys.Left Keys.Right inputs
+        Keyboard.directions Keys.Up Keys.Down Keys.Left Keys.Right inputs
 
     dispatch (Input currentInputsAsVector)
 
-    if KeyBoard.iskeydown Keys.Space inputs then
+    if Keyboard.iskeydown Keys.Space inputs then
         (dispatch TransformCharacter)
 
-    if KeyBoard.iskeydown Keys.LeftControl inputs then
+    if Keyboard.iskeydown Keys.LeftControl inputs then
         (dispatch (FreezeMovement true))
 
-    if KeyBoard.iskeyup Keys.LeftControl inputs then
+    if Keyboard.iskeyup Keys.LeftControl inputs then
         (dispatch (FreezeMovement false))
 
-    if KeyBoard.iskeydown Keys.LeftShift inputs then
+    if Keyboard.iskeydown Keys.LeftShift inputs then
         (dispatch (ArrowsControlPlacement true))
 
-    if KeyBoard.iskeyup Keys.LeftShift inputs then
+    if Keyboard.iskeyup Keys.LeftShift inputs then
         (dispatch (ArrowsControlPlacement false))

@@ -285,7 +285,7 @@ let level_observers: LevelBuilder =
 
         { PlayerStartsAtPos = (Vector2(200f, 100f))
           PlayerStartsCarrying = []
-          LevelText = "Observers re-transmit whatever signal they observe"
+          LevelText = "Observers re-transmit signals from the block they are facing"
           Tiles = tiles
           Size = (width, height) }
 
@@ -315,7 +315,7 @@ let level_observers2: LevelBuilder =
 
         { PlayerStartsAtPos = (Vector2(200f, 100f))
           PlayerStartsCarrying = []
-          LevelText = "X: Pick, C: Place, Z: Interact"
+          LevelText = "Observers re-transmit signals from the block they are facing"
           Tiles = tiles
           Size = (width, height) }
 
@@ -533,6 +533,7 @@ let level_toggles: LevelBuilder =
         let ir = observerOnGrass time (observing Id) FacingRight true
         let tu = observerOnGrass time (observing (Toggle true)) FacingUp false
         let tl = observerOnGrass time (observing (Toggle true)) FacingLeft false
+        let tr = observerOnGrass time (observing (Toggle true)) FacingRight false
         let bb = createButtonOnGrass time false
         let xx = createEntityOn (buildObserver GoToNextLevel) Grass time true
         let bx =
@@ -552,12 +553,12 @@ let level_toggles: LevelBuilder =
         let tiles, width, height =
             worldFromTemplate
                 [ [ ww; wt; wt; wt; wt; wt; wt; wt; wt; ww ]
-                  [ wl; __; __; __; __; __; __; __; bx; wr ]
+                  [ wl; __; __; __; __; __; __; __; __; wr ]
                   [ wl; __; bb; __; __; __; __; __; __; wr ]
-                  [ wl; __; tu; __; __; __; __; __; __; wr ]
+                  [ wl; tr; tu; __; __; __; __; __; __; wr ]
                   [ wl; __; tu; __; __; tl; tl; tl; tl; wr ]
                   [ wl; __; tu; __; __; __; tu; __; __; wr ]
-                  [ wl; __; tu; __; __; __; tu; __; xx; wr ]
+                  [ wl; bx; tu; __; __; __; tu; __; xx; wr ]
                   [ ww; wb; wb; wb; wb; wb; wb; wb; wb; ww ] ]
 
         { PlayerStartsAtPos = Vector2(200f, 100f)

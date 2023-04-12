@@ -23,6 +23,7 @@
   </ItemGroup>
   <ItemGroup>
     <Compile Include="Prelude.fs" />
+    <Compile Include="Keyboard.fs" />
     <Compile Include="Config\GameConfig.fs" />
     <Compile Include="Config\PlayerConfig.fs" />
     <Compile Include="Config\EntityConfig.fs" />
