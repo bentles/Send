@@ -35,13 +35,14 @@ TODO:
 - tiles with different properties
 - perhaps boxes can be observed too?
 	- open empty, open non-empty, closed?
-- fix bug with mappers
-- more toggle levels
 - the next block to be placed should also rotate???
-
-- should not be able to place on walls lol
+- get all block types as a big record that can be destructured
+	- maybe leave off the canpickup param so that can be added later
 
 DOING:
+- fix bug with mappers
+- more toggle levels
+- should not be able to place on walls lol
 
 DONE:
 - redo levels with next-level observer

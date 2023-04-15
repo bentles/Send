@@ -41,7 +41,7 @@ let view (model: Model) (dispatch: Message -> unit) =
 let main _ =
     let config: GameConfig =
         { clearColour = Some Colour.CornflowerBlue
-          resolution = Windowed(1600, 900)
+          resolution = window
           assetsToLoad =
             [
               //tiles

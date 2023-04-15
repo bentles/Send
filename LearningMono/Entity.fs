@@ -176,7 +176,7 @@ let (|CanPickOutOfEntity|_|) (entityType: EntityType) : voption<EntityType * Ent
     match entityType with
     | Observable { Type = Map Unit }
     | Observable { Type = Filter Unit } -> ValueNone
-    | Observable({ Type = Map e } as obs) -> ValueSome(Observable { obs with Type = Filter Unit }, e)
+    | Observable({ Type = Map e } as obs) -> ValueSome(Observable { obs with Type = Map Unit }, e)
     | Observable({ Type = Filter e } as obs) -> ValueSome(Observable { obs with Type = Filter Unit }, e)
     | Box { IsOpen = true; Items = e :: rest } -> ValueSome(Box { IsOpen = true; Items = rest }, e)
     | _ -> ValueNone

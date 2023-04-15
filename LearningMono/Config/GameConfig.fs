@@ -3,7 +3,7 @@
 open Xelmish.Model
 open Microsoft.Xna.Framework
 
-let window = FullScreen // Windowed(1600, 900)
+let window =   Windowed(1600, 900)//FullScreen(1920, 1080)
 let AcceptableError = 0.001f
 let DepthFactor = 0.0001f;
 let DepthSubFactor = 0.00001f;
