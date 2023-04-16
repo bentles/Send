@@ -51,7 +51,7 @@ let level_PlayerPickUp: LevelBuilder =
 
         { PlayerStartsAtPos = (Vector2(200f, 100f))
           PlayerStartsCarrying = []
-          LevelText = "Press X on an item to pick it up! Press C to place an item down. Z: Interact"
+          LevelText = "Press X on an item to try to pick it up! Press C to place an item down. Z: Interact"
           Tiles = tiles
           Size = (width, height) }
 
