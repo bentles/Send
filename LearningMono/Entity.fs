@@ -85,7 +85,8 @@ let getSpriteConfig (eType: EntityType) : SpriteConfig =
         match sub with
         | Timer _ -> timerSpriteConfig
         | Button -> buttonSpriteConfig
-        | Box _ -> boxSpriteConfig
+        | Box { IsOpen = true } -> boxOpenSpriteConfig
+        | Box { IsOpen = false } -> boxClosedSpriteConfig
     | Observable { Type = ob } ->
         match ob with
         | GoToNextLevel _ -> nextLevelSpriteConfig
@@ -105,7 +106,8 @@ let getEmitImage (eType: EntityType) =
         match sub with
         | Timer _ -> timerImage
         | Button -> buttonImage
-        | Box _ -> boxImage
+        | Box { IsOpen = true } -> boxOpenImage
+        | Box { IsOpen = false } -> boxClosedImage
     | Observable { Type = ob } ->
         match ob with
         | GoToNextLevel _ -> nextLevelImage
@@ -286,14 +288,14 @@ let getOnEmit (obs: EntityType) (pos: Vector2) =
             { entity with
                 Type = newObs
                 Collider = if not state then getCollider newObs pos else ValueNone
-                Sprite = Sprite.reInit entity.Sprite newSprite }
+                Sprite = Sprite.reInit entity.Sprite newSprite 0 }
     | Observable({ Type = GoToNextLevel }) ->
         fun (entity: Model) ->
             let newObs = Unit
 
             { entity with
                 Type = newObs
-                Sprite = Sprite.reInit entity.Sprite unitSpriteConfig }
+                Sprite = Sprite.reInit entity.Sprite unitSpriteConfig 0 }
     | _ -> (id)
 
 
@@ -328,6 +330,12 @@ let getSubjectFunc (sub: SubjectType) =
     | Button _ -> subjectStep
     | Box _ -> subjectStep
 
+let getBoxYPos (boxType:BoxData) = 
+    match boxType with
+    | { IsOpen = false } -> 0
+    | { Items = _ :: _ } -> 1
+    | { Items = [] } -> 0
+
 let getYpos (entityType: EntityType) (facing: Facing) =
     match entityType with
     | Observable _ ->
@@ -336,9 +344,7 @@ let getYpos (entityType: EntityType) (facing: Facing) =
         | FacingRight -> 1
         | FacingDown -> 2
         | FacingUp -> 3
-    | Subject { Type = Box { IsOpen = false } } -> 1
-    | Subject { Type = Box { Items = _ :: _ } } -> 2
-    | Subject { Type = Box { Items = [] } } -> 0
+    | Subject { Type = Box boxData } -> getBoxYPos boxData
     | _ -> 0
 
 let init (entityType: EntityType) (pos: Vector2) (time) (facing: Facing) (canBePickedUp: bool) =
@@ -410,26 +416,20 @@ let interact (entity: Model) : Model * InteractionEvent =
                         TicksSinceEmit = 0
                         GenerationNumber = subData.GenerationNumber + 1 } },
         InteractionEvent.NoEvent
-    | Subject({ Type = Box({ IsOpen = isOpen; Items = items } as boxType) } as subj) ->
-        let animIndex =
-            if isOpen then
-                1
-            else
-                match items with
-                | [] -> 0
-                | _ -> 2
+    | Subject({ Type = Box({ IsOpen = isOpen } as boxType) } as subj) ->
+        let boxData = { boxType with IsOpen = not isOpen }
+        let animIndex = getBoxYPos boxData
+        let boxImageConfig = if boxData.IsOpen then boxOpenSpriteConfig else boxClosedSpriteConfig
 
         let newSprite =
-            Sprite.switchAnimation ({ imageSpriteConfig with Index = animIndex }, 0, false) entity.Sprite
-
-        let boxType = Box { boxType with IsOpen = not isOpen }
+            Sprite.reInit entity.Sprite boxImageConfig animIndex
 
         { entity with
             Type =
                 Subject
                     { subj with
-                        Type = boxType
-                        ToEmit = (WillEmit << Subject) { defaultSubjectData with Type = boxType }
+                        Type = Box boxData
+                        ToEmit = (WillEmit << Subject) { defaultSubjectData with Type = Box boxData }
                         TicksSinceEmit = 0
                         GenerationNumber = subj.GenerationNumber + 1 }
             Sprite = newSprite },

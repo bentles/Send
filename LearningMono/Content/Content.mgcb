@@ -62,7 +62,7 @@
 /processorParam:TextureFormat=Color
 /build:sprites/entity/BigChar.png
 
-#begin sprites/entity/Box.png
+#begin sprites/entity/BoxClosed.png
 /importer:TextureImporter
 /processor:TextureProcessor
 /processorParam:ColorKeyColor=255,0,255,255
@@ -72,7 +72,19 @@
 /processorParam:ResizeToPowerOfTwo=False
 /processorParam:MakeSquare=False
 /processorParam:TextureFormat=Color
-/build:sprites/entity/Box.png
+/build:sprites/entity/BoxClosed.png
+
+#begin sprites/entity/BoxOpen.png
+/importer:TextureImporter
+/processor:TextureProcessor
+/processorParam:ColorKeyColor=255,0,255,255
+/processorParam:ColorKeyEnabled=True
+/processorParam:GenerateMipmaps=False
+/processorParam:PremultiplyAlpha=True
+/processorParam:ResizeToPowerOfTwo=False
+/processorParam:MakeSquare=False
+/processorParam:TextureFormat=Color
+/build:sprites/entity/BoxOpen.png
 
 #begin sprites/entity/Button.png
 /importer:TextureImporter

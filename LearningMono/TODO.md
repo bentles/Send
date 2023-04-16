@@ -10,13 +10,8 @@ TODO:
 - quick check for collision exclusion of far away objects
 - simplify away the pre-sending potential collider objects since world+player are now one
 - use the stopped animation on characters
-- prevent transform if carrying limits exceeded
-- button goes down on key down
-- simplify all the things
-	- make it easier to create entities for carrying
-	- simplify interaction event stuffs - seems dumb
-	- make it easier to switch animations
-	- some of my partial active patterns could probs just be complete patterns
+- carrying limits need to be revisited... maybe
+- button animates going down on key down
 - open close chest sounds
 - move entities to their own list
 - feedback from session with ash
@@ -37,6 +32,12 @@ TODO:
 - better level creation functions
 	- create tile and add entity to it??
 		- ok this has a problem with how i currently do non-pick upable things but that's just a temp fix anyway hmmm
+- simplify all the things
+	- make it easier to create entities for carrying
+	- simplify interaction event stuffs - seems dumb
+	- make it easier to switch animations
+	- some of my partial active patterns could probs just be complete patterns
+
 
 DOING:
 - boxes can also be observed like buttons and transmit their state as the signal

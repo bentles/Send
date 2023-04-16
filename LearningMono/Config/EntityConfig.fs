@@ -38,9 +38,14 @@ let buttonImage = { unitImage with TextureName = "button" }
 
 let rockImage = { unitImage with TextureName = "rock" }
 
-let boxImage =
+let boxOpenImage =
     { unitImage with
-        TextureName = "box"
+        TextureName = "boxOpen"
+        Rows = 3 }
+
+let boxClosedImage =
+    { unitImage with
+        TextureName = "boxClosed"
         Rows = 3 }
 
 //entities
@@ -92,9 +97,15 @@ let emptySpriteConfig =
           Tint = Color.White
           FrameLength = 300L }
 
-let boxSpriteConfig =
+let boxOpenSpriteConfig =
     SingleSpriteConfig
-        { Image = boxImage
+        { Image = boxOpenImage
+          Tint = Color.White
+          FrameLength = 300L }
+
+let boxClosedSpriteConfig =
+    SingleSpriteConfig
+        { Image = boxClosedImage
           Tint = Color.White
           FrameLength = 300L }
 
