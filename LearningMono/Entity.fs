@@ -130,7 +130,7 @@ let rec entityEq (e1: EntityType) (e2: EntityType) =
     | Observable { Type = Merge }, Observable { Type = Merge } -> true
     | Subject { Type = Timer _ }, Subject { Type = Timer _ } -> true
     | Subject { Type = Button _ }, Subject { Type = Button _ } -> true
-    | Subject { Type = Box _ }, Subject { Type = Box _ } -> true // check contents ?? check open/closed
+    | Subject { Type = Box { IsOpen = a} }, Subject { Type = Box {IsOpen = b} } when a = b -> true // check contents ?? check open/closed
     | _, _ -> false
 
 let getCollider (eType: EntityType) (pos: Vector2) : AABB voption =

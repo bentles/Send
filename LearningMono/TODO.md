@@ -36,13 +36,14 @@ TODO:
 	- simplify interaction event stuffs - seems dumb
 	- make it easier to switch animations
 	- some of my partial active patterns could probs just be complete patterns
-- filter levels are now possible too
+- fix toggle display bug :(
 
 
 DOING:
-- redo box levels
+- filter levels are now possible too
 
 DONE:
+- redo box levels
 - boxes can also be observed like buttons and transmit their state as the signal
 	- empty | filled | closed | ??
 	- this means that buttons should send themselves as the signal too
