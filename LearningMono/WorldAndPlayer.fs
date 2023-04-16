@@ -60,7 +60,7 @@ let getTileAtPos (pos: Vector2) (size: Coords) (tiles: Tiles) : struct (Tile * i
     index |> ValueOption.map (fun index -> PersistentVector.nth index tiles, index)
 
 let init time =
-    let levelIndex = Level.levels.Length - 3
+    let levelIndex = Level.levels.Length - 4
     let level = Level.levels[levelIndex] time
 
     { Tiles = level.Tiles
@@ -200,18 +200,19 @@ let placeEntity (model: Model) : Model =
             let feetIndex = model.PlayerFeet
 
             match tileAndIndex with
-            | ValueSome({ Entity = ValueNone } as tile, i) ->
+            | ValueSome({ Entity = ValueNone; Collider = ValueNone } as tile, i) ->
                 match feetIndex with
                 | ValueSome feet when feet <> i ->
                     let roundedPos = posRounded player.Target
                     let entity = Entity.init placeEntity.Type roundedPos model.TimeElapsed player.PlacementFacing true
+                    
+                    // can't place if the block will intersect with the player
                     let collided =
                         voption {
                             let! col = entity.Collider
                             return! Collision.intersectAABB (Collision.playerCollider player.Pos) col
                         }
 
-                    // can't place if the block will intersect with the player
                     match collided with
                     | ValueNone ->
                         let tiles =

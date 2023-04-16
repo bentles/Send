@@ -567,6 +567,52 @@ let level_toggles: LevelBuilder =
           LevelText = ""
           Size = (width, height) }
 
+let level_toggles2: LevelBuilder =
+    fun time ->
+        let __ = createNonCollidableTile FloorType.Grass
+        let ww = createCollidableTile Wall
+        let wl = createCollidableTile FloorType.LeftWall
+        let wr = createCollidableTile FloorType.RightWall
+        let wb = createCollidableTile FloorType.BottomWall
+        let wt = createCollidableTile FloorType.TopWall
+        let ir = observerOnGrass time (observing Id) FacingRight true
+        let tu = observerOnGrass time (observing (Toggle true)) FacingUp false
+        let tl = observerOnGrass time (observing (Toggle true)) FacingLeft false
+        let td = observerOnGrass time (observing (Toggle false)) FacingDown false
+        let tr = observerOnGrass time (observing (Toggle true)) FacingRight false
+        let bb = createButtonOnGrass time false
+        let xx = observerOnGrass time (observing GoToNextLevel) FacingLeft false
+        let bx =
+            createEntityOn
+                (Box
+                    { Items =
+                        [ (observing Id)
+                          (observing Id)
+                          (observing Id)
+                          (observing Id)
+                          (observing Id) ]
+                      IsOpen = false })
+                Grass
+                time
+                true
+
+        let tiles, width, height =
+            worldFromTemplate
+                [ [ ww; wt; wt; wt; wt; wt; wt; wt; wt; ww ]
+                  [ wl; __; __; __; __; __; __; __; __; wr ]
+                  [ wl; __; bb; __; __; __; __; __; __; wr ]
+                  [ wl; tr; tu; __; __; td; td; td; td; wr ]
+                  [ wl; __; tu; __; __; tl; tl; tl; tl; wr ]
+                  [ wl; __; tu; __; __; __; tu; __; __; wr ]
+                  [ wl; bx; tu; __; __; __; tu; __; xx; wr ]
+                  [ ww; wb; wb; wb; wb; wb; wb; wb; wb; ww ] ]
+
+        { PlayerStartsAtPos = Vector2(200f, 100f)
+          PlayerStartsCarrying = []
+          Tiles = tiles
+          LevelText = ""
+          Size = (width, height) }
+
 let level_map1: LevelBuilder =
     fun time ->
         let __ = createNonCollidableTile FloorType.Grass
@@ -865,6 +911,7 @@ let levels: LevelBuilder[] =
        level_box1
        level_box2
        level_toggles
+       level_toggles2
        level_map1
        level7
        levelSandBox |]
