@@ -60,8 +60,8 @@ let getTileAtPos (pos: Vector2) (size: Coords) (tiles: Tiles) : struct (Tile * i
     index |> ValueOption.map (fun index -> PersistentVector.nth index tiles, index)
 
 let init time =
-    let levelIndex = Level.levels.Length - 4
-    let level = Level.levels[levelIndex] time
+    let levelIndex = Levels.levels.Length - 4
+    let level = Levels.levels[levelIndex] time
 
     { Tiles = level.Tiles
       Song = PlaySong "pewpew"
@@ -257,8 +257,8 @@ let orientEntity (model:Model) (facing:Facing) =
     | _ -> model
 
 let nextLevel (model: Model) : Model =
-    let levelIndex = (model.Level + 1) % Level.levels.Length
-    let newLevel = Level.levels[levelIndex]model.TimeElapsed
+    let levelIndex = (model.Level + 1) % Levels.levels.Length
+    let newLevel = Levels.levels[levelIndex]model.TimeElapsed
 
     { model with
         Size = newLevel.Size

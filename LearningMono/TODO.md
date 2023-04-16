@@ -36,13 +36,14 @@ TODO:
 - perhaps boxes can be observed too?
 	- open empty, open non-empty, closed?
 - the next block to be placed should also rotate???
-- get all block types as a big record that can be destructured
-	- maybe leave off the canpickup param so that can be added later
-- more toggle levels
 
 DOING:
+- better level creation functions
+	- create tile and add entity to it
+		- ok this has a problem with how i currently do non-pick upable things but that's just a temp fix anyway hmmm
 
 DONE:
+- more toggle levels
 - should not be able to place on walls lol
 - fix bug with mappers
 - redo levels with next-level observer
