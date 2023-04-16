@@ -3,8 +3,7 @@
 - place observer?? too OP?
 	- can only infinitely place itself
 	- can place a box in a box
-- boxes can also be observed like buttons and transmit their state as the signal
-	- empty | filled | closed | ??
+
 
 
 TODO:
@@ -40,6 +39,10 @@ TODO:
 		- ok this has a problem with how i currently do non-pick upable things but that's just a temp fix anyway hmmm
 
 DOING:
+- boxes can also be observed like buttons and transmit their state as the signal
+	- empty | filled | closed | ??
+	- this means that buttons should send themselves as the signal too
+		- this is impossible because 
 
 DONE:
 - use tile to show which entities are permanent
