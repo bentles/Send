@@ -29,6 +29,7 @@ type ObserverType =
 type SubjectType =
     | Timer of BoxData * int
     | Button
+    | Box of BoxData
 
 and BoxData =
     { Items: (EntityType list)
@@ -46,8 +47,8 @@ and ObservableType =
 and EntityType =
     | Unit
     | Rock
-   // | NextLevel
-    | Box of BoxData
+    // | NextLevel
+
     | Subject of SubjectData
     | Observable of ObservableData
 
@@ -70,15 +71,22 @@ type Model =
       Facing: Facing
       Type: EntityType }
 
+let defaultSubjectData: SubjectData =
+    { Type = Button
+      ToEmit = Nothing
+      TicksSinceEmit = 0
+      GenerationNumber = 0 }
+
 let getSpriteConfig (eType: EntityType) : SpriteConfig =
     match eType with
     | Unit -> emptySpriteConfig
     | Rock -> rockSpriteConfig
-    | Box _ -> boxSpriteConfig
     | Subject { Type = sub } ->
         match sub with
         | Timer _ -> timerSpriteConfig
         | Button -> buttonSpriteConfig
+        | Box { IsOpen = true } -> boxOpenSpriteConfig
+        | Box { IsOpen = false } -> boxClosedSpriteConfig
     | Observable { Type = ob } ->
         match ob with
         | GoToNextLevel _ -> nextLevelSpriteConfig
@@ -94,11 +102,12 @@ let getEmitImage (eType: EntityType) =
     match eType with
     | Unit -> unitImage
     | Rock -> rockImage
-    | Box _ -> boxImage
     | Subject { Type = sub } ->
         match sub with
         | Timer _ -> timerImage
         | Button -> buttonImage
+        | Box { IsOpen = true } -> boxOpenImage
+        | Box { IsOpen = false } -> boxClosedImage
     | Observable { Type = ob } ->
         match ob with
         | GoToNextLevel _ -> nextLevelImage
@@ -113,7 +122,6 @@ let rec entityEq (e1: EntityType) (e2: EntityType) =
     match (e1, e2) with
     | Rock, Rock -> true
     | Unit, Unit -> true
-    | Box _, Box _ -> true // check contents ??
     | Observable { Type = Id }, Observable { Type = Id } -> true
     | Observable { Type = Toggle _ }, Observable { Type = Toggle _ } -> true
     | Observable { Type = Map _ }, Observable { Type = Map _ } -> true
@@ -122,6 +130,7 @@ let rec entityEq (e1: EntityType) (e2: EntityType) =
     | Observable { Type = Merge }, Observable { Type = Merge } -> true
     | Subject { Type = Timer _ }, Subject { Type = Timer _ } -> true
     | Subject { Type = Button _ }, Subject { Type = Button _ } -> true
+    | Subject { Type = Box _ }, Subject { Type = Box _ } -> true // check contents ?? check open/closed
     | _, _ -> false
 
 let getCollider (eType: EntityType) (pos: Vector2) : AABB voption =
@@ -130,7 +139,6 @@ let getCollider (eType: EntityType) (pos: Vector2) : AABB voption =
     | Observable { Type = Toggle false } -> ValueNone
     | Rock
     | Subject _
-    | Box _
     | Observable _ -> ValueSome { Pos = pos; Half = Vector2(10f, 10f) }
 
 let getObserverType (obs: ObservableType) : ObserverType =
@@ -162,13 +170,19 @@ let (|EmittingObservable|_|) (emit: EntityType) =
     | _ -> None
 
 [<return: Struct>]
-let (|CanPlaceIntoEntity|_|) (inputEntity: EntityType) (entityType: EntityType)  : voption<EntityType> =
+let (|CanPlaceIntoEntity|_|) (inputEntity: EntityType) (entityType: EntityType) : voption<EntityType> =
     match entityType with
     | Observable({ Type = Map Unit } as oData) -> ValueSome(Observable { oData with Type = Map inputEntity })
     | Observable({ Type = Filter Unit } as oData) -> ValueSome(Observable { oData with Type = Filter inputEntity })
-    | Box { IsOpen = true; Items = items } -> ValueSome(Box
-            { IsOpen = true
-              Items = inputEntity :: items })
+    | Subject({ Type = Box { IsOpen = true; Items = items } } as sData) ->
+        ValueSome(
+            Subject
+                { sData with
+                    Type =
+                        Box
+                            { IsOpen = true
+                              Items = inputEntity :: items } }
+        )
     | _ -> ValueNone
 
 [<return: Struct>]
@@ -178,7 +192,8 @@ let (|CanPickOutOfEntity|_|) (entityType: EntityType) : voption<EntityType * Ent
     | Observable { Type = Filter Unit } -> ValueNone
     | Observable({ Type = Map e } as obs) -> ValueSome(Observable { obs with Type = Map Unit }, e)
     | Observable({ Type = Filter e } as obs) -> ValueSome(Observable { obs with Type = Filter Unit }, e)
-    | Box { IsOpen = true; Items = e :: rest } -> ValueSome(Box { IsOpen = true; Items = rest }, e)
+    | Subject({ Type = Box { IsOpen = true; Items = e :: rest } } as sub) ->
+        ValueSome(Subject { sub with Type = Box { IsOpen = true; Items = rest } }, e)
     | _ -> ValueNone
 
 
@@ -186,7 +201,8 @@ let takeOutOf (existingEntity: EntityType) =
     match existingEntity with
     | Observable({ Type = Map _ } as oData) -> Observable { oData with Type = Map Unit }
     | Observable({ Type = Filter _ } as oData) -> Observable { oData with Type = Filter Unit }
-    | Box { IsOpen = true; Items = _ :: rest } -> Box { IsOpen = true; Items = rest }
+    | Subject({ Type = Box { IsOpen = true; Items = _ :: rest } } as sub) ->
+        Subject { sub with Type = Box { IsOpen = true; Items = rest } }
     | _ -> existingEntity
 
 let private behaviorFunc (observable: ObservableData) (a: EntityType voption) (b: EntityType voption) =
@@ -211,7 +227,8 @@ let private behaviorFunc (observable: ObservableData) (a: EntityType voption) (b
         | _ -> Nothing
     | Merge ->
         match (a, b) with
-        | (ValueSome e1), (ValueSome e2) -> WillEmit(Box { Items = [ e1; e2 ]; IsOpen = false })
+        | (ValueSome e1), (ValueSome e2) ->
+            WillEmit(Subject { defaultSubjectData with Type = Box { Items = [ e1; e2 ]; IsOpen = false } })
         | (ValueSome e1), ValueNone -> WillEmit e1
         | ValueNone, ValueSome e2 -> WillEmit e2
         | _ -> Nothing
@@ -271,13 +288,14 @@ let getOnEmit (obs: EntityType) (pos: Vector2) =
             { entity with
                 Type = newObs
                 Collider = if not state then getCollider newObs pos else ValueNone
-                Sprite = Sprite.reInit entity.Sprite newSprite }
+                Sprite = Sprite.reInit entity.Sprite newSprite 0 }
     | Observable({ Type = GoToNextLevel }) ->
         fun (entity: Model) ->
             let newObs = Unit
+
             { entity with
-                Type = newObs               
-                Sprite = Sprite.reInit entity.Sprite unitSpriteConfig }
+                Type = newObs
+                Sprite = Sprite.reInit entity.Sprite unitSpriteConfig 0 }
     | _ -> (id)
 
 
@@ -310,6 +328,13 @@ let getSubjectFunc (sub: SubjectType) =
     match sub with
     | Timer(box, time) -> buildRepeatListEmittingEvery box time
     | Button _ -> subjectStep
+    | Box _ -> subjectStep
+
+let getBoxYPos (boxType:BoxData) = 
+    match boxType with
+    | { IsOpen = false } -> 0
+    | { Items = _ :: _ } -> 1
+    | { Items = [] } -> 0
 
 let getYpos (entityType: EntityType) (facing: Facing) =
     match entityType with
@@ -319,16 +344,17 @@ let getYpos (entityType: EntityType) (facing: Facing) =
         | FacingRight -> 1
         | FacingDown -> 2
         | FacingUp -> 3
-    | Box { IsOpen = false } -> 1
-    | Box { Items = _ :: _ } -> 2
-    | Box { Items = [] } -> 0
+    | Subject { Type = Box boxData } -> getBoxYPos boxData
     | _ -> 0
 
 let init (entityType: EntityType) (pos: Vector2) (time) (facing: Facing) (canBePickedUp: bool) =
     let config = (getSpriteConfig entityType)
 
     let ypos = getYpos entityType facing
-    let sprite = Sprite.startAnimation (Sprite.init pos time config (Some ypos) (Some false))
+
+    let sprite =
+        Sprite.startAnimation (Sprite.init pos time config (Some ypos) (Some false))
+
     let collider = getCollider entityType pos
 
     { Type = entityType
@@ -386,24 +412,26 @@ let interact (entity: Model) : Model * InteractionEvent =
             Type =
                 Subject
                     { subData with
-                        ToEmit = WillEmit Unit
+                        ToEmit = (WillEmit << Subject) { defaultSubjectData with Type = Button }
                         TicksSinceEmit = 0
                         GenerationNumber = subData.GenerationNumber + 1 } },
         InteractionEvent.NoEvent
-    | Box({ IsOpen = isOpen; Items = items } as boxType) ->
-        let animIndex =
-            if isOpen then
-                1
-            else
-                match items with
-                | [] -> 0
-                | _ -> 2
+    | Subject({ Type = Box({ IsOpen = isOpen } as boxType) } as subj) ->
+        let boxData = { boxType with IsOpen = not isOpen }
+        let animIndex = getBoxYPos boxData
+        let boxImageConfig = if boxData.IsOpen then boxOpenSpriteConfig else boxClosedSpriteConfig
 
         let newSprite =
-            Sprite.switchAnimation ({ imageSpriteConfig with Index = animIndex }, 0, false) entity.Sprite
+            Sprite.reInit entity.Sprite boxImageConfig animIndex
 
         { entity with
-            Type = Box { boxType with IsOpen = not isOpen }
+            Type =
+                Subject
+                    { subj with
+                        Type = Box boxData
+                        ToEmit = (WillEmit << Subject) { defaultSubjectData with Type = Box boxData }
+                        TicksSinceEmit = 0
+                        GenerationNumber = subj.GenerationNumber + 1 }
             Sprite = newSprite },
         InteractionEvent.NoEvent
     | _ -> entity, InteractionEvent.NoEvent
