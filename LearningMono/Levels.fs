@@ -5,7 +5,7 @@ open Microsoft.Xna.Framework
 open Entity
 open Prelude
 
-let level_PlayerMoves: LevelBuilder =   
+let level_PlayerMoves: LevelBuilder =
     fun time ->
         let __ = createNonCollidableTile FloorType.Grass
         let ww = createCollidableTile Wall
@@ -16,13 +16,13 @@ let level_PlayerMoves: LevelBuilder =
 
         let tiles, width, height =
             worldFromTemplate
-              [ [ ww; wt; wt; wt; wt; wt; ww ]
-                [ ww; __; __; __; __; __; ww ]
-                [ ww; __; __; __; __; __; ww ]
-                [ ww; __; __; __; __; __; ww ]
-                [ ww; __; __; __; __; bb; ww ]
-                [ ww; __; __; __; __; NL; ww ]
-                [ wt; wt; wt; wt; wt; wt; wt ] ]
+                [ [ ww; wt; wt; wt; wt; wt; ww ]
+                  [ ww; __; __; __; __; __; ww ]
+                  [ ww; __; __; __; __; __; ww ]
+                  [ ww; __; __; __; __; __; ww ]
+                  [ ww; __; __; __; __; bb; ww ]
+                  [ ww; __; __; __; __; NL; ww ]
+                  [ wt; wt; wt; wt; wt; wt; wt ] ]
 
         { PlayerStartsAtPos = Vector2(150f, 150f)
           PlayerStartsCarrying = []
@@ -262,6 +262,8 @@ let level_observers5: LevelBuilder =
           Tiles = tiles
           Size = (width, height) }
 
+let buildBox = buildSubject << Box
+
 let level_box0: LevelBuilder =
     fun time ->
         let g = createNonCollidableTile FloorType.Grass
@@ -274,7 +276,7 @@ let level_box0: LevelBuilder =
 
         let x =
             createEntityOn
-                (Box
+                (buildBox
                     { Items = [ Rock; Rock; (buildSubject Button) ]
                       IsOpen = false })
                 Grass
@@ -310,30 +312,17 @@ let level_box1: LevelBuilder =
 
         let x =
             createEntityOn
-                (Box
+                (buildBox
                     { Items = [ Rock; Rock; (buildSubject Button) ]
                       IsOpen = false })
                 Grass
                 time
                 true
 
-        let y =  
-            createEntityOn
-                (Box
-                    { Items = []
-                      IsOpen = false })
-                Grass
-                time
-                true 
+        let y = createEntityOn (buildBox { Items = []; IsOpen = false }) Grass time true
 
         let tiles, width, height =
-            worldFromTemplate
-                [ [ w; t; w]
-                  [ w; N; w]
-                  [ w; g; w]
-                  [ w; x; w]
-                  [ w; y; w]
-                  [ t; t; t]]
+            worldFromTemplate [ [ w; t; w ]; [ w; N; w ]; [ w; g; w ]; [ w; x; w ]; [ w; y; w ]; [ t; t; t ] ]
 
         { PlayerStartsAtPos = (Vector2(75f, 125f))
           PlayerStartsCarrying = []
@@ -353,14 +342,14 @@ let level_box2: LevelBuilder =
 
         let x =
             createEntityOn
-                (Box
+                (buildBox
                     { Items =
                         [ Rock
                           buildObserver GoToNextLevel
-                          Box
+                          buildBox
                               { Items =
-                                  [ Box { Items = []; IsOpen = true }
-                                    Box
+                                  [ buildBox { Items = []; IsOpen = true }
+                                    buildBox
                                         { Items = [ Rock; Rock; Rock; (buildSubject Button) ]
                                           IsOpen = false } ]
                                 IsOpen = false } ]
@@ -432,9 +421,10 @@ let level_toggles: LevelBuilder =
         let tr = observerOnGrass time (observing (Toggle true)) FacingRight false
         let bb = createButtonOnGrass time false
         let xx = createEntityOn (buildObserver GoToNextLevel) Grass time true
+
         let bx =
             createEntityOn
-                (Box
+                (buildBox
                     { Items =
                         [ (observing Id)
                           (observing Id)
@@ -479,9 +469,10 @@ let level_toggles2: LevelBuilder =
         let tr = observerOnGrass time (observing (Toggle true)) FacingRight false
         let bb = createButtonOnGrass time false
         let xx = observerOnGrass time (observing GoToNextLevel) FacingLeft false
+
         let bx =
             createEntityOn
-                (Box
+                (buildBox
                     { Items =
                         [ (observing Id)
                           (observing Id)
@@ -531,7 +522,7 @@ let level_map1: LevelBuilder =
 
         let bx =
             createEntityOn
-                (Box
+                (buildBox
                     { Items =
                         [ (observing Id)
                           (observing Id)
@@ -589,7 +580,7 @@ let level7: LevelBuilder =
 
         let bx =
             createEntityOn
-                (Box
+                (buildBox
                     { Items =
                         [ (observing Id)
                           (observing Id)
@@ -657,7 +648,7 @@ let levelSandBox: LevelBuilder =
 
         let b0 =
             createEntityOn
-                (Box
+                (buildBox
                     { Items =
                         [ (observing (Toggle true))
                           (observing (Toggle true))
@@ -676,7 +667,7 @@ let levelSandBox: LevelBuilder =
 
         let b1 =
             createEntityOn
-                (Box
+                (buildBox
                     { Items =
                         [ (observing Id)
                           (observing Id)
@@ -707,7 +698,7 @@ let levelSandBox: LevelBuilder =
 
         let b2 =
             createEntityOn
-                (Box
+                (buildBox
                     { Items =
                         [ (observing Merge)
                           (observing Merge)
@@ -724,7 +715,7 @@ let levelSandBox: LevelBuilder =
 
         let b3 =
             createEntityOn
-                (Box
+                (buildBox
                     { Items =
                         [ (observing (Map Unit))
                           (observing (Map Unit))
@@ -741,7 +732,7 @@ let levelSandBox: LevelBuilder =
 
         let b4 =
             createEntityOn
-                (Box
+                (buildBox
                     { Items =
                         [ (observing (Filter Unit))
                           (observing (Filter Unit))
@@ -758,7 +749,7 @@ let levelSandBox: LevelBuilder =
 
         let b5 =
             createEntityOn
-                (Box
+                (buildBox
                     { Items =
                         [ (observing (Compare))
                           (observing (Compare))
@@ -810,6 +801,6 @@ let levels: LevelBuilder[] =
        level_box2
        level_toggles
        level_toggles2
-    //    level_map1
-    //    level7
+       //    level_map1
+       //    level7
        levelSandBox |]
