@@ -36,11 +36,12 @@ TODO:
 - perhaps boxes can be observed too?
 	- open empty, open non-empty, closed?
 - the next block to be placed should also rotate???
-
-DOING:
 - better level creation functions
 	- create tile and add entity to it
 		- ok this has a problem with how i currently do non-pick upable things but that's just a temp fix anyway hmmm
+
+DOING:
+- force player to pick up multiple items
 
 DONE:
 - more toggle levels

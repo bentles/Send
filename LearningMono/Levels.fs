@@ -262,7 +262,7 @@ let level_observers5: LevelBuilder =
           Tiles = tiles
           Size = (width, height) }
 
-let level_box1: LevelBuilder =
+let level_box0: LevelBuilder =
     fun time ->
         let g = createNonCollidableTile FloorType.Grass
         let w = createCollidableTile Wall
@@ -293,6 +293,49 @@ let level_box1: LevelBuilder =
                   [ w; b; b; b; b; b; w ] ]
 
         { PlayerStartsAtPos = (Vector2(200f, 100f))
+          PlayerStartsCarrying = []
+          LevelText = "Boxes store items. Try using Z (interact), X (pick up) and C (place) on a box"
+          Tiles = tiles
+          Size = (width, height) }
+
+let level_box1: LevelBuilder =
+    fun time ->
+        let g = createNonCollidableTile FloorType.Grass
+        let w = createCollidableTile Wall
+        let l = createCollidableTile FloorType.LeftWall
+        let r = createCollidableTile FloorType.RightWall
+        let b = createCollidableTile FloorType.BottomWall
+        let t = createCollidableTile FloorType.TopWall
+        let N = observerCannotPick time (observing GoToNextLevel) FacingDown
+
+        let x =
+            createEntityOn
+                (Box
+                    { Items = [ Rock; Rock; (buildSubject Button) ]
+                      IsOpen = false })
+                Grass
+                time
+                true
+
+        let y =  
+            createEntityOn
+                (Box
+                    { Items = []
+                      IsOpen = false })
+                Grass
+                time
+                true 
+
+        let tiles, width, height =
+            worldFromTemplate
+                [ [ w; t; w]
+                  [ w; N; w]
+                  [ w; g; w]
+                  [ w; x; w]
+                  [ w; y; w]
+                  [ t; t; t]]
+
+        { PlayerStartsAtPos = (Vector2(75f, 125f))
           PlayerStartsCarrying = []
           LevelText = "Boxes store items. Try using Z (interact), X (pick up) and C (place) on a box"
           Tiles = tiles
@@ -762,6 +805,7 @@ let levels: LevelBuilder[] =
        level_observers3
        level_observers4
        level_observers5
+       level_box0
        level_box1
        level_box2
        level_toggles
