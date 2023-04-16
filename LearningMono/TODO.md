@@ -38,13 +38,13 @@ TODO:
 - the next block to be placed should also rotate???
 - get all block types as a big record that can be destructured
 	- maybe leave off the canpickup param so that can be added later
+- more toggle levels
 
 DOING:
-- fix bug with mappers
-- more toggle levels
-- should not be able to place on walls lol
 
 DONE:
+- should not be able to place on walls lol
+- fix bug with mappers
 - redo levels with next-level observer
 	- problem: game feel is not right
 	- i think its ok but needs something 
