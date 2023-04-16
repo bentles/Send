@@ -3,9 +3,7 @@
 - place observer?? too OP?
 	- can only infinitely place itself
 	- can place a box in a box
-- boxes can also be observed like buttons and transmit their state as the signal
-	- empty | filled | closed | ??
-
+- unit vs void... not sure i have it right :'D
 
 TODO:
 - quick check for collision exclusion of far away objects
@@ -38,10 +36,22 @@ TODO:
 - better level creation functions
 	- create tile and add entity to it??
 		- ok this has a problem with how i currently do non-pick upable things but that's just a temp fix anyway hmmm
+- simplify all the things
+	- make it easier to create entities for carrying
+	- simplify interaction event stuffs - seems dumb
+	- make it easier to switch animations
+	- some of my partial active patterns could probs just be complete patterns
+- filter levels are now possible too
+
 
 DOING:
+- redo box levels
 
 DONE:
+- boxes can also be observed like buttons and transmit their state as the signal
+	- empty | filled | closed | ??
+	- this means that buttons should send themselves as the signal too
+		- this is impossible because 
 - use tile to show which entities are permanent
 - force player to pick up multiple items
 - more toggle levels

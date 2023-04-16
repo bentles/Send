@@ -795,16 +795,16 @@ let levelSandBox: LevelBuilder =
           Size = (width, height) }
 
 let levels: LevelBuilder[] =
-    [|     
-       level_PlayerMoves
-       level_PlayerPickUp
-       level_left
-       level_dang_rocks
-       level_observers
-       level_observers2
-       level_observers3
-       level_observers4
-       level_observers5
+    [| 
+       //level_PlayerMoves
+       //level_PlayerPickUp
+       //level_left
+       //level_dang_rocks
+       //level_observers
+       //level_observers2
+       //level_observers3
+       //level_observers4
+       //level_observers5
        level_box0
        level_box1
        level_box2

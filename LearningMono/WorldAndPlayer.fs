@@ -60,7 +60,7 @@ let getTileAtPos (pos: Vector2) (size: Coords) (tiles: Tiles) : struct (Tile * i
     index |> ValueOption.map (fun index -> PersistentVector.nth index tiles, index)
 
 let init time =
-    let levelIndex =  0 //Levels.levels.Length - 5
+    let levelIndex = 0 //Levels.levels.Length - 1
     let level = Levels.levels[levelIndex] time
 
     { Tiles = level.Tiles
