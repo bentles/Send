@@ -34,13 +34,14 @@ TODO:
 	- simplify interaction event stuffs - seems dumb
 	- make it easier to switch animations
 	- some of my partial active patterns could probs just be complete patterns
-
+	- create a flattened entity type tree??
+		- not sure if this replaces the existing one or just to be used for non reactive stuffs???
 
 DOING:
-- fix box display bug
 - filter levels are now possible too
 
 DONE:
+- fix box display bug
 - fix toggle display bug :(
 - redo box levels
 - boxes can also be observed like buttons and transmit their state as the signal

@@ -705,9 +705,9 @@ let levels: LevelBuilder[] =
        //    level_box0
        //    level_box1
        //    level_box2
-       level_toggles
+       //level_toggles
        //    level_toggles2
        //level_filter1
-       //level_filter2
+       level_filter2
        //    level7
        levelSandBox |]

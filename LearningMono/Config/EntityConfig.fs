@@ -31,7 +31,7 @@ let unitImage =
       Rows = 1
       Columns = 1
       TextureName = "unit"
-      Offset = Vector2(0f, 0f) }
+      Offset = Vector2(0f, 10f) }
 
 
 let buttonImage = { unitImage with TextureName = "button" }
@@ -41,12 +41,12 @@ let rockImage = { unitImage with TextureName = "rock" }
 let boxOpenImage =
     { unitImage with
         TextureName = "boxOpen"
-        Rows = 3 }
+        Rows = 2 }
 
 let boxClosedImage =
     { unitImage with
         TextureName = "boxClosed"
-        Rows = 3 }
+        Rows = 1 }
 
 //entities
 let timerSpriteConfig =
