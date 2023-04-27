@@ -22,11 +22,9 @@ TODO:
 - fix placements
 	- placements should go red when cannot be placed?
 	- preview with greyed out?
-- maybe just tint non movables darker??
 - use an effect to show an entity can't be picked up 
+	- maybe just tint non movables darker??
 - tiles with different properties
-- perhaps boxes can be observed too?
-	- open empty, open non-empty, closed?
 - the next block to be placed should also rotate???
 - better level creation functions
 	- create tile and add entity to it??
@@ -36,13 +34,14 @@ TODO:
 	- simplify interaction event stuffs - seems dumb
 	- make it easier to switch animations
 	- some of my partial active patterns could probs just be complete patterns
-- fix toggle display bug :(
 
 
 DOING:
+- fix box display bug
 - filter levels are now possible too
 
 DONE:
+- fix toggle display bug :(
 - redo box levels
 - boxes can also be observed like buttons and transmit their state as the signal
 	- empty | filled | closed | ??

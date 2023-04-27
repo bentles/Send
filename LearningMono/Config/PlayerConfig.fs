@@ -19,7 +19,7 @@ let playerConfig =
       Acc = 30f
       Slow = 40f
       AABBConfig =
-        { Half = Vector2(25f, 25f)
+        { Half = Vector2(24f, 24f)
           Pos = Vector2(0f, 0f) } }
 
 let bigCharImage =

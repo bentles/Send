@@ -288,14 +288,14 @@ let getOnEmit (obs: EntityType) (pos: Vector2) =
             { entity with
                 Type = newObs
                 Collider = if not state then getCollider newObs pos else ValueNone
-                Sprite = Sprite.reInit entity.Sprite newSprite 0 }
+                Sprite = Sprite.reInit entity.Sprite newSprite ValueNone }
     | Observable({ Type = GoToNextLevel }) ->
         fun (entity: Model) ->
             let newObs = Unit
 
             { entity with
                 Type = newObs
-                Sprite = Sprite.reInit entity.Sprite unitSpriteConfig 0 }
+                Sprite = Sprite.reInit entity.Sprite unitSpriteConfig ValueNone }
     | _ -> (id)
 
 
@@ -422,7 +422,7 @@ let interact (entity: Model) : Model * InteractionEvent =
         let boxImageConfig = if boxData.IsOpen then boxOpenSpriteConfig else boxClosedSpriteConfig
 
         let newSprite =
-            Sprite.reInit entity.Sprite boxImageConfig animIndex
+            Sprite.reInit entity.Sprite boxImageConfig (ValueSome animIndex)
 
         { entity with
             Type =

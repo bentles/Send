@@ -76,14 +76,14 @@ let init pos time (config: SpriteConfig) (ypos: int option) (flipH: bool option)
           ScreenPos = pos }
 
 //TODO: almost definitely wrong lol
-let reInit (sprite: Model) (config: SpriteConfig) (curr: int32) =
+let reInit (sprite: Model) (config: SpriteConfig) (curr: int32 voption) =
     match config with
     | SingleSpriteConfig singleConfig ->
         { sprite with
             Images = [ singleConfig.Image ]
             CurrentImage = singleConfig.Image
             Tint = singleConfig.Tint
-            RelativeYPos = curr
+            RelativeYPos = curr |> ValueOption.defaultValue sprite.RelativeYPos 
             AnimationState = Stopped(imageSpriteConfig, 0)
             FrameLength = singleConfig.FrameLength }
 
