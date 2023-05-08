@@ -36,8 +36,10 @@ TODO:
 	- some of my partial active patterns could probs just be complete patterns
 	- create a flattened entity type tree??
 		- not sure if this replaces the existing one or just to be used for non reactive stuffs???
+- cannot observe while emitting? i need a speed limit
 
 DOING:
+- merge levels
 - filter levels are now possible too
 
 DONE:

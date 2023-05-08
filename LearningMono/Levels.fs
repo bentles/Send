@@ -441,47 +441,124 @@ let level_toggles2: LevelBuilder =
           LevelText = ""
           Size = (width, height) }
 
-let level_filter2: LevelBuilder =
+let level_merge1: LevelBuilder =
     fun time ->
         let __ = createNonCollidableTile FloorType.Grass
         let ww = createCollidableTile Wall
         let wt = createCollidableTile FloorType.TopWall
-        let iu = observerOnGrass time (observing Id) FacingUp true
-        let il = observerOnGrass time (observing Id) FacingLeft true
+        let iu = observerOnGrass time (observing Id) FacingUp false
+        let ir = observerOnGrass time (observing Id) FacingRight true
         let tu = observerOnGrass time (observing (Toggle true)) FacingUp false
-        let tl = observerOnGrass time (observing (Toggle true)) FacingLeft false
-        let td = observerOnGrass time (observing (Toggle true)) FacingDown false
 
-        let fl =
-            observerOnGrass time (observing (Filter(buildBox { IsOpen = true; Items = [] }))) FacingLeft false
-        let fd =
-            observerOnGrass time (observing (Filter(buildBox { IsOpen = false; Items = [] }))) FacingDown false
-        let fu =
-            observerOnGrass time (observing (Filter(buildSubject Button))) FacingUp false
+        let tr = observerOnGrass time (observing (Toggle true)) FacingRight false
+        let Tr = observerOnGrass time (observing (Toggle false)) FacingRight false
 
-        let mu = observerOnGrass time (observing (Map Unit)) FacingUp true
-        let bb = createButtonOnGrass time true
+
+        let mu = observerOnGrass time (observing (Merge)) FacingUp false
+        let bb = createButtonOnGrass time false
         let xx = createEntityOn ((observing GoToNextLevel)) Grass time true
 
-        let bx = createEntityOn (buildBox { Items = []; IsOpen = true }) Grass time true
+
 
         let tiles, width, height =
             worldFromTemplate
-                [ [ ww; wt; ww; wt; wt; wt; wt; wt; wt; wt; wt; ww ]
-                  [ ww; __; ww; __; __; __; __; td; bb; __; __; ww ]
-                  [ ww; __; ww; __; bx; __; __; td; __; __; __; ww ]
-                  [ ww; __; ww; __; iu; __; __; fd; __; __; __; ww ]
-                  [ ww; __; ww; __; iu; il; il; il; fl; tl; tl; ww ]
-                  [ ww; __; ww; __; __; fu; tl; tl; tu; __; __; ww ]
-                  [ ww; __; ww; __; __; tu; __; tu; tu; __; xx; ww ]
-                  [ ww; __; wt; wt; wt; wt; __; wt; wt; wt; wt; ww ]
-                  [ ww; __; __; __; __; __; __; __; __; __; __; ww ]
-                  [ wt; wt; wt; wt; wt; wt; wt; wt; wt; wt; wt; wt ]]
+                [ [ ww; wt; wt; wt; wt; wt; wt; wt; ww ]
+                  [ ww; __; __; __; __; __; __; __; ww ]
+                  [ ww; __; __; __; __; __; __; __; ww ]
+                  [ ww; __; __; __; __; bb; __; __; ww ]
+                  [ ww; __; __; __; ir; iu; __; __; ww ]
+                  [ ww; ir; ir; ir; ir; iu; __; __; ww ]
+                  [ ww; tr; tr; tr; tr; iu; __; __; ww ]
+                  [ ww; __; __; __; __; mu; __; __; ww ]
+                  [ ww; Tr; Tr; Tr; Tr; iu; __; __; ww ]
+                  [ ww; __; __; __; __; iu; __; __; ww ]
+                  [ ww; __; xx; __; __; iu; __; __; ww ]
+                  [ wt; wt; wt; wt; wt; wt; wt; wt; wt ] ]
 
         { PlayerStartsAtPos = Vector2(200f, 100f)
           PlayerStartsCarrying = []
           Tiles = tiles
-          LevelText = "The filter observer filters signals."
+          LevelText = "The merge observer can observe two signals and merge them."
+          Size = (width, height) }
+
+let level_merge2: LevelBuilder =
+    fun time ->
+        let __ = createNonCollidableTile FloorType.Grass
+        let ww = createCollidableTile Wall
+        let wt = createCollidableTile FloorType.TopWall
+        let iu = observerOnGrass time (observing Id) FacingUp false
+        let ir = observerOnGrass time (observing Id) FacingRight true
+        let tu = observerOnGrass time (observing (Toggle true)) FacingUp false
+
+        let tr = observerOnGrass time (observing (Toggle true)) FacingRight false
+        let Tr = observerOnGrass time (observing (Toggle false)) FacingRight false
+
+
+        let mu = observerOnGrass time (observing (Merge)) FacingUp false
+        let bb = createButtonOnGrass time false
+        let xx = createEntityOn ((observing GoToNextLevel)) Grass time true
+
+
+
+        let tiles, width, height =
+            worldFromTemplate
+                [ [ ww; wt; wt; wt; wt; wt; wt; wt; ww ]
+                  [ ww; ir; __; __; __; __; __; __; ww ]
+                  [ ww; ir; __; __; __; __; __; __; ww ]
+                  [ ww; __; __; __; __; bb; __; __; ww ]
+                  [ ww; __; __; __; __; iu; __; __; ww ]
+                  [ ww; __; __; __; __; iu; __; __; ww ]
+                  [ ww; tr; tr; tr; tr; iu; __; __; ww ]
+                  [ ww; __; __; __; __; mu; __; __; ww ]
+                  [ ww; Tr; Tr; Tr; Tr; iu; __; __; ww ]
+                  [ ww; __; __; __; __; iu; __; __; ww ]
+                  [ ww; __; xx; __; __; iu; __; __; ww ]
+                  [ wt; wt; wt; wt; wt; wt; wt; wt; wt ] ]
+
+        { PlayerStartsAtPos = Vector2(200f, 100f)
+          PlayerStartsCarrying = []
+          Tiles = tiles
+          LevelText = "The merge observer can observe two signals and merge them."
+          Size = (width, height) }
+
+let level_merge3: LevelBuilder =
+    fun time ->
+        let __ = createNonCollidableTile FloorType.Grass
+        let ww = createCollidableTile Wall
+        let wt = createCollidableTile FloorType.TopWall
+        let iu = observerOnGrass time (observing Id) FacingUp false
+        let ir = observerOnGrass time (observing Id) FacingRight true
+        let tu = observerOnGrass time (observing (Toggle true)) FacingUp false
+
+        let tr = observerOnGrass time (observing (Toggle true)) FacingRight false
+        let Tr = observerOnGrass time (observing (Toggle false)) FacingRight false
+
+
+        let mu = observerOnGrass time (observing (Merge)) FacingUp false
+        let bb = createButtonOnGrass time false
+        let xx = createEntityOn ((observing GoToNextLevel)) Grass time true
+
+
+
+        let tiles, width, height =
+            worldFromTemplate
+                [ [ ww; wt; wt; wt; wt; wt; wt; wt; ww ]
+                  [ ww; ir; __; __; __; __; __; __; ww ]
+                  [ ww; ir; __; __; __; __; __; __; ww ]
+                  [ ww; __; __; __; __; bb; __; __; ww ]
+                  [ ww; __; __; __; __; iu; __; __; ww ]
+                  [ ww; __; __; __; __; iu; __; __; ww ]
+                  [ ww; tr; tr; tr; tr; iu; __; __; ww ]
+                  [ ww; __; __; __; __; mu; __; __; ww ]
+                  [ ww; Tr; Tr; Tr; Tr; iu; __; __; ww ]
+                  [ ww; __; __; __; __; iu; __; __; ww ]
+                  [ ww; __; xx; __; __; iu; __; __; ww ]
+                  [ wt; wt; wt; wt; wt; wt; wt; wt; wt ] ]
+
+        { PlayerStartsAtPos = Vector2(200f, 100f)
+          PlayerStartsCarrying = []
+          Tiles = tiles
+          LevelText = "The merge observer can observe two signals and merge them."
           Size = (width, height) }
 
 let level_filter1: LevelBuilder =
@@ -501,6 +578,8 @@ let level_filter1: LevelBuilder =
         let bb = createButtonOnGrass time false
         let xx = createEntityOn ((observing GoToNextLevel)) Grass time true
 
+
+
         let bx = createEntityOn (buildBox { Items = []; IsOpen = true }) Grass time true
 
         let tiles, width, height =
@@ -519,6 +598,95 @@ let level_filter1: LevelBuilder =
           Tiles = tiles
           LevelText = "The filter observer filters signals."
           Size = (width, height) }
+
+let level_filter11: LevelBuilder =
+    fun time ->
+        let __ = createNonCollidableTile FloorType.Grass
+        let ww = createCollidableTile Wall
+        let wt = createCollidableTile FloorType.TopWall
+        let iu = observerOnGrass time (observing Id) FacingUp true
+        let il = observerOnGrass time (observing Id) FacingLeft true
+        let tu = observerOnGrass time (observing (Toggle true)) FacingUp false
+        let tl = observerOnGrass time (observing (Toggle true)) FacingLeft false
+
+        let Tl = observerOnGrass time (observing (Toggle false)) FacingLeft false
+
+        let fl =
+            observerOnGrass time (observing (Filter(buildBox { IsOpen = true; Items = [] }))) FacingLeft false
+
+        let fd =
+            observerOnGrass time (observing (Filter(buildBox { IsOpen = false; Items = [] }))) FacingDown false
+
+        let mu = observerOnGrass time (observing (Map Unit)) FacingUp true
+        let bb = createButtonOnGrass time false
+        let xx = createEntityOn ((observing GoToNextLevel)) Grass time true
+
+        let bx = createEntityOn (buildBox { Items = []; IsOpen = true }) Grass time true
+
+        let tiles, width, height =
+            worldFromTemplate
+                [ [ ww; wt; wt; wt; wt; wt; wt; wt; wt; ww ]
+                  [ ww; __; __; __; __; __; bx; __; __; ww ]
+                  [ ww; __; bb; __; __; __; __; __; __; ww ]
+                  [ ww; __; iu; __; __; fd; tl; tl; tl; ww ]
+                  [ ww; __; iu; il; il; il; fl; Tl; Tl; ww ]
+                  [ ww; __; __; __; __; __; tu; __; __; ww ]
+                  [ ww; __; __; __; __; __; tu; __; xx; ww ]
+                  [ wt; wt; wt; wt; wt; wt; wt; wt; wt; wt ] ]
+
+        { PlayerStartsAtPos = Vector2(200f, 100f)
+          PlayerStartsCarrying = []
+          Tiles = tiles
+          LevelText = "The filter observer filters signals."
+          Size = (width, height) }
+
+let level_filter2: LevelBuilder =
+    fun time ->
+        let __ = createNonCollidableTile FloorType.Grass
+        let ww = createCollidableTile Wall
+        let wt = createCollidableTile FloorType.TopWall
+        let iu = observerOnGrass time (observing Id) FacingUp true
+        let il = observerOnGrass time (observing Id) FacingLeft true
+        let tu = observerOnGrass time (observing (Toggle true)) FacingUp false
+        let tl = observerOnGrass time (observing (Toggle true)) FacingLeft false
+        let td = observerOnGrass time (observing (Toggle true)) FacingDown false
+
+        let fl =
+            observerOnGrass time (observing (Filter(buildBox { IsOpen = true; Items = [] }))) FacingLeft false
+
+        let fd =
+            observerOnGrass time (observing (Filter(buildBox { IsOpen = false; Items = [] }))) FacingDown false
+
+        let fu =
+            observerOnGrass time (observing (Filter(buildSubject Button))) FacingUp false
+
+        let mu = observerOnGrass time (observing (Map Unit)) FacingUp true
+        let bb = createButtonOnGrass time true
+        let xx = createEntityOn ((observing GoToNextLevel)) Grass time true
+
+        let bx = createEntityOn (buildBox { Items = []; IsOpen = true }) Grass time true
+
+        let tiles, width, height =
+            worldFromTemplate
+                [ [ ww; wt; ww; wt; wt; wt; wt; wt; wt; wt; wt; ww ]
+                  [ ww; __; ww; __; __; __; __; td; __; __; __; ww ]
+                  [ ww; __; ww; __; __; __; __; td; bb; __; __; ww ]
+                  [ ww; __; ww; __; bx; __; __; td; __; __; __; ww ]
+                  [ ww; __; ww; __; iu; __; __; fd; __; __; __; ww ]
+                  [ ww; __; ww; __; iu; il; il; il; fl; tl; tl; ww ]
+                  [ ww; __; ww; __; __; fu; tl; tl; tu; __; __; ww ]
+                  [ ww; __; ww; __; __; tu; __; tu; tu; __; xx; ww ]
+                  [ ww; __; wt; wt; wt; wt; __; wt; wt; wt; wt; ww ]
+                  [ ww; __; __; __; __; __; __; __; __; __; __; ww ]
+                  [ wt; wt; wt; wt; wt; wt; wt; wt; wt; wt; wt; wt ] ]
+
+        { PlayerStartsAtPos = Vector2(200f, 100f)
+          PlayerStartsCarrying = []
+          Tiles = tiles
+          LevelText = "The filter observer filters signals."
+          Size = (width, height) }
+
+
 
 
 let levelSandBox: LevelBuilder =
@@ -707,7 +875,10 @@ let levels: LevelBuilder[] =
        //    level_box2
        //level_toggles
        //    level_toggles2
+       //level_merge1
+       //level_merge2
        //level_filter1
-       level_filter2
+       //level_filter11
+       //level_filter2
        //    level7
        levelSandBox |]
