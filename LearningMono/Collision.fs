@@ -122,6 +122,11 @@ let intersectAABB (aabb: AABB) (box: AABB) : Hit voption =
                   Normal = Vector2(0f, sy)
                   Pos = Vector2(box.Pos.X, aabb.Pos.Y + (aabb.Half.Y * sy)) }
 
+let noIntersectionAABB (aabb: AABB) (box: AABB) : unit voption  =
+    let intersect = intersectAABB aabb box
+    match intersect with
+    | ValueSome _ -> ValueNone
+    | ValueNone -> ValueSome ()
 
 let sweepAABB (aabb: AABB) (box: AABB) (delta: Vector2) : Sweep =
     if delta.X = 0f && delta.Y = 0f then

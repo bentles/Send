@@ -122,21 +122,22 @@ let level_observers: LevelBuilder =
         let xu = observerCannotPick time (observing Id) FacingUp
         let xl = observerCannotPick time (observing Id) FacingLeft
         let xr = observerCannotPick time (observing Id) FacingRight
-        let NL = observerCannotPick time (observing GoToNextLevel) FacingUp
+        let xd = observerCannotPick time (observing Id) FacingDown
+        let NL = observerCannotPick time (observing GoToNextLevel) FacingDown
 
 
         let tiles, width, height =
             worldFromTemplate
-                [ [ ww; wt; wt; wt; wt; wt; ww ]
-                  [ ww; __; __; __; __; __; ww ]
-                  [ ww; __; bb; __; __; __; ww ]
-                  [ ww; __; xu; __; xu; __; ww ]
-                  [ ww; __; xu; __; xu; __; ww ]
-                  [ ww; __; xu; __; NL; __; ww ]
-                  [ ww; __; __; __; __; __; ww ]
-                  [ wt; wt; wt; wt; wt; wt; wt ] ]
+                [ [ ww; wt; wt; wt; wt; wt; wt; wt; ww ]
+                  [ ww; __; __; __; __; __; __; __; ww ]
+                  [ ww; __; xd; bb; __; __; NL; __; ww ]
+                  [ ww; __; xd; xu; __; xu; xd; __; ww ]
+                  [ ww; __; xd; xu; __; xu; xd; __; ww ]
+                  [ ww; __; xr; xu; __; xu; xl; __; ww ]
+                  [ ww; __; __; __; __; __; __; __; ww ]
+                  [ wt; wt; wt; wt; wt; wt; wt; wt; wt ] ]
 
-        { PlayerStartsAtPos = (Vector2(200f, 100f))
+        { PlayerStartsAtPos = (Vector2(250f, 100f))
           PlayerStartsCarrying = []
           LevelText = "Try pressing the button!"
           Tiles = tiles
@@ -220,10 +221,10 @@ let level_observers4: LevelBuilder =
                 [ [ ww; wt; wt; wt; wt; wt; ww ]
                   [ ww; __; __; __; __; __; ww ]
                   [ ww; __; __; __; __; __; ww ]
-                  [ ww; __; __; __; __; NL; ww ]
+                  [ ww; __; __; xl; xr; NL; ww ]
                   [ ww; __; bb; __; __; __; ww ]
-                  [ ww; __; __; __; __; __; ww ]
-                  [ ww; __; xr; xr; xr; xr; ww ]
+                  [ ww; __; __; __; xl; __; ww ]
+                  [ ww; __; xr; xr; __; xr; ww ]
                   [ wt; wt; wt; wt; wt; wt; wt ] ]
 
         { PlayerStartsAtPos = (Vector2(200f, 100f))
@@ -396,7 +397,7 @@ let level_toggles: LevelBuilder =
                   [ wl; __; __; __; __; __; __; __; __; wr ]
                   [ wl; __; bb; __; __; __; __; __; __; wr ]
                   [ wl; tr; tu; __; __; __; __; __; __; wr ]
-                  [ wl; ir; tu; __; __; tl; tl; tl; tl; wr ]
+                  [ wl; __; tu; __; __; tl; tl; tl; tl; wr ]
                   [ wl; ir; tu; __; __; __; tu; __; __; wr ]
                   [ wl; ir; tu; __; __; __; tu; __; xx; wr ]
                   [ ww; wb; wb; wb; wb; wb; wb; wb; wb; ww ] ]
@@ -404,7 +405,7 @@ let level_toggles: LevelBuilder =
         { PlayerStartsAtPos = Vector2(200f, 100f)
           PlayerStartsCarrying = []
           Tiles = tiles
-          LevelText = ""
+          LevelText = "Toggle observers switch between two states"
           Size = (width, height) }
 
 let level_toggles2: LevelBuilder =
@@ -463,11 +464,11 @@ let level_merge1: LevelBuilder =
         let tiles, width, height =
             worldFromTemplate
                 [ [ ww; wt; wt; wt; wt; wt; wt; wt; ww ]
-                  [ ww; __; __; __; __; __; __; __; ww ]
-                  [ ww; __; __; __; __; __; __; __; ww ]
-                  [ ww; __; __; __; __; bb; __; __; ww ]
-                  [ ww; __; __; __; ir; iu; __; __; ww ]
-                  [ ww; ir; ir; ir; ir; iu; __; __; ww ]
+                  [ ww; ir; ir; __; __; __; __; __; ww ]
+                  [ ww; ir; ir; __; __; __; __; __; ww ]
+                  [ ww; ir; ir; __; __; bb; __; __; ww ]
+                  [ ww; __; __; __; __; iu; __; __; ww ]
+                  [ ww; __; __; __; __; iu; __; __; ww ]
                   [ ww; tr; tr; tr; tr; iu; __; __; ww ]
                   [ ww; __; __; __; __; mu; __; __; ww ]
                   [ ww; Tr; Tr; Tr; Tr; iu; __; __; ww ]
@@ -860,25 +861,24 @@ let levelSandBox: LevelBuilder =
           Size = (width, height) }
 
 let levels: LevelBuilder[] =
-    [|
-       //    level_playerMoves
-       //    level_playerPickUp
-       //    level_left
-       //    level_dangRocks
-       //    level_observers
-       //    level_observers2
-       //    level_observers3
-       //    level_observers4
-       //    level_observers5
-       //    level_box0
-       //    level_box1
-       //    level_box2
+    [| 
+    //level_playerMoves
+    //   level_playerPickUp
+    //   level_left
+    //   level_dangRocks
+       //level_observers
+       //level_observers2
+       //level_observers3
+       //level_observers4
+       //level_observers5
+       //level_box0
+       //level_box1
+       //level_box2
        //level_toggles
-       //    level_toggles2
-       //level_merge1
+       //level_toggles2
+       level_merge1
        //level_merge2
-       //level_filter1
-       //level_filter11
-       //level_filter2
-       //    level7
+       level_filter1
+       level_filter11
+       level_filter2
        levelSandBox |]

@@ -26,5 +26,6 @@ type PhysicsInfo =
 type PlayerWorldInteraction =
     | TryPickup
     | TryPlace
+    | TryMultiPlace of start:bool
     | TryOrient of Facing
     | NoAction

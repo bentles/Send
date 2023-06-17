@@ -9,6 +9,7 @@ open GameConfig
 type PlayerConfig =
     { BigMaxVelocity: float32
       SmallMaxVelocity: float32
+      MultiPlaceDelayMs: float32
       Acc: float32
       Slow: float32
       AABBConfig: AABB }
@@ -16,6 +17,7 @@ type PlayerConfig =
 let playerConfig =
     { BigMaxVelocity = 2f
       SmallMaxVelocity = 4.5f
+      MultiPlaceDelayMs = 400f
       Acc = 30f
       Slow = 40f
       AABBConfig =

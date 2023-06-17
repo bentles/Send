@@ -1,4 +1,9 @@
 ﻿IDEAS:
+
+- multiple exits or puzzles that teach concepts to be used in later puzzles
+- multi placement could be fun
+- toggle observer jumping could be fun??
+
 - design by contract
 	- put asserts wherever i have made assumptions
 -``` // TODO: something like this for later

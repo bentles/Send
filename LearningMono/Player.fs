@@ -15,6 +15,8 @@ type State =
     | Growing
     | Shrinking
 
+type MultiPlace = { LastTime: int64; LastCoords: Coords }
+
 type Model =
     { SpriteInfo: Sprite.Model
       CharacterState: State
@@ -30,6 +32,7 @@ type Model =
       CarryingDelta: int
       Target: Vector2
       PlacementFacing: Facing
+      MultiPlace: MultiPlace voption
 
       //physics
       Facing: Vector2
@@ -50,6 +53,7 @@ let init (pos: Vector2) (carrying: Entity.Model list) (playerConfig: PlayerConfi
 
       MovementFrozen = false
       ArrowsControlPlacement = false
+      MultiPlace = ValueNone
 
       Carrying = carrying
       CarryingDelta = 0
@@ -185,6 +189,9 @@ let carryingUpdate pos model =
     |> List.map (fun carry ->
         let newSprite = Sprite.setPos pos carry.Sprite
         { carry with Sprite = newSprite })
+
+let endMultiPlace model =
+     { model with MultiPlace = ValueNone }
 
 let updateAnimations (newModel: Model) (oldModel: Model) =
     let xChange = changeDir newModel.Facing.X oldModel.Facing.X Sprite.setDirectionX

@@ -61,7 +61,7 @@ let getTileAtPos (pos: Vector2) (size: Coords) (tiles: Tiles) : struct (Tile * i
 
 let init time =
     let levelIndex = 0 //Levels.levels.Length - 1
-    let level = Levels.levels[levelIndex] time
+    let level = Levels.levels[levelIndex]time
 
     { Tiles = level.Tiles
       Song = PlaySong "pewpew"
@@ -82,6 +82,8 @@ type Message =
     | PlayerMessage of Player.Message
     | PickUpEntity
     | PlaceEntity
+    | MultiPlaceEntity
+    | EndMultiPlace
     | Interact
     | SongStarted of string
     | PhysicsTick of time: int64 * slow: bool
@@ -192,68 +194,67 @@ let pickUpEntity (model: Model) : Model =
 let placeEntity (model: Model) : Model =
     let player = model.Player
 
-    match player.CharacterState with
-    | Player.Small _ ->
-        match player.Carrying with
-        | placeEntity :: rest ->
-            let tileAndIndex = model.PlayerTarget
-            let feetIndex = model.PlayerFeet
+    match player.CharacterState, player.Carrying with
+    | Player.Small _, placeEntity :: rest ->
+        let tileAndIndex = model.PlayerTarget
+        let feetIndex = model.PlayerFeet
 
-            match tileAndIndex with
-            | ValueSome({ Entity = ValueNone; Collider = ValueNone } as tile, i) ->
-                match feetIndex with
-                | ValueSome feet when feet <> i ->
-                    let roundedPos = posRounded player.Target
-                    let entity = Entity.init placeEntity.Type roundedPos model.TimeElapsed player.PlacementFacing true
+        match tileAndIndex with
+        | ValueSome({ Entity = ValueNone
+                      Collider = ValueNone } as tile,
+                    i) ->
                     
-                    // can't place if the block will intersect with the player
-                    let collided =
-                        voption {
-                            let! col = entity.Collider
-                            return! Collision.intersectAABB (Collision.playerCollider player.Pos) col
-                        }
+            match feetIndex with
+            | ValueSome feet when feet <> i ->
+                let roundedPos = posRounded player.Target
 
-                    match collided with
-                    | ValueNone ->
-                        let tiles =
-                            model.Tiles
-                            |> PersistentVector.update i { tile with Entity = ValueSome(entity) }
+                let entity =
+                    Entity.init placeEntity.Type roundedPos model.TimeElapsed player.PlacementFacing true
 
-                        { model with
-                            Tiles = tiles
-                            Player = { player with Carrying = rest } }
-                    | ValueSome _ -> model
-                | _ -> model
-            | ValueSome({ Entity = ValueSome({ Type = CanPlaceIntoEntity placeEntity.Type (newEntity) } as targetEntity) } as tile,
-                        i) ->
-                let newTarget = Entity.updateSprite { targetEntity with Type = newEntity }
-
-                let tiles =
-                    model.Tiles
-                    |> PersistentVector.update i { tile with Entity = ValueSome newTarget }
-
-                { model with
-                    Tiles = tiles
-                    Player = { player with Carrying = rest } }
+                // can't place if the block will intersect with the player
+                voption {
+                    let! col = entity.Collider
+                    let! _ = Collision.noIntersectionAABB (Collision.playerCollider player.Pos) col
+                    let tiles =
+                        model.Tiles
+                        |> PersistentVector.update i { tile with Entity = ValueSome(entity) }
+    
+                    return { model with
+                                Tiles = tiles
+                                Player = { player with Carrying = rest } }
+                } |> ValueOption.defaultValue model
             | _ -> model
+        | ValueSome({ Entity = ValueSome({ Type = CanPlaceIntoEntity placeEntity.Type (newEntity) } as targetEntity) } as tile,
+                    i) ->
+            let newTarget = Entity.updateSprite { targetEntity with Type = newEntity }
+
+            let tiles =
+                model.Tiles
+                |> PersistentVector.update i { tile with Entity = ValueSome newTarget }
+
+            { model with
+                Tiles = tiles
+                Player = { player with Carrying = rest } }
         | _ -> model
     | _ -> model
 
-let orientEntity (model:Model) (facing:Facing) =
+
+let orientEntity (model: Model) (facing: Facing) =
     let player = model.Player
 
     match player.CharacterState with
     | Player.Small _ ->
         let tileAndIndex = model.PlayerTarget
-        match tileAndIndex with 
-        | ValueSome ({ Entity = ValueSome({CanBePickedUp = true } as entityData)} as tile, i) -> 
-            let entity = Entity.updateSprite {entityData with Facing = facing} 
+
+        match tileAndIndex with
+        | ValueSome({ Entity = ValueSome({ CanBePickedUp = true } as entityData) } as tile, i) ->
+            let entity = Entity.updateSprite { entityData with Facing = facing }
+
             let tiles =
-                    model.Tiles
-                    |> PersistentVector.update i { tile with Entity = ValueSome entity }
-            { model with
-                Tiles = tiles }
-        | _ -> model        
+                model.Tiles |> PersistentVector.update i { tile with Entity = ValueSome entity }
+
+            { model with Tiles = tiles }
+        | _ -> model
     | _ -> model
 
 let nextLevel (model: Model) : Model =
@@ -280,16 +281,19 @@ let update (message: Message) (model: Model) : Model =
     | PlayerMessage playerMsg ->
         let (newPlayerModel) = Player.update playerMsg model.Player
         // intercept orientation messages
-        let playerAction = 
-            match playerMsg with 
-            | Player.Message.Input dir when model.Player.ArrowsControlPlacement -> 
+        let playerAction =
+            match playerMsg with
+            | Player.Message.Input dir when model.Player.ArrowsControlPlacement ->
                 let facing = vectorToFacing (Vector2(float32 dir.X, float32 dir.Y))
+
                 match facing with
                 | ValueSome facing -> TryOrient facing
                 | _ -> model.PlayerAction
             | _ -> model.PlayerAction
 
-        { model with Player = newPlayerModel; PlayerAction = playerAction }
+        { model with
+            Player = newPlayerModel
+            PlayerAction = playerAction }
     | SongStarted name -> { model with Song = PlayingSong name }
     | PickUpEntity -> { model with PlayerAction = TryPickup }
     | PlaceEntity -> { model with PlayerAction = TryPlace }
@@ -318,6 +322,8 @@ let update (message: Message) (model: Model) : Model =
             match model.PlayerAction with
             | TryPickup -> pickUpEntity model
             | TryPlace -> placeEntity model
+            | TryMultiPlace true -> model
+            | TryMultiPlace false -> model
             | TryOrient facing -> orientEntity model facing
             | NoAction -> model
 
@@ -337,28 +343,35 @@ let update (message: Message) (model: Model) : Model =
 
         let tiles = updateWorldReactive model.Tiles model.Size
 
-        let goToNextLevel = tiles |> PersistentVector.fold (fun curr next -> 
-                                            curr || match next with 
-                                                    | { Entity = ValueSome{ Type = Unit }} -> true 
-                                                    | _ -> false)
-                                            false
+        let goToNextLevel =
+            tiles
+            |> PersistentVector.fold
+                (fun curr next ->
+                    curr
+                    || match next with
+                       | { Entity = ValueSome { Type = Unit } } -> true
+                       | _ -> false)
+                false
         //TODO: move this outside if update ticks < 60ps
         let tiles = updateWorldSprites time tiles
 
         let newCameraPos = updateCameraPos player.Pos model.CameraPos
 
-        let model = { model with
-                        Dt = dt
-                        Slow = slow
-                        TimeElapsed = time
-                        Tiles = tiles
-                        CameraPos = newCameraPos
-                        Player = { player with CarryingDelta = isCarrying - wasCarrying }
-                        PlayerTarget = maybeTarget
-                        PlayerFeet = maybeFeetIndex
-                        PlayerAction = NoAction }
+        let model =
+            { model with
+                Dt = dt
+                Slow = slow
+                TimeElapsed = time
+                Tiles = tiles
+                CameraPos = newCameraPos
+                Player = { player with CarryingDelta = isCarrying - wasCarrying }
+                PlayerTarget = maybeTarget
+                PlayerFeet = maybeFeetIndex
+                PlayerAction = NoAction }
 
         if goToNextLevel then nextLevel model else model
+    | MultiPlaceEntity -> { model with PlayerAction = TryMultiPlace true }
+    | EndMultiPlace -> { model with PlayerAction = TryMultiPlace false }
 
 
 // VIEW
@@ -590,6 +603,12 @@ let inputs (inputs: Inputs) (dispatch: Message -> unit) =
 
     if Keyboard.iskeydown Keys.C inputs then
         (dispatch (PlaceEntity))
+
+    if Keyboard.whilekeydown Keys.C inputs then
+        (dispatch (MultiPlaceEntity))
+
+    if Keyboard.iskeyup Keys.C inputs then
+        (dispatch (EndMultiPlace))
 
     if Keyboard.iskeydown Keys.Z inputs then
         (dispatch (Interact))
