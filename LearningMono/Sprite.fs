@@ -120,7 +120,7 @@ let spriteSourceRect (spriteInfo: ImageConfig) (aniState: AnimationState) pos =
 
 let viewSprite (model: Model) (cameraPos: Vector2) (loadedAssets: LoadedAssets) (spriteBatch: SpriteBatch) (depth: float32) =
 
-    let texture = loadedAssets.textures[model.CurrentImage.TextureName]
+    let texture = loadedAssets.textures.[model.CurrentImage.TextureName]
     //by convention the flipped sprite will be above the unflipped one
     let flipV = if model.FlipV then -1 else 0
 

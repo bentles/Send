@@ -862,20 +862,20 @@ let levelSandBox: LevelBuilder =
 
 let levels: LevelBuilder[] =
     [| 
-    //level_playerMoves
-    //   level_playerPickUp
-    //   level_left
-    //   level_dangRocks
-       //level_observers
-       //level_observers2
-       //level_observers3
-       //level_observers4
-       //level_observers5
-       //level_box0
-       //level_box1
-       //level_box2
-       //level_toggles
-       //level_toggles2
+       level_playerMoves
+       level_playerPickUp
+       level_left
+       level_dangRocks
+       level_observers
+       level_observers2
+       level_observers3
+       level_observers4
+       level_observers5
+       level_box0
+       level_box1
+       level_box2
+       level_toggles
+       level_toggles2
        level_merge1
        //level_merge2
        level_filter1
