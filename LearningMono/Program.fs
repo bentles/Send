@@ -9,8 +9,8 @@ type Model = { World: World.Model
     }
 
 let init () =
-    { World = (World.init 0)
-      TimeElapsed = 0
+    { World = (World.init 0L)
+      TimeElapsed = 0L
     }, Cmd.none
 
 type Message =
