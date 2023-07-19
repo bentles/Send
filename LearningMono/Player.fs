@@ -15,7 +15,7 @@ type State =
     | Growing
     | Shrinking
 
-type MultiPlace = { LastTime: int64; LastCoords: Coords }
+type MultiPlace = { LastTime: int64; Coords: Coords; Distance: int }
 
 type Model =
     { SpriteInfo: Sprite.Model

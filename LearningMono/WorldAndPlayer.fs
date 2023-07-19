@@ -197,13 +197,16 @@ let pickUpEntity (model: Model) : Model =
         |> Option.defaultValue model
     | _ -> model
 
-let placeEntity (model: Model) time : Model =
+let placeEntityAt (distance: int) (model: Model) time : Model =
     let playerPlaced (model: Model) tiles rest time i : Model =
         let struct (width, _) = model.Size
+
         let multiPlace: voption<Player.MultiPlace> =
             ValueSome
                 { LastTime = time
-                  LastCoords = (indexToCoords i width) }
+                  Coords = (indexToCoords i width)
+                  Distance = distance
+                }
 
         { model with
             Tiles = tiles
@@ -227,6 +230,7 @@ let placeEntity (model: Model) time : Model =
             match feetIndex with
             | ValueSome feet when feet <> i ->
                 let roundedPos = posRounded player.Target
+
                 let entity =
                     Entity.init placeEntity.Type roundedPos model.TimeElapsed player.PlacementFacing true
 
@@ -234,31 +238,39 @@ let placeEntity (model: Model) time : Model =
                 voption {
                     let! col = entity.Collider
                     let! _ = Collision.noIntersectionAABB (Collision.playerCollider player.Pos) col
-                    let tiles =
-                        model.Tiles
-                        |> PersistentVector.update i { tile with Entity = ValueSome(entity) }
-
+                    let newTile = { tile with Entity = ValueSome entity }
+                    let tiles = model.Tiles |> PersistentVector.update i newTile
                     return playerPlaced model tiles rest time i
                 }
                 |> ValueOption.defaultValue model
             | _ -> model
         | ValueSome({ Entity = ValueSome({ Type = CanPlaceIntoEntity placeEntity.Type (newEntity) } as targetEntity) } as tile,
                     i) ->
-            let newTarget = Entity.updateSprite { targetEntity with Type = newEntity }
-            let tiles =
-                model.Tiles
-                |> PersistentVector.update
-                    i
-                    { tile with
-                        Entity = ValueSome newTarget }
-
+            let newTarg = Entity.updateSprite { targetEntity with Type = newEntity }
+            let newTile = { tile with Entity = ValueSome newTarg }
+            let tiles = model.Tiles |> PersistentVector.update i newTile
             playerPlaced model tiles rest time i
         | _ -> model
     | _ -> model
 
-let multiPlaceEntity (model: Model) : Model =
-    let player = model.Player
-    model
+let placeEntity = placeEntityAt 0
+
+let multiPlaceEntity (model: Model) time : Model =
+    match model.Player.MultiPlace with
+    | ValueNone -> model
+    | ValueSome multiPlace when time - multiPlace.LastTime > playerConfig.MultiPlaceDelayMs ->
+        let model = placeEntityAt (multiPlace.Distance + 1) model time 
+        let player = model.Player
+        let player =
+            { player with
+                MultiPlace =
+                    ValueSome
+                        { multiPlace with
+                            LastTime = time } }
+
+        { model with Player = player }
+    | ValueSome _ -> model
+
 
 let orientEntity (model: Model) (facing: Facing) =
     let player = model.Player
@@ -346,7 +358,7 @@ let update (message: Message) (model: Model) : Model =
             match model.PlayerAction with
             | TryPickup -> pickUpEntity model
             | TryPlace -> placeEntity model time
-            | TryMultiPlace true -> model
+            | TryMultiPlace true -> multiPlaceEntity model time
             | TryMultiPlace false -> model
             | TryOrient facing -> orientEntity model facing
             | NoAction -> model
