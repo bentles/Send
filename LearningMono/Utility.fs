@@ -37,6 +37,9 @@ let posRounded (pos: Vector2) =
 
 let toIndex ((x, y): Coords) (width: int) = y * width + x
 
+let indexToCoords (index: int) (width:int): Coords =
+    (index % width, index / width)
+
 let posToIndex (pos: Vector2) (width: int) : int =
     let coords = offsetVectorToCoords pos
     toIndex coords width

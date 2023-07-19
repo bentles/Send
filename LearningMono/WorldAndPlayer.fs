@@ -177,21 +177,41 @@ let pickUpEntity (model: Model) : Model =
                     | { Type = CanPickOutOfEntity(eData, entityType) } as targetEntity ->
                         let newTarget = Entity.updateSprite { targetEntity with Type = eData }
                         let fromObserverEntity = Entity.init entityType Vector2.Zero 0 FacingRight true
-                        let tile = { tile with Entity = ValueSome newTarget }
+
+                        let tile =
+                            { tile with
+                                Entity = ValueSome newTarget }
+
                         tile, fromObserverEntity
                     | _ -> { tile with Entity = ValueNone }, targetEntity
 
                 return
                     { model with
                         Tiles = model.Tiles |> PersistentVector.update i newTile
-                        Player = { player with Carrying = pickedUpEntity :: player.Carrying } }
+                        Player =
+                            { player with
+                                Carrying = pickedUpEntity :: player.Carrying } }
             else
                 return! None
         }
         |> Option.defaultValue model
     | _ -> model
 
-let placeEntity (model: Model) : Model =
+let placeEntity (model: Model) time : Model =
+    let playerPlaced (model: Model) tiles rest time i : Model =
+        let struct (width, _) = model.Size
+        let multiPlace: voption<Player.MultiPlace> =
+            ValueSome
+                { LastTime = time
+                  LastCoords = (indexToCoords i width) }
+
+        { model with
+            Tiles = tiles
+            Player =
+                { model.Player with
+                    Carrying = rest
+                    MultiPlace = multiPlace } }
+
     let player = model.Player
 
     match player.CharacterState, player.Carrying with
@@ -203,11 +223,10 @@ let placeEntity (model: Model) : Model =
         | ValueSome({ Entity = ValueNone
                       Collider = ValueNone } as tile,
                     i) ->
-                    
+
             match feetIndex with
             | ValueSome feet when feet <> i ->
                 let roundedPos = posRounded player.Target
-
                 let entity =
                     Entity.init placeEntity.Type roundedPos model.TimeElapsed player.PlacementFacing true
 
@@ -218,26 +237,28 @@ let placeEntity (model: Model) : Model =
                     let tiles =
                         model.Tiles
                         |> PersistentVector.update i { tile with Entity = ValueSome(entity) }
-    
-                    return { model with
-                                Tiles = tiles
-                                Player = { player with Carrying = rest } }
-                } |> ValueOption.defaultValue model
+
+                    return playerPlaced model tiles rest time i
+                }
+                |> ValueOption.defaultValue model
             | _ -> model
         | ValueSome({ Entity = ValueSome({ Type = CanPlaceIntoEntity placeEntity.Type (newEntity) } as targetEntity) } as tile,
                     i) ->
             let newTarget = Entity.updateSprite { targetEntity with Type = newEntity }
-
             let tiles =
                 model.Tiles
-                |> PersistentVector.update i { tile with Entity = ValueSome newTarget }
+                |> PersistentVector.update
+                    i
+                    { tile with
+                        Entity = ValueSome newTarget }
 
-            { model with
-                Tiles = tiles
-                Player = { player with Carrying = rest } }
+            playerPlaced model tiles rest time i
         | _ -> model
     | _ -> model
 
+let multiPlaceEntity (model: Model) : Model =
+    let player = model.Player
+    model
 
 let orientEntity (model: Model) (facing: Facing) =
     let player = model.Player
@@ -306,7 +327,10 @@ let update (message: Message) (model: Model) : Model =
 
                 let tiles =
                     model.Tiles
-                    |> PersistentVector.update i { tile with Entity = ValueSome newEntity }
+                    |> PersistentVector.update
+                        i
+                        { tile with
+                            Entity = ValueSome newEntity }
 
                 return interactionEvent event { model with Tiles = tiles }
             }
@@ -321,7 +345,7 @@ let update (message: Message) (model: Model) : Model =
         let model =
             match model.PlayerAction with
             | TryPickup -> pickUpEntity model
-            | TryPlace -> placeEntity model
+            | TryPlace -> placeEntity model time
             | TryMultiPlace true -> model
             | TryMultiPlace false -> model
             | TryOrient facing -> orientEntity model facing
@@ -364,14 +388,20 @@ let update (message: Message) (model: Model) : Model =
                 TimeElapsed = time
                 Tiles = tiles
                 CameraPos = newCameraPos
-                Player = { player with CarryingDelta = isCarrying - wasCarrying }
+                Player =
+                    { player with
+                        CarryingDelta = isCarrying - wasCarrying }
                 PlayerTarget = maybeTarget
                 PlayerFeet = maybeFeetIndex
                 PlayerAction = NoAction }
 
         if goToNextLevel then nextLevel model else model
-    | MultiPlaceEntity -> { model with PlayerAction = TryMultiPlace true }
-    | EndMultiPlace -> { model with PlayerAction = TryMultiPlace false }
+    | MultiPlaceEntity ->
+        { model with
+            PlayerAction = TryMultiPlace true }
+    | EndMultiPlace ->
+        { model with
+            PlayerAction = TryMultiPlace false }
 
 
 // VIEW
@@ -546,7 +576,7 @@ let viewWorld (model: Model) loadedAssets (spriteBatch: SpriteBatch) =
                 (depth + depthConfig.Entities_And_Player)
 
             match entity.Type with
-            | EmittingObservable(_, _) -> loadedAssets.sounds[ "click" ].Play(0.3f, 0.0f, 0.0f) |> ignore
+            | EmittingObservable(_, _) -> loadedAssets.sounds["click"].Play(0.3f, 0.0f, 0.0f) |> ignore
             | _ -> ()
 
             match entity.Type with
