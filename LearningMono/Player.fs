@@ -15,7 +15,8 @@ type State =
     | Growing
     | Shrinking
 
-type MultiPlace = { LastTime: int64; Coords: Coords; Distance: int }
+[<Struct>]
+type MultiPlace = { LastTime: int64; Coords: Coords; Facing: Facing }
 
 type Model =
     { SpriteInfo: Sprite.Model
@@ -218,6 +219,10 @@ let updateAnimations (newModel: Model) (oldModel: Model) =
         Carrying = (updateCarrying newModel)
         SpriteInfo = (updateSprite newModel.SpriteInfo) }
 
+let (|PlayerCanPlace|_|) (player:Model) =
+      match player.CharacterState, player.Carrying with
+      | Small _, placeEntity :: rest -> Some((placeEntity, rest))
+      | _ -> None
 
 let transformStart (characterState: State) =
     match characterState with

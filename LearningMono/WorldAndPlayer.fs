@@ -55,9 +55,12 @@ let getIndexAtPos (pos: Vector2) (size: Coords) : int voption =
     let coords = offsetVectorToCoords pos
     coordsToIndex coords size
 
+let getTileAtIndex index (tiles: Tiles) = PersistentVector.nth index tiles
+
 let getTileAtPos (pos: Vector2) (size: Coords) (tiles: Tiles) : struct (Tile * int) voption =
     let index = getIndexAtPos pos size
-    index |> ValueOption.map (fun index -> PersistentVector.nth index tiles, index)
+    index |> ValueOption.map (fun index -> getTileAtIndex index tiles, index)
+
 
 let init time =
     let levelIndex = 0 //Levels.levels.Length - 1
@@ -197,16 +200,16 @@ let pickUpEntity (model: Model) : Model =
         |> Option.defaultValue model
     | _ -> model
 
-let placeEntityAt (distance: int) (model: Model) time : Model =
-    let playerPlaced (model: Model) tiles rest time i : Model =
-        let struct (width, _) = model.Size
+let placeEntityAt (coords: Coords) (tile: Tile) (i: int) (model: Model) time : Model =
+    let playerPlaced (model: Model) tiles rest time coords : Model =
+        let facing =
+            vectorToFacing model.Player.Facing |> ValueOption.defaultValue FacingRight
 
         let multiPlace: voption<Player.MultiPlace> =
             ValueSome
                 { LastTime = time
-                  Coords = (indexToCoords i width)
-                  Distance = distance
-                }
+                  Coords = (indexToCoords i coords)
+                  Facing = facing }
 
         { model with
             Tiles = tiles
@@ -215,24 +218,19 @@ let placeEntityAt (distance: int) (model: Model) time : Model =
                     Carrying = rest
                     MultiPlace = multiPlace } }
 
-
     let player = model.Player
-    match player.CharacterState, player.Carrying with
-    | Player.Small _, placeEntity :: rest ->
-        let tileAndIndex = model.PlayerTarget
-        let feetIndex = model.PlayerFeet
 
-        match tileAndIndex with
-        | ValueSome({ Entity = ValueNone
-                      Collider = ValueNone } as tile,
-                    i) ->
-
-            match feetIndex with
+    match player with
+    | Player.PlayerCanPlace(toPlace, rest) ->
+        match tile with
+        | { Entity = ValueNone
+            Collider = ValueNone } ->
+            match model.PlayerFeet with
             | ValueSome feet when feet <> i ->
                 let roundedPos = posRounded player.Target
 
                 let entity =
-                    Entity.init placeEntity.Type roundedPos model.TimeElapsed player.PlacementFacing true
+                    Entity.init toPlace.Type roundedPos model.TimeElapsed player.PlacementFacing true
 
                 // can't place if the block will intersect with the player
                 voption {
@@ -243,30 +241,37 @@ let placeEntityAt (distance: int) (model: Model) time : Model =
                 }
                 |> ValueOption.defaultValue model
             | _ -> model
-        | ValueSome({ Entity = ValueSome({ Type = CanPlaceIntoEntity placeEntity.Type (newEntity) } as targetEntity) } as tile,
-                    i) ->
+        | { Entity = ValueSome({ Type = CanPlaceIntoEntity toPlace.Type (newEntity) } as targetEntity) } ->
             let newTarg = Entity.updateSprite { targetEntity with Type = newEntity }
             let tiles = updateTilesWithEntity model.Tiles i tile newTarg
             playerPlaced model tiles rest time i
         | _ -> model
     | _ -> model
 
-let placeEntity = placeEntityAt 0
+let placeEntity (model: Model) time =
+    let tileAndIndex = model.PlayerTarget
+
+    match tileAndIndex with
+    | ValueSome(tile, i) ->
+        let struct (width, _) = model.Size
+        let coords = indexToCoords i width
+        placeEntityAt coords tile i model time
+    | ValueNone -> model
+
+
 
 let multiPlaceEntity (model: Model) time : Model =
     match model.Player.MultiPlace with
     | ValueNone -> model
     | ValueSome multiPlace when time - multiPlace.LastTime > playerConfig.MultiPlaceDelayMs ->
-        let model = placeEntityAt (multiPlace.Distance + 1) model time 
-        let player = model.Player
-        let player =
-            { player with
-                MultiPlace =
-                    ValueSome
-                        { multiPlace with
-                            LastTime = time } }
+        let nextCoords = addFacing multiPlace.Coords multiPlace.Facing
 
-        { model with Player = player }
+        voption {
+            let! i = coordsToIndex nextCoords model.Size
+            let tile = getTileAtIndex i model.Tiles
+            return placeEntityAt nextCoords tile i model time
+        }
+        |> ValueOption.defaultValue model
     | ValueSome _ -> model
 
 

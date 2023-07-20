@@ -18,7 +18,6 @@ let CoordsFToOffsetVector ((x,y): CoordsF) (half: Vector2) =
 
     Vector2(actualX, actualY)
 
-
 let offsetVectorToCoords (pos: Vector2) : Coords =
     let x = int (pos.X / float32 worldConfig.TileWidth)
     let y = int (pos.Y / float32 worldConfig.TileWidth)
@@ -121,3 +120,7 @@ let vectorToFacing (vec: Vector2) : Facing voption =
     | 0f, -1f -> ValueSome FacingUp
     | 0f, 1f -> ValueSome FacingDown
     | _ -> ValueNone
+
+let addFacing ((x,y):Coords) (facing:Facing): Coords =
+    let struct (xx,yy) = facingToCoords facing
+    (x + xx, y + yy)
