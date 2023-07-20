@@ -215,8 +215,8 @@ let placeEntityAt (distance: int) (model: Model) time : Model =
                     Carrying = rest
                     MultiPlace = multiPlace } }
 
-    let player = model.Player
 
+    let player = model.Player
     match player.CharacterState, player.Carrying with
     | Player.Small _, placeEntity :: rest ->
         let tileAndIndex = model.PlayerTarget
@@ -238,8 +238,7 @@ let placeEntityAt (distance: int) (model: Model) time : Model =
                 voption {
                     let! col = entity.Collider
                     let! _ = Collision.noIntersectionAABB (Collision.playerCollider player.Pos) col
-                    let newTile = { tile with Entity = ValueSome entity }
-                    let tiles = model.Tiles |> PersistentVector.update i newTile
+                    let tiles = updateTilesWithEntity model.Tiles i tile entity
                     return playerPlaced model tiles rest time i
                 }
                 |> ValueOption.defaultValue model
@@ -247,8 +246,7 @@ let placeEntityAt (distance: int) (model: Model) time : Model =
         | ValueSome({ Entity = ValueSome({ Type = CanPlaceIntoEntity placeEntity.Type (newEntity) } as targetEntity) } as tile,
                     i) ->
             let newTarg = Entity.updateSprite { targetEntity with Type = newEntity }
-            let newTile = { tile with Entity = ValueSome newTarg }
-            let tiles = model.Tiles |> PersistentVector.update i newTile
+            let tiles = updateTilesWithEntity model.Tiles i tile newTarg
             playerPlaced model tiles rest time i
         | _ -> model
     | _ -> model
@@ -282,10 +280,7 @@ let orientEntity (model: Model) (facing: Facing) =
         match tileAndIndex with
         | ValueSome({ Entity = ValueSome({ CanBePickedUp = true } as entityData) } as tile, i) ->
             let entity = Entity.updateSprite { entityData with Facing = facing }
-
-            let tiles =
-                model.Tiles |> PersistentVector.update i { tile with Entity = ValueSome entity }
-
+            let tiles = updateTilesWithEntity model.Tiles i tile entity
             { model with Tiles = tiles }
         | _ -> model
     | _ -> model

@@ -132,3 +132,7 @@ let worldFromTemplate (template: List<List<Coords -> Tile>>) =
     |> PersistentVector.ofSeq,
     template.Head.Length,
     template.Length
+
+let updateTilesWithEntity (tiles:Tiles) (i:int) (tile:Tile) (entity:Entity.Model) : Tiles =
+    let newTile = { tile with Entity = ValueSome entity }
+    tiles |> PersistentVector.update i newTile
