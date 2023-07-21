@@ -378,7 +378,6 @@ let update (message: Message) (model: Model) : Model =
 
         let dt = (float32 (time - lastTick)) / 1000f
         lastTick <- time
-        printf $"{time}\n\r"
 
         let (info: PhysicsInfo) =
             { Time = time
