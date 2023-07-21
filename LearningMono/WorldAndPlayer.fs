@@ -93,52 +93,56 @@ type Message =
     | SongStarted of string
     | PhysicsTick of time: int64 * slow: bool
 
-let updateWorldReactive (tiles: Tiles) ((width, height): Coords) : Tiles =
-    tiles
-    |> PersistentVector.map (fun tile ->
-        let maybeEntity =
-            voption {
-                let! entity = tile.Entity
+let updateWorldReactive (tiles: Tiles) (ticksElapsed:int64) ((width, height): Coords) : Tiles =
+    //only do reactive updates every TicksPerReactiveUpdate ticks
+    if (ticksElapsed % WorldConfig.TicksPerReactiveUpdate) = 0 then 
+        tiles
+        |> PersistentVector.map (fun tile ->
+            let maybeEntity =
+                voption {
+                    let! entity = tile.Entity
 
-                let newEntityType =
-                    match entity.Type with
-                    | Subject subject -> Subject((getSubjectFunc subject.Type) subject)
-                    | Observable({ Type = oType } as oData) ->
+                    let newEntityType =
+                        match entity.Type with
+                        | Subject subject -> Subject((getSubjectFunc subject.Type) subject)
+                        | Observable({ Type = oType } as oData) ->
 
-                        // get what is being is observed if anything
-                        let getObserved (tile: Tile) (facing: Facing) =
-                            voption {
-                                let struct (tx, ty) = facingToCoords (facing)
-                                let struct (x, y) = tile.Coords
-                                let! targetIndex = (coordsToIndex (x + tx, y + ty) (width, height))
-                                let tile = PersistentVector.nth targetIndex tiles
-                                let! e = tile.Entity
-                                return e.Type
-                            }
+                            // get what is being is observed if anything
+                            let getObserved (tile: Tile) (facing: Facing) =
+                                voption {
+                                    let struct (tx, ty) = facingToCoords (facing)
+                                    let struct (x, y) = tile.Coords
+                                    let! targetIndex = (coordsToIndex (x + tx, y + ty) (width, height))
+                                    let tile = PersistentVector.nth targetIndex tiles
+                                    let! e = tile.Entity
+                                    return e.Type
+                                }
 
-                        let observerType = getObserverType oType
+                            let observerType = getObserverType oType
 
-                        let eType1, eType2 =
-                            match observerType with
-                            | SingleObserver -> (getObserved tile entity.Facing), ValueNone
-                            | DoubleObserver ->
-                                (getObserved tile entity.Facing), (getObserved tile (rotateFacing entity.Facing true))
+                            let eType1, eType2 =
+                                match observerType with
+                                | SingleObserver -> (getObserved tile entity.Facing), ValueNone
+                                | DoubleObserver ->
+                                    (getObserved tile entity.Facing), (getObserved tile (rotateFacing entity.Facing true))
 
-                        Observable(observerFunc oData eType1 eType2)
-                    | other -> other
+                            Observable(observerFunc oData eType1 eType2)
+                        | other -> other
 
-                // if emitting and has an onEmit fun then apply that
-                let onEmit =
-                    match newEntityType with
-                    | EmittingObservable _ ->
-                        let pos = (CoordsFToOffsetVector (toCoordsF tile.Coords) half)
-                        getOnEmit newEntityType pos
-                    | _ -> id
+                    // if emitting and has an onEmit fun then apply that
+                    let onEmit =
+                        match newEntityType with
+                        | EmittingObservable _ ->
+                            let pos = (CoordsFToOffsetVector (toCoordsF tile.Coords) half)
+                            getOnEmit newEntityType pos
+                        | _ -> id
 
-                return onEmit { entity with Type = newEntityType }
-            }
+                    return onEmit { entity with Type = newEntityType }
+                }
 
-        { tile with Entity = maybeEntity })
+            { tile with Entity = maybeEntity })
+    else 
+        tiles
 
 let updateWorldSprites (totalTime: int64) (tiles: Tiles) : Tiles =
     tiles
@@ -384,12 +388,8 @@ let update (message: Message) (model: Model) : Model =
         let player = Player.tick info model.Player
         let maybeTarget = getTileAtPos player.Target model.Size model.Tiles
         let maybeFeetIndex = getIndexAtPos player.Pos model.Size
-
-        //only do reactive updates every TicksPerReactiveUpdate ticks
-        let tiles =
-            if (model.TicksElapsed % WorldConfig.TicksPerReactiveUpdate) = 0 then 
-                updateWorldReactive model.Tiles model.Size
-            else model.Tiles
+ 
+        let tiles = updateWorldReactive model.Tiles model.TicksElapsed model.Size
 
         let goToNextLevel =
             tiles
@@ -400,9 +400,8 @@ let update (message: Message) (model: Model) : Model =
                        | { Entity = ValueSome { Type = Unit } } -> true
                        | _ -> false)
                 false
-        //TODO: move this outside if update ticks < 60ps
-        let tiles = updateWorldSprites time tiles
 
+        let tiles = updateWorldSprites time tiles
         let newCameraPos = updateCameraPos player.Pos model.CameraPos
 
         let model =
