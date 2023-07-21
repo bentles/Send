@@ -16,7 +16,10 @@ type State =
     | Shrinking
 
 [<Struct>]
-type MultiPlace = { LastTime: int64; Coords: Coords; Facing: Facing }
+type MultiPlace =
+    { LastTime: int64
+      Coords: Coords
+      Facing: Facing }
 
 type Model =
     { SpriteInfo: Sprite.Model
@@ -191,8 +194,7 @@ let carryingUpdate pos model =
         let newSprite = Sprite.setPos pos carry.Sprite
         { carry with Sprite = newSprite })
 
-let endMultiPlace model =
-     { model with MultiPlace = ValueNone }
+let endMultiPlace model = { model with MultiPlace = ValueNone }
 
 let updateAnimations (newModel: Model) (oldModel: Model) =
     let xChange = changeDir newModel.Facing.X oldModel.Facing.X Sprite.setDirectionX
@@ -219,10 +221,10 @@ let updateAnimations (newModel: Model) (oldModel: Model) =
         Carrying = (updateCarrying newModel)
         SpriteInfo = (updateSprite newModel.SpriteInfo) }
 
-let (|PlayerCanPlace|_|) (player:Model) =
-      match player.CharacterState, player.Carrying with
-      | Small _, placeEntity :: rest -> Some((placeEntity, rest))
-      | _ -> None
+let (|PlayerCanPlace|_|) (player: Model) =
+    match player.CharacterState, player.Carrying with
+    | Small _, placeEntity :: rest -> Some((placeEntity, rest))
+    | _ -> None
 
 let transformStart (characterState: State) =
     match characterState with
@@ -306,18 +308,13 @@ let viewCarrying
 
 let hearCarrying (carryingDelta: int) (loadedAssets: LoadedAssets) =
     match carryingDelta with
-    | 1 -> loadedAssets.sounds[ "pickUp" ].Play(0.5f, 0f, 0f) |> ignore
-    | -1 -> loadedAssets.sounds[ "place" ].Play(0.5f, 0f, 0f) |> ignore
+    | 1 -> loadedAssets.sounds["pickUp"].Play(0.5f, 0f, 0f) |> ignore
+    | -1 -> loadedAssets.sounds["place"].Play(0.5f, 0f, 0f) |> ignore
     | _ -> ()
 
 let viewPlayer (model: Model) (cameraPos: Vector2) loadedAssets (spriteBatch: SpriteBatch) =
     let playerDepth = (model.Pos.Y * DepthFactor + depthConfig.Entities_And_Player)
-    Sprite.viewSprite
-        model.SpriteInfo
-        cameraPos
-        loadedAssets
-        spriteBatch
-        playerDepth
+    Sprite.viewSprite model.SpriteInfo cameraPos loadedAssets spriteBatch playerDepth
 
     viewAABB (playerCollider model.Pos) cameraPos loadedAssets spriteBatch
     viewCarrying model.Carrying cameraPos model.CharacterState loadedAssets spriteBatch playerDepth

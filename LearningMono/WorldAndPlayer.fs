@@ -211,8 +211,6 @@ let placeEntityAt (coords: Coords) (tile: Tile) (i: int) (model: Model) time : M
                     LastTime = time
                     Coords = coords }
             | ValueNone ->
-                printf $"{model.Player.Facing}"
-
                 let facing =
                     vectorToFacing model.Player.Facing |> ValueOption.defaultValue FacingRight
 
