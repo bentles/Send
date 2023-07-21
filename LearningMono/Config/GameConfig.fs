@@ -19,6 +19,7 @@ module DepthConfig =
 [<RequireQualifiedAccess>]
 module WorldConfig = 
   let TicksPerReactiveUpdate = 2L //i.e. 30fps since game runs at 60fps
+  let ObserverCooldownTicks = 4;
   let AcceptableError = 0.001f
   let TileWidth = 50; 
   let HalfTileWidth = 25; 

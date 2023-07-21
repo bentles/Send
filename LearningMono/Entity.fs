@@ -242,11 +242,11 @@ let observerFunc (observable: ObservableData) (observing: EntityType voption) (o
         | Emitting t -> Emitted t
         | other -> other
 
-    //otherwise check in on the thing you are observing
+    //otherwise check in on the thing you are observing if the cooldown has elapsed
     let toEmit =
         match toEmit with
         | Nothing
-        | Emitted _ as cur ->
+        | Emitted _ as cur when observable.TicksSinceEmit > WorldConfig.ObserverCooldownTicks ->
             let observed =
                 match observing with
                 | ValueSome(EmittingObservable(s, _)) -> ValueSome s
