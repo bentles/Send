@@ -29,6 +29,7 @@ type Model =
       Dt: float32
       Slow: bool
       TimeElapsed: int64
+      TicksElapsed: int64
 
       //player and camera
       PlayerAction: PlayerWorldInteraction
@@ -78,6 +79,7 @@ let init time =
       PlayerTarget = ValueNone
       PlayerFeet = ValueNone
       TimeElapsed = 0
+      TicksElapsed = 0
       CameraPos = Vector2(0f, -0f) }
 
 // UPDATE
@@ -372,6 +374,7 @@ let update (message: Message) (model: Model) : Model =
 
         let dt = (float32 (time - lastTick)) / 1000f
         lastTick <- time
+        printf $"{time}\n\r"
 
         let (info: PhysicsInfo) =
             { Time = time
@@ -382,7 +385,11 @@ let update (message: Message) (model: Model) : Model =
         let maybeTarget = getTileAtPos player.Target model.Size model.Tiles
         let maybeFeetIndex = getIndexAtPos player.Pos model.Size
 
-        let tiles = updateWorldReactive model.Tiles model.Size
+        //only do reactive updates every TicksPerReactiveUpdate ticks
+        let tiles =
+            if (model.TicksElapsed % WorldConfig.TicksPerReactiveUpdate) = 0 then 
+                updateWorldReactive model.Tiles model.Size
+            else model.Tiles
 
         let goToNextLevel =
             tiles
@@ -403,6 +410,7 @@ let update (message: Message) (model: Model) : Model =
                 Dt = dt
                 Slow = slow
                 TimeElapsed = time
+                TicksElapsed = model.TicksElapsed + 1L
                 Tiles = tiles
                 CameraPos = newCameraPos
                 Player =
