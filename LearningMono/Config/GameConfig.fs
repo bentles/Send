@@ -16,7 +16,9 @@ let depthConfig = {|
     Debug = 1f;
 |}
 
-let worldConfig = {| TileWidth = 50; ShowCollisions = false |}
+let worldConfig = {| TileWidth = 50; HalfTileWidth = 25; ShowCollisions = false |}
+
+let halfTile = Vector2(float32 worldConfig.HalfTileWidth, float32 worldConfig.HalfTileWidth)
 
 type ImageConfig =
     { SpriteSize: struct (int * int)

@@ -52,6 +52,10 @@ let coordsToIndex (coords: Coords) ((width: int, height: int): Coords) : int vop
     else
         ValueSome(toIndex coords width)
 
+let coordsToPos (coords:Coords) = 
+    let coordsF = toCoordsF coords
+    CoordsFToOffsetVector coordsF halfTile
+
 let createColliderFromCoords (coordsF: CoordsF) (half: Vector2) =
     { Pos = CoordsFToOffsetVector coordsF half
       Half = half }

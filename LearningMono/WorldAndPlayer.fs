@@ -201,14 +201,23 @@ let pickUpEntity (model: Model) : Model =
     | _ -> model
 
 let placeEntityAt (coords: Coords) (tile: Tile) (i: int) (model: Model) time : Model =
-    let playerPlaced (model: Model) tiles rest time coords : Model =
-        let facing =
-            vectorToFacing model.Player.Facing |> ValueOption.defaultValue FacingRight
+    let place (model: Model) tiles rest time coords : Model =
+        let curMulti = model.Player.MultiPlace
 
-        let multiPlace: voption<Player.MultiPlace> =
-            ValueSome
+        let newMulti: Player.MultiPlace =
+            match curMulti with
+            | ValueSome multi ->
+                { multi with
+                    LastTime = time
+                    Coords = coords }
+            | ValueNone ->
+                printf $"{model.Player.Facing}"
+
+                let facing =
+                    vectorToFacing model.Player.Facing |> ValueOption.defaultValue FacingRight
+
                 { LastTime = time
-                  Coords = (indexToCoords i coords)
+                  Coords = coords
                   Facing = facing }
 
         { model with
@@ -216,7 +225,7 @@ let placeEntityAt (coords: Coords) (tile: Tile) (i: int) (model: Model) time : M
             Player =
                 { model.Player with
                     Carrying = rest
-                    MultiPlace = multiPlace } }
+                    MultiPlace = ValueSome newMulti } }
 
     let player = model.Player
 
@@ -227,24 +236,22 @@ let placeEntityAt (coords: Coords) (tile: Tile) (i: int) (model: Model) time : M
             Collider = ValueNone } ->
             match model.PlayerFeet with
             | ValueSome feet when feet <> i ->
-                let roundedPos = posRounded player.Target
-
                 let entity =
-                    Entity.init toPlace.Type roundedPos model.TimeElapsed player.PlacementFacing true
+                    Entity.init toPlace.Type (coordsToPos coords) model.TimeElapsed player.PlacementFacing true
 
                 // can't place if the block will intersect with the player
                 voption {
                     let! col = entity.Collider
                     let! _ = Collision.noIntersectionAABB (Collision.playerCollider player.Pos) col
                     let tiles = updateTilesWithEntity model.Tiles i tile entity
-                    return playerPlaced model tiles rest time i
+                    return place model tiles rest time coords
                 }
                 |> ValueOption.defaultValue model
             | _ -> model
         | { Entity = ValueSome({ Type = CanPlaceIntoEntity toPlace.Type (newEntity) } as targetEntity) } ->
             let newTarg = Entity.updateSprite { targetEntity with Type = newEntity }
             let tiles = updateTilesWithEntity model.Tiles i tile newTarg
-            playerPlaced model tiles rest time i
+            place model tiles rest time coords
         | _ -> model
     | _ -> model
 
@@ -258,8 +265,6 @@ let placeEntity (model: Model) time =
         placeEntityAt coords tile i model time
     | ValueNone -> model
 
-
-
 let multiPlaceEntity (model: Model) time : Model =
     match model.Player.MultiPlace with
     | ValueNone -> model
@@ -268,12 +273,15 @@ let multiPlaceEntity (model: Model) time : Model =
 
         voption {
             let! i = coordsToIndex nextCoords model.Size
+            printfn $"{i}"
             let tile = getTileAtIndex i model.Tiles
             return placeEntityAt nextCoords tile i model time
         }
         |> ValueOption.defaultValue model
     | ValueSome _ -> model
 
+let endMultiPlace (model:Model) =
+    { model with Player = Player.endMultiPlace model.Player }
 
 let orientEntity (model: Model) (facing: Facing) =
     let player = model.Player
@@ -359,7 +367,7 @@ let update (message: Message) (model: Model) : Model =
             | TryPickup -> pickUpEntity model
             | TryPlace -> placeEntity model time
             | TryMultiPlace true -> multiPlaceEntity model time
-            | TryMultiPlace false -> model
+            | TryMultiPlace false -> endMultiPlace model
             | TryOrient facing -> orientEntity model facing
             | NoAction -> model
 
