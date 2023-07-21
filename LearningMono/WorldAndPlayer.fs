@@ -240,8 +240,8 @@ let placeEntityAt (coords: Coords) (tile: Tile) (i: int) (model: Model) time : M
                     Entity.init toPlace.Type (coordsToPos coords) model.TimeElapsed player.PlacementFacing true
 
                 // can't place if the block will intersect with the player
+                let col = entity.Collider |> ValueOption.defaultValue Collision.emptyCollider
                 voption {
-                    let! col = entity.Collider
                     let! _ = Collision.noIntersectionAABB (Collision.playerCollider player.Pos) col
                     let tiles = updateTilesWithEntity model.Tiles i tile entity
                     return place model tiles rest time coords
@@ -273,7 +273,6 @@ let multiPlaceEntity (model: Model) time : Model =
 
         voption {
             let! i = coordsToIndex nextCoords model.Size
-            printfn $"{i}"
             let tile = getTileAtIndex i model.Tiles
             return placeEntityAt nextCoords tile i model time
         }

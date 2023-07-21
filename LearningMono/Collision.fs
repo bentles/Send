@@ -35,6 +35,11 @@ type Sweep =
       Pos: Vector2
       Time: float32 } //default to 1
 
+let emptyCollider: AABB = {
+    Half = Vector2(0f,0f)
+    Pos = Vector2(0f,0f)
+}
+
 let renderAABB (aabb: AABB) (cameraPos: Vector2) =
     image
         "tile"
