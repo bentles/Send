@@ -35,10 +35,9 @@ type Sweep =
       Pos: Vector2
       Time: float32 } //default to 1
 
-let emptyCollider: AABB = {
-    Half = Vector2(0f,0f)
-    Pos = Vector2(0f,0f)
-}
+let emptyCollider: AABB =
+    { Half = Vector2(0f, 0f)
+      Pos = Vector2(0f, 0f) }
 
 let renderAABB (aabb: AABB) (cameraPos: Vector2) =
     image
@@ -127,11 +126,12 @@ let intersectAABB (aabb: AABB) (box: AABB) : Hit voption =
                   Normal = Vector2(0f, sy)
                   Pos = Vector2(box.Pos.X, aabb.Pos.Y + (aabb.Half.Y * sy)) }
 
-let noIntersectionAABB (aabb: AABB) (box: AABB) : unit voption  =
+let noIntersectionAABB (aabb: AABB) (box: AABB) : unit voption =
     let intersect = intersectAABB aabb box
+
     match intersect with
     | ValueSome _ -> ValueNone
-    | ValueNone -> ValueSome ()
+    | ValueNone -> ValueSome()
 
 let sweepAABB (aabb: AABB) (box: AABB) (delta: Vector2) : Sweep =
     if delta.X = 0f && delta.Y = 0f then
@@ -198,10 +198,14 @@ let collide pos oldPos obstacles =
         let sweepResult = sweepInto (playerCollider oldPos) obstacles deltaPos
 
         let result =
-            { sweepResult with Pos = sweepResult.Pos - PlayerConfig.playerConfig.AABBConfig.Pos }
+            { sweepResult with
+                Pos = sweepResult.Pos - PlayerConfig.playerConfig.AABBConfig.Pos }
 
         //collision distance should be <= unadjusted distance
-        assert ((result.Pos - oldPos).Length() <= deltaPos.Length() + AcceptableError)
+        assert
+            ((result.Pos - oldPos).Length()
+             <= deltaPos.Length() + WorldConfig.AcceptableError)
+
         result
 
 
@@ -229,7 +233,7 @@ let collide pos oldPos obstacles =
         | ValueNone -> pos
 
 let viewAABB (aabb: AABB) (cameraPos: Vector2) (loadedAssets: LoadedAssets) (spriteBatch: SpriteBatch) =
-    if worldConfig.ShowCollisions then
+    if WorldConfig.ShowCollisions then
         spriteBatch.Draw(
             loadedAssets.textures["tile"],
             Rectangle(
@@ -243,5 +247,5 @@ let viewAABB (aabb: AABB) (cameraPos: Vector2) (loadedAssets: LoadedAssets) (spr
             0f,
             Vector2.Zero,
             Graphics.SpriteEffects.None,
-            depthConfig.Debug
+            DepthConfig.Debug
         )

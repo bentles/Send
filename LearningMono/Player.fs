@@ -141,7 +141,7 @@ let updatePhysics (model: Model) (info: PhysicsInfo) =
     assert (Assert.inputAffectsVelocityAssertions model.Input model.Vel vel)
 
     // TileWidth pixels is 1m
-    let pixelsPerMeter = float32 worldConfig.TileWidth
+    let pixelsPerMeter = float32 WorldConfig.TileWidth
 
     let preCollisionPos = model.Pos + (vel * dt) * pixelsPerMeter
 
@@ -304,7 +304,7 @@ let viewCarrying
     carrying
     |> Seq.iteri (fun i item ->
         let offSetPos = cameraPos + offsetStart + (Vector2(0f, 25f) * (float32 i))
-        Sprite.viewSprite item.Sprite offSetPos loadedAssets spriteBatch (depth + (float32 i) * DepthSubFactor))
+        Sprite.viewSprite item.Sprite offSetPos loadedAssets spriteBatch (depth + (float32 i) * DepthConfig.DepthSubFactor))
 
 let hearCarrying (carryingDelta: int) (loadedAssets: LoadedAssets) =
     match carryingDelta with
@@ -313,7 +313,7 @@ let hearCarrying (carryingDelta: int) (loadedAssets: LoadedAssets) =
     | _ -> ()
 
 let viewPlayer (model: Model) (cameraPos: Vector2) loadedAssets (spriteBatch: SpriteBatch) =
-    let playerDepth = (model.Pos.Y * DepthFactor + depthConfig.Entities_And_Player)
+    let playerDepth = (model.Pos.Y * DepthConfig.DepthFactor + DepthConfig.Entities_And_Player)
     Sprite.viewSprite model.SpriteInfo cameraPos loadedAssets spriteBatch playerDepth
 
     viewAABB (playerCollider model.Pos) cameraPos loadedAssets spriteBatch

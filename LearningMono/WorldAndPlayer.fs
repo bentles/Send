@@ -447,7 +447,7 @@ let viewEmitting
             0f,
             Vector2.Zero,
             SpriteEffects.None,
-            depthConfig.Emitting
+            DepthConfig.Emitting
         )
 
 let viewObserverItem
@@ -473,10 +473,10 @@ let viewObserverItem
             0f,
             Vector2.Zero,
             SpriteEffects.None,
-            depthConfig.Emitting
+            DepthConfig.Emitting
         )
 
-let blockWidth = worldConfig.TileWidth
+let blockWidth = WorldConfig.TileWidth
 let empty = "tile"
 let _void = "void"
 let grass = "grass"
@@ -560,7 +560,7 @@ let viewWorld (model: Model) loadedAssets (spriteBatch: SpriteBatch) =
                 0f,
                 Vector2.Zero,
                 effect,
-                depthConfig.Target
+                DepthConfig.Target
             )
         | ValueNone -> ()
 
@@ -574,7 +574,7 @@ let viewWorld (model: Model) loadedAssets (spriteBatch: SpriteBatch) =
                 0f,
                 Vector2.Zero,
                 effect,
-                depthConfig.Target
+                DepthConfig.Target
             )
         | _ -> ()
 
@@ -582,7 +582,7 @@ let viewWorld (model: Model) loadedAssets (spriteBatch: SpriteBatch) =
         | ValueSome entity ->
             let depth =
                 match entity.Collider with
-                | ValueSome coll -> (coll.Pos.Y * DepthFactor)
+                | ValueSome coll -> (coll.Pos.Y * DepthConfig.DepthFactor)
                 | ValueNone -> 0f
 
             Sprite.viewSprite
@@ -590,7 +590,7 @@ let viewWorld (model: Model) loadedAssets (spriteBatch: SpriteBatch) =
                 -cameraOffset
                 loadedAssets
                 spriteBatch
-                (depth + depthConfig.Entities_And_Player)
+                (depth + DepthConfig.Entities_And_Player)
 
             match entity.Type with
             | EmittingObservable(_, _) -> loadedAssets.sounds["click"].Play(0.3f, 0.0f, 0.0f) |> ignore

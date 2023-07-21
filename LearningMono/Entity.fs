@@ -402,7 +402,7 @@ let observing (oType: ObservableType) : EntityType =
 
 let buildObserver (oType: ObservableType) = observing oType
 
-let tileHalf = float32 (worldConfig.TileWidth / 2)
+let tileHalf = float32 (WorldConfig.TileWidth / 2)
 let half = Vector2(tileHalf)
 
 let interact (entity: Model) : Model * InteractionEvent =

@@ -4,21 +4,27 @@ open Xelmish.Model
 open Microsoft.Xna.Framework
 
 let window = Windowed(1600, 900)//FullScreen(1920, 1080)
-let AcceptableError = 0.001f
-let DepthFactor = 0.0001f;
-let DepthSubFactor = 0.00001f;
 
-let depthConfig = {|
-    Tile = 0f;
-    Target = 0.1f;
-    Entities_And_Player = 0.2f;
-    Emitting = 0.3f;
-    Debug = 1f;
-|}
+[<RequireQualifiedAccess>]
+module DepthConfig =    
+  let DepthFactor = 0.0001f;
+  let DepthSubFactor = 0.00001f;
 
-let worldConfig = {| TileWidth = 50; HalfTileWidth = 25; ShowCollisions = false |}
+  let Tile = 0f;
+  let Target = 0.1f;
+  let Entities_And_Player = 0.2f;
+  let Emitting = 0.3f;
+  let Debug = 1f;
+    
+[<RequireQualifiedAccess>]
+module WorldConfig = 
+  let TicksPerReactiveUpdate = 3 //i.e. 20fps since game runs at 60fps
+  let AcceptableError = 0.001f
+  let TileWidth = 50; 
+  let HalfTileWidth = 25; 
+  let ShowCollisions = false 
 
-let halfTile = Vector2(float32 worldConfig.HalfTileWidth, float32 worldConfig.HalfTileWidth)
+let halfTile = Vector2(float32 WorldConfig.HalfTileWidth, float32 WorldConfig.HalfTileWidth)
 
 type ImageConfig =
     { SpriteSize: struct (int * int)

@@ -10,8 +10,8 @@ let CoordsFToOffsetVector ((x,y): CoordsF) (half: Vector2) =
     let startX = 0f
     let startY = 0f
 
-    let xBlockOffSet = float32 (x * float32 worldConfig.TileWidth)
-    let yBlockOffSet = float32 (y * float32 worldConfig.TileWidth)
+    let xBlockOffSet = float32 (x * float32 WorldConfig.TileWidth)
+    let yBlockOffSet = float32 (y * float32 WorldConfig.TileWidth)
 
     let actualX = startX + xBlockOffSet + half.X
     let actualY = startY + yBlockOffSet + half.Y
@@ -19,20 +19,20 @@ let CoordsFToOffsetVector ((x,y): CoordsF) (half: Vector2) =
     Vector2(actualX, actualY)
 
 let offsetVectorToCoords (pos: Vector2) : Coords =
-    let x = int (pos.X / float32 worldConfig.TileWidth)
-    let y = int (pos.Y / float32 worldConfig.TileWidth)
+    let x = int (pos.X / float32 WorldConfig.TileWidth)
+    let y = int (pos.Y / float32 WorldConfig.TileWidth)
     (x, y)
 
 let toCoordsF ((x, y): Coords) : CoordsF = (float32 x, float32 y)
 
 let posRounded (pos: Vector2) =
     let x =
-        (floor (pos.X / float32 worldConfig.TileWidth)) * float32 worldConfig.TileWidth
+        (floor (pos.X / float32 WorldConfig.TileWidth)) * float32 WorldConfig.TileWidth
 
     let y =
-        (floor (pos.Y / float32 worldConfig.TileWidth)) * float32 worldConfig.TileWidth
+        (floor (pos.Y / float32 WorldConfig.TileWidth)) * float32 WorldConfig.TileWidth
 
-    Vector2(x, y) + Vector2(float32 (worldConfig.TileWidth / 2))
+    Vector2(x, y) + Vector2(float32 (WorldConfig.TileWidth / 2))
 
 let toIndex ((x, y): Coords) (width: int) = y * width + x
 
