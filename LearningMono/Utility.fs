@@ -128,7 +128,7 @@ let vectorToFacing (vec: Vector2) : Facing voption =
 let vectorToFacingDefault (vec: Vector2): Facing =
     vectorToFacing vec |> ValueOption.defaultValue FacingRight
     
-
 let addFacing ((x,y):Coords) (facing:Facing): Coords =
     let struct (xx,yy) = facingToCoords facing
     (x + xx, y + yy)
+

@@ -18,6 +18,8 @@ type SongState =
     | PlayingSong of playing: string
     | Stopped
 
+type PlayerTarget = voption<struct (Tile * int)>
+
 type Model =
     { Tiles: Tiles
       Song: SongState
@@ -34,9 +36,13 @@ type Model =
       //player and camera
       PlayerAction: PlayerWorldInteraction
       Player: Player.Model
-      PlayerTarget: struct (Tile * int) voption
+      PlayerTarget: PlayerTarget
       PlayerFeet: int voption
       CameraPos: Vector2 }
+
+let getWidth (model: Model) : int32 =
+    let struct (width, _) = model.Size
+    width
 
 let halfScreenOffset (camPos: Vector2) : Vector2 =
     Vector2.Subtract(camPos, Vector2(800f, 450f))
@@ -196,14 +202,14 @@ let pickUp (targetEntity: Entity.Model) (i: int) (tile: Tile) (model: Model) : M
             { player with
                 Carrying = pickedUpEntity :: player.Carrying } }
 
-let pickUpEntityImpl (pickupFn: PickupEntityFn) (model: Model) : Model =
+let pickUpEntityImpl (pickupFn: PickupEntityFn) (model: Model) (target: PlayerTarget) : Model =
     let player = model.Player
     let playerLimit = Player.getPlayerPickupLimit player.CharacterState
 
     match player.CharacterState with
     | Player.Small _ when player.Carrying.Length + 1 <= playerLimit ->
         option {
-            let! (tile, i) = model.PlayerTarget
+            let! (tile, i) = target
             let! targetEntity = tile.Entity
 
             if targetEntity.CanBePickedUp then
@@ -214,7 +220,7 @@ let pickUpEntityImpl (pickupFn: PickupEntityFn) (model: Model) : Model =
         |> Option.defaultValue model
     | _ -> model
 
-let pickUpEntity (model: Model) : Model = pickUpEntityImpl pickUp model
+let pickUpEntity (model: Model) : Model = pickUpEntityImpl pickUp model model.PlayerTarget
 
 type PlaceDownFn = Model -> Tiles -> List<Entity.Model> -> int64 -> Coords -> Model
 
@@ -241,7 +247,7 @@ let placeDown (model: Model) (tiles: Tiles) (rest: List<Entity.Model>) (time: in
                 Carrying = rest
                 MultiPlace = ValueSome newMulti } }
 
-let placeEntityAtImpl (placeFn:PlaceDownFn) (coords: Coords) (tile: Tile) (i: int) (model: Model) time : Model =
+let placeEntityAtImpl (placeFn: PlaceDownFn) (coords: Coords) (tile: Tile) (i: int) (model: Model) time : Model =
     let player = model.Player
 
     match player with
@@ -280,24 +286,27 @@ let placeEntity (model: Model) time =
 
     match tileAndIndex with
     | ValueSome(tile, i) ->
-        let struct (width, _) = model.Size
+        let width = getWidth model
         let coords = indexToCoords i width
         placeEntityAt coords tile i model time
     | ValueNone -> model
 
-let pushEntity model =
-    let worldAfterPickup = pickUpEntity model
+let pushEntity model time =
     let facing = vectorToFacingDefault model.Player.Facing
-    model
-// let nextCoords = addFacing multiPlace.Coords multiPlace.Facing
+    let width = getWidth model
 
-//     voption {
-//         let! i = coordsToIndex nextCoords model.Size
-//         let tile = getTileAtIndex i model.Tiles
-//         return placeEntityAt nextCoords tile i model time
-//     }
-//     |> ValueOption.defaultValue model
-// model
+    voption {
+        let! (tile, i) = model.PlayerTarget
+        let coords = indexToCoords i width
+        let nextCoords = addFacing coords facing
+        let! nextI = coordsToIndex nextCoords model.Size
+        let nextTile = getTileAtIndex nextI model.Tiles
+        return placeEntityAtImpl (fun (modl: Model) (tiles: Tiles) (rest: List<Entity.Model>) (time': int64) (coords': Coords) ->
+                                    let modelAfterPick = pickUpEntity modl
+                                    placeEntityAt coords' nextTile nextI modelAfterPick time'
+                                     ) nextCoords nextTile nextI model time
+    }
+    |> ValueOption.defaultValue model
 
 let multiPlaceEntity (model: Model) time : Model =
     match model.Player.MultiPlace with
@@ -400,7 +409,7 @@ let update (message: Message) (model: Model) : Model =
             match model.PlayerAction with
             | TryPickup -> pickUpEntity model
             | TryPlace -> placeEntity model time
-            | TryPush -> pushEntity model
+            | TryPush -> pushEntity model time
             | TryMultiPlace true -> multiPlaceEntity model time
             | TryMultiPlace false -> endMultiPlace model
             | TryOrient facing -> orientEntity model facing
@@ -550,7 +559,7 @@ let viewWorld (model: Model) loadedAssets (spriteBatch: SpriteBatch) =
 
         let startX = 0
         let startY = 0
-        let struct (width, _) = model.Size
+        let width = getWidth model
 
         let xBlockOffSet = (i % width) * blockWidth
         let yBlockOffSet = (i / width) * blockWidth
