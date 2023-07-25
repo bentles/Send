@@ -93,9 +93,9 @@ type Message =
     | SongStarted of string
     | PhysicsTick of time: int64 * slow: bool
 
-let updateWorldReactive (tiles: Tiles) (ticksElapsed:int64) ((width, height): Coords) : Tiles =
+let updateWorldReactive (tiles: Tiles) (ticksElapsed: int64) ((width, height): Coords) : Tiles =
     //only do reactive updates every TicksPerReactiveUpdate ticks
-    if (ticksElapsed % WorldConfig.TicksPerReactiveUpdate) = 0 then 
+    if (ticksElapsed % WorldConfig.TicksPerReactiveUpdate) = 0 then
         tiles
         |> PersistentVector.map (fun tile ->
             let maybeEntity =
@@ -124,7 +124,8 @@ let updateWorldReactive (tiles: Tiles) (ticksElapsed:int64) ((width, height): Co
                                 match observerType with
                                 | SingleObserver -> (getObserved tile entity.Facing), ValueNone
                                 | DoubleObserver ->
-                                    (getObserved tile entity.Facing), (getObserved tile (rotateFacing entity.Facing true))
+                                    (getObserved tile entity.Facing),
+                                    (getObserved tile (rotateFacing entity.Facing true))
 
                             Observable(observerFunc oData eType1 eType2)
                         | other -> other
@@ -141,7 +142,7 @@ let updateWorldReactive (tiles: Tiles) (ticksElapsed:int64) ((width, height): Co
                 }
 
             { tile with Entity = maybeEntity })
-    else 
+    else
         tiles
 
 let updateWorldSprites (totalTime: int64) (tiles: Tiles) : Tiles =
@@ -170,7 +171,31 @@ let updateCameraPos (playerPos: Vector2) (oldCamPos: Vector2) : Vector2 =
 
 let mutable lastTick = 0L // we use a mutable tick counter here in order to ensure precision
 
-let pickUpEntity (model: Model) : Model =
+type PickupEntityFn = Entity.Model -> int32 -> Tile -> Model -> Model
+
+let pickUp (targetEntity:Entity.Model) (i:int) (tile:Tile) (model:Model): Model  = 
+    let player = model.Player
+    let newTile, pickedUpEntity =
+        match targetEntity with
+        | { Type = CanPickOutOfEntity(eData, entityType) } as targetEntity ->
+            let newTarget = Entity.updateSprite { targetEntity with Type = eData }
+            let fromObserverEntity = Entity.init entityType Vector2.Zero 0 FacingRight true
+
+            let tile =
+                { tile with
+                    Entity = ValueSome newTarget }
+
+            tile, fromObserverEntity
+        | _ -> { tile with Entity = ValueNone }, targetEntity
+
+    
+    { model with
+        Tiles = model.Tiles |> PersistentVector.update i newTile
+        Player =
+            { player with
+                Carrying = pickedUpEntity :: player.Carrying } }
+
+let pickUpEntityImpl (pickupFn: PickupEntityFn) (model:Model) : Model =
     let player = model.Player
     let playerLimit = Player.getPlayerPickupLimit player.CharacterState
 
@@ -181,30 +206,15 @@ let pickUpEntity (model: Model) : Model =
             let! targetEntity = tile.Entity
 
             if targetEntity.CanBePickedUp then
-                let newTile, pickedUpEntity =
-                    match targetEntity with
-                    | { Type = CanPickOutOfEntity(eData, entityType) } as targetEntity ->
-                        let newTarget = Entity.updateSprite { targetEntity with Type = eData }
-                        let fromObserverEntity = Entity.init entityType Vector2.Zero 0 FacingRight true
-
-                        let tile =
-                            { tile with
-                                Entity = ValueSome newTarget }
-
-                        tile, fromObserverEntity
-                    | _ -> { tile with Entity = ValueNone }, targetEntity
-
-                return
-                    { model with
-                        Tiles = model.Tiles |> PersistentVector.update i newTile
-                        Player =
-                            { player with
-                                Carrying = pickedUpEntity :: player.Carrying } }
+                return pickupFn targetEntity i tile model
             else
                 return! None
         }
         |> Option.defaultValue model
     | _ -> model
+
+let pickUpEntity (model: Model) : Model =
+    pickUpEntityImpl pickUp model
 
 let placeEntityAt (coords: Coords) (tile: Tile) (i: int) (model: Model) time : Model =
     let place (model: Model) tiles rest time coords : Model =
@@ -217,8 +227,7 @@ let placeEntityAt (coords: Coords) (tile: Tile) (i: int) (model: Model) time : M
                     LastTime = time
                     Coords = coords }
             | ValueNone ->
-                let facing =
-                    vectorToFacing model.Player.Facing |> ValueOption.defaultValue FacingRight
+                let facing = vectorToFacingDefault model.Player.Facing
 
                 { LastTime = time
                   Coords = coords
@@ -245,6 +254,7 @@ let placeEntityAt (coords: Coords) (tile: Tile) (i: int) (model: Model) time : M
 
                 // can't place if the block will intersect with the player
                 let col = entity.Collider |> ValueOption.defaultValue Collision.emptyCollider
+
                 voption {
                     let! _ = Collision.noIntersectionAABB (Collision.playerCollider player.Pos) col
                     let tiles = updateTilesWithEntity model.Tiles i tile entity
@@ -269,6 +279,20 @@ let placeEntity (model: Model) time =
         placeEntityAt coords tile i model time
     | ValueNone -> model
 
+let pushEntity model =
+    let worldAfterPickup = pickUpEntity model
+    let facing = vectorToFacingDefault model.Player.Facing
+    model
+    // let nextCoords = addFacing multiPlace.Coords multiPlace.Facing
+
+    //     voption {
+    //         let! i = coordsToIndex nextCoords model.Size
+    //         let tile = getTileAtIndex i model.Tiles
+    //         return placeEntityAt nextCoords tile i model time
+    //     }
+    //     |> ValueOption.defaultValue model
+    // model
+
 let multiPlaceEntity (model: Model) time : Model =
     match model.Player.MultiPlace with
     | ValueNone -> model
@@ -283,8 +307,9 @@ let multiPlaceEntity (model: Model) time : Model =
         |> ValueOption.defaultValue model
     | ValueSome _ -> model
 
-let endMultiPlace (model:Model) =
-    { model with Player = Player.endMultiPlace model.Player }
+let endMultiPlace (model: Model) =
+    { model with
+        Player = Player.endMultiPlace model.Player }
 
 let orientEntity (model: Model) (facing: Facing) =
     let player = model.Player
@@ -369,6 +394,7 @@ let update (message: Message) (model: Model) : Model =
             match model.PlayerAction with
             | TryPickup -> pickUpEntity model
             | TryPlace -> placeEntity model time
+            | TryPush -> pushEntity model
             | TryMultiPlace true -> multiPlaceEntity model time
             | TryMultiPlace false -> endMultiPlace model
             | TryOrient facing -> orientEntity model facing
@@ -387,7 +413,7 @@ let update (message: Message) (model: Model) : Model =
         let player = Player.tick info model.Player
         let maybeTarget = getTileAtPos player.Target model.Size model.Tiles
         let maybeFeetIndex = getIndexAtPos player.Pos model.Size
- 
+
         let tiles = updateWorldReactive model.Tiles model.TicksElapsed model.Size
 
         let goToNextLevel =

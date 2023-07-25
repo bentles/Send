@@ -28,4 +28,5 @@ type PlayerWorldInteraction =
     | TryPlace
     | TryMultiPlace of start:bool
     | TryOrient of Facing
+    | TryPush
     | NoAction
