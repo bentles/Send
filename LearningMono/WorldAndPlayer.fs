@@ -302,11 +302,21 @@ let pushEntity model time =
         let nextCoords = addFacing coords facing
         let! nextI = coordsToIndex nextCoords model.Size
         let nextTile = getTileAtIndex nextI model.Tiles
+        
+        // wanted the below inside place anonymous function because then
+        // we know pickup will only happen if place can happen
+        // but place cannot happen before the player has picked something up lol
+
+        //I think I actually need to make a new pickUp function
+        // this will call pickUp and then try to place and revert the pickup
+
+        //actually this is all dumb... i need canPick and canPlace functions that only care about the world not the player
+        //and then I can simplify place and pick and decouple the player-related conditions from the world ones
         let modelAfterPick = pickUpEntity model //normal pick up
 
         return
             placeEntityAtImpl
-                (fun (model': Model) _ _ (time': int64) (coords': Coords) ->
+                (fun _ _ _ (time': int64) (coords': Coords) ->
                     placeEntityAt coords' nextTile nextI modelAfterPick time' //then place 1 block onwards
                 )
                 nextCoords
