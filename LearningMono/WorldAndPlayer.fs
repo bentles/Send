@@ -220,7 +220,8 @@ let pickUpEntityImpl (pickupFn: PickupEntityFn) (model: Model) (target: PlayerTa
         |> Option.defaultValue model
     | _ -> model
 
-let pickUpEntity (model: Model) : Model = pickUpEntityImpl pickUp model model.PlayerTarget
+let pickUpEntity (model: Model) : Model =
+    pickUpEntityImpl pickUp model model.PlayerTarget
 
 type PlaceDownFn = Model -> Tiles -> List<Entity.Model> -> int64 -> Coords -> Model
 
@@ -296,15 +297,23 @@ let pushEntity model time =
     let width = getWidth model
 
     voption {
-        let! (tile, i) = model.PlayerTarget
+        let! (_, i) = model.PlayerTarget
         let coords = indexToCoords i width
         let nextCoords = addFacing coords facing
         let! nextI = coordsToIndex nextCoords model.Size
         let nextTile = getTileAtIndex nextI model.Tiles
-        return placeEntityAtImpl (fun (modl: Model) (tiles: Tiles) (rest: List<Entity.Model>) (time': int64) (coords': Coords) ->
-                                    let modelAfterPick = pickUpEntity modl
-                                    placeEntityAt coords' nextTile nextI modelAfterPick time'
-                                     ) nextCoords nextTile nextI model time
+
+        return
+            placeEntityAtImpl
+                (fun (modl: Model) (tiles: Tiles) (rest: List<Entity.Model>) (time': int64) (coords': Coords) ->
+                    let modelAfterPick = pickUpEntity modl //normal pick up
+                    placeEntityAt coords' nextTile nextI modelAfterPick time' //then place 1 block onwards
+                    )
+                nextCoords
+                nextTile
+                nextI
+                model
+                time
     }
     |> ValueOption.defaultValue model
 
