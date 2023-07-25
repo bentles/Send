@@ -92,6 +92,7 @@ let init time =
 type Message =
     | PlayerMessage of Player.Message
     | PickUpEntity
+    | PushEntity
     | PlaceEntity
     | MultiPlaceEntity
     | EndMultiPlace
@@ -389,6 +390,7 @@ let update (message: Message) (model: Model) : Model =
             PlayerAction = playerAction }
     | SongStarted name -> { model with Song = PlayingSong name }
     | PickUpEntity -> { model with PlayerAction = TryPickup }
+    | PushEntity -> { model with PlayerAction = TryPush }
     | PlaceEntity -> { model with PlayerAction = TryPlace }
     | Interact ->
         let maybeUpdate =
@@ -703,6 +705,9 @@ let view model (dispatch: Message -> unit) loadedAssets _inputs spriteBatch =
 let inputs (inputs: Inputs) (dispatch: Message -> unit) =
     if Keyboard.iskeydown Keys.X inputs then
         (dispatch (PickUpEntity))
+
+    if Keyboard.iskeydown Keys.S inputs then
+        (dispatch (PushEntity))
 
     if Keyboard.iskeydown Keys.C inputs then
         (dispatch (PlaceEntity))
