@@ -68,7 +68,6 @@ let getTileAtPos (pos: Vector2) (size: Coords) (tiles: Tiles) : struct (Tile * i
     let index = getIndexAtPos pos size
     index |> ValueOption.map (fun index -> getTileAtIndex index tiles, index)
 
-
 let init time =
     let levelIndex = 0 //Levels.levels.Length - 1
     let level = Levels.levels[levelIndex]time
@@ -303,17 +302,17 @@ let pushEntity model time =
         let nextCoords = addFacing coords facing
         let! nextI = coordsToIndex nextCoords model.Size
         let nextTile = getTileAtIndex nextI model.Tiles
+        let modelAfterPick = pickUpEntity model //normal pick up
 
         return
             placeEntityAtImpl
                 (fun (model': Model) _ _ (time': int64) (coords': Coords) ->
-                    let modelAfterPick = pickUpEntity model' //normal pick up
                     placeEntityAt coords' nextTile nextI modelAfterPick time' //then place 1 block onwards
                 )
                 nextCoords
                 nextTile
                 nextI
-                model
+                modelAfterPick
                 time
     }
     |> ValueOption.defaultValue model
