@@ -305,10 +305,10 @@ let pushEntity model time =
 
         return
             placeEntityAtImpl
-                (fun (modl: Model) (tiles: Tiles) (rest: List<Entity.Model>) (time': int64) (coords': Coords) ->
-                    let modelAfterPick = pickUpEntity modl //normal pick up
+                (fun (model': Model) _ _ (time': int64) (coords': Coords) ->
+                    let modelAfterPick = pickUpEntity model' //normal pick up
                     placeEntityAt coords' nextTile nextI modelAfterPick time' //then place 1 block onwards
-                    )
+                )
                 nextCoords
                 nextTile
                 nextI
