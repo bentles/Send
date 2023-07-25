@@ -438,10 +438,10 @@ let viewEmitting
     : unit =
     let imageInfo = getEmitImage entityType
     let struct (width, height) = (imageInfo.SpriteSize)
-    let timeToGone = 10
+    let timeToGone = 30
 
     if ticksSinceLast < timeToGone then
-        let alpha = int ((float32 (15 - ticksSinceLast) / (float32 timeToGone)) * 220f)
+        let alpha = int ((float32 (30 - ticksSinceLast) / (float32 timeToGone)) * 220f)
         let dwidth, dheight = (int ((float width) / 1.5), int ((float height) / 1.5))
         let x, y = pos
 
@@ -598,9 +598,9 @@ let viewWorld (model: Model) loadedAssets (spriteBatch: SpriteBatch) =
                 spriteBatch
                 (depth + DepthConfig.Entities_And_Player)
 
-            match entity.Type with
-            | EmittingObservable(_, _) -> loadedAssets.sounds["click"].Play(0.3f, 0.0f, 0.0f) |> ignore
-            | _ -> ()
+            // match entity.Type with
+            // | EmittingObservable(_, _) -> loadedAssets.sounds["click"].Play(0.05f, 0.0f, 0.0f) |> ignore
+            // | _ -> ()
 
             match entity.Type with
             | RenderEmittingObservable(etype, t) ->

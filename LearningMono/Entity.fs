@@ -39,6 +39,7 @@ and ObservableType =
     | Id
     | GoToNextLevel
     | Toggle of bool
+   // | MultiToggle of bool
     | Map of EntityType
     | Filter of EntityType
     | Compare
@@ -47,7 +48,6 @@ and ObservableType =
 and EntityType =
     | Unit
     | Rock
-    // | NextLevel
 
     | Subject of SubjectData
     | Observable of ObservableData
@@ -214,8 +214,9 @@ let private behaviorFunc (observable: ObservableData) (a: EntityType voption) (b
         | (ValueSome e1) -> WillEmit e1
         | _ -> Nothing
     | Map e ->
-        match a with
-        | (ValueSome _) -> WillEmit e
+        match a, e with
+        | ValueSome s, Unit -> WillEmit s
+        | ValueSome _, _ -> WillEmit e
         | _ -> Nothing
     | Filter e ->
         match a with

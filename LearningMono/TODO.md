@@ -7,18 +7,11 @@
 
 TODO:
 - quick check for collision exclusion of far away objects
-- simplify away the pre-sending potential collider objects since world+player are now one
 - use the stopped animation on characters
 - carrying limits need to be revisited... maybe
 - button animates going down on key down
 - open close chest sounds
 - move entities to their own list
-- feedback from session with ash
-	- lag spikes
-		- only on laptop battery??
-	- pick up multiple things more obvious
-	- more smaller obvious levels
-	- pick up some things still confusing
 - fix placements
 	- placements should go red when cannot be placed?
 	- preview with greyed out?
@@ -30,19 +23,24 @@ TODO:
 	- create tile and add entity to it??
 		- ok this has a problem with how i currently do non-pick upable things but that's just a temp fix anyway hmmm
 - simplify all the things
+	- simplify away the pre-sending potential collider objects since world+player are now one
 	- make it easier to create entities for carrying
 	- simplify interaction event stuffs - seems dumb
 	- make it easier to switch animations
 	- some of my partial active patterns could probs just be complete patterns
 	- create a flattened entity type tree??
 		- not sure if this replaces the existing one or just to be used for non reactive stuffs???
-- cannot observe while emitting? i need a speed limit
+- LEVEL editorrr with saving and loading of all the things
+- arms up animation for holding blocks??
+- jump animation?
 
 DOING:
 - merge levels
 - filter levels are now possible too
 
 DONE:
+- multi place
+- cannot observe while emitting? i need a speed limit
 - fix box display bug
 - fix toggle display bug :(
 - redo box levels
@@ -74,7 +72,12 @@ DONE:
 - unit signal
 - just use facing to determine observable target
 - figure out a nicer way to create levels
-
+- feedback from session with ash
+	- lag spikes
+		- only on laptop battery??
+	- pick up multiple things more obvious
+	- more smaller obvious levels
+	- pick up some things still confusing
 ```fsharp
 let level = [
 	[xx;xx;xx;xx;xx];
