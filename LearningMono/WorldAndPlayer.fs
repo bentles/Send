@@ -173,8 +173,9 @@ let mutable lastTick = 0L // we use a mutable tick counter here in order to ensu
 
 type PickupEntityFn = Entity.Model -> int32 -> Tile -> Model -> Model
 
-let pickUp (targetEntity:Entity.Model) (i:int) (tile:Tile) (model:Model): Model  = 
+let pickUp (targetEntity: Entity.Model) (i: int) (tile: Tile) (model: Model) : Model =
     let player = model.Player
+
     let newTile, pickedUpEntity =
         match targetEntity with
         | { Type = CanPickOutOfEntity(eData, entityType) } as targetEntity ->
@@ -188,14 +189,14 @@ let pickUp (targetEntity:Entity.Model) (i:int) (tile:Tile) (model:Model): Model 
             tile, fromObserverEntity
         | _ -> { tile with Entity = ValueNone }, targetEntity
 
-    
+
     { model with
         Tiles = model.Tiles |> PersistentVector.update i newTile
         Player =
             { player with
                 Carrying = pickedUpEntity :: player.Carrying } }
 
-let pickUpEntityImpl (pickupFn: PickupEntityFn) (model:Model) : Model =
+let pickUpEntityImpl (pickupFn: PickupEntityFn) (model: Model) : Model =
     let player = model.Player
     let playerLimit = Player.getPlayerPickupLimit player.CharacterState
 
@@ -213,33 +214,34 @@ let pickUpEntityImpl (pickupFn: PickupEntityFn) (model:Model) : Model =
         |> Option.defaultValue model
     | _ -> model
 
-let pickUpEntity (model: Model) : Model =
-    pickUpEntityImpl pickUp model
+let pickUpEntity (model: Model) : Model = pickUpEntityImpl pickUp model
 
-let placeEntityAt (coords: Coords) (tile: Tile) (i: int) (model: Model) time : Model =
-    let place (model: Model) tiles rest time coords : Model =
-        let curMulti = model.Player.MultiPlace
+type PlaceDownFn = Model -> Tiles -> List<Entity.Model> -> int64 -> Coords -> Model
 
-        let newMulti: Player.MultiPlace =
-            match curMulti with
-            | ValueSome multi ->
-                { multi with
-                    LastTime = time
-                    Coords = coords }
-            | ValueNone ->
-                let facing = vectorToFacingDefault model.Player.Facing
+let placeDown (model: Model) (tiles: Tiles) (rest: List<Entity.Model>) (time: int64) (coords: Coords) : Model =
+    let curMulti = model.Player.MultiPlace
 
-                { LastTime = time
-                  Coords = coords
-                  Facing = facing }
+    let newMulti: Player.MultiPlace =
+        match curMulti with
+        | ValueSome multi ->
+            { multi with
+                LastTime = time
+                Coords = coords }
+        | ValueNone ->
+            let facing = vectorToFacingDefault model.Player.Facing
 
-        { model with
-            Tiles = tiles
-            Player =
-                { model.Player with
-                    Carrying = rest
-                    MultiPlace = ValueSome newMulti } }
+            { LastTime = time
+              Coords = coords
+              Facing = facing }
 
+    { model with
+        Tiles = tiles
+        Player =
+            { model.Player with
+                Carrying = rest
+                MultiPlace = ValueSome newMulti } }
+
+let placeEntityAtImpl (placeFn:PlaceDownFn) (coords: Coords) (tile: Tile) (i: int) (model: Model) time : Model =
     let player = model.Player
 
     match player with
@@ -258,16 +260,20 @@ let placeEntityAt (coords: Coords) (tile: Tile) (i: int) (model: Model) time : M
                 voption {
                     let! _ = Collision.noIntersectionAABB (Collision.playerCollider player.Pos) col
                     let tiles = updateTilesWithEntity model.Tiles i tile entity
-                    return place model tiles rest time coords
+                    return placeFn model tiles rest time coords
                 }
                 |> ValueOption.defaultValue model
             | _ -> model
         | { Entity = ValueSome({ Type = CanPlaceIntoEntity toPlace.Type (newEntity) } as targetEntity) } ->
             let newTarg = Entity.updateSprite { targetEntity with Type = newEntity }
             let tiles = updateTilesWithEntity model.Tiles i tile newTarg
-            place model tiles rest time coords
+            placeFn model tiles rest time coords
         | _ -> model
     | _ -> model
+
+
+let placeEntityAt (coords: Coords) (tile: Tile) (i: int) (model: Model) time : Model =
+    placeEntityAtImpl placeDown coords tile i model time
 
 let placeEntity (model: Model) time =
     let tileAndIndex = model.PlayerTarget
@@ -283,15 +289,15 @@ let pushEntity model =
     let worldAfterPickup = pickUpEntity model
     let facing = vectorToFacingDefault model.Player.Facing
     model
-    // let nextCoords = addFacing multiPlace.Coords multiPlace.Facing
+// let nextCoords = addFacing multiPlace.Coords multiPlace.Facing
 
-    //     voption {
-    //         let! i = coordsToIndex nextCoords model.Size
-    //         let tile = getTileAtIndex i model.Tiles
-    //         return placeEntityAt nextCoords tile i model time
-    //     }
-    //     |> ValueOption.defaultValue model
-    // model
+//     voption {
+//         let! i = coordsToIndex nextCoords model.Size
+//         let tile = getTileAtIndex i model.Tiles
+//         return placeEntityAt nextCoords tile i model time
+//     }
+//     |> ValueOption.defaultValue model
+// model
 
 let multiPlaceEntity (model: Model) time : Model =
     match model.Player.MultiPlace with
