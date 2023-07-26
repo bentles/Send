@@ -221,10 +221,17 @@ let updateAnimations (newModel: Model) (oldModel: Model) =
         Carrying = (updateCarrying newModel)
         SpriteInfo = (updateSprite newModel.SpriteInfo) }
 
-let (|PlayerCanPlace|_|) (player: Model) =
+let (|PlayerCanPlace|PlayerCantPlace|) (player: Model) =
     match player.CharacterState, player.Carrying with
-    | Small _, placeEntity :: rest -> Some((placeEntity, rest))
-    | _ -> None
+    | Small _, placeEntity :: rest -> PlayerCanPlace((placeEntity, rest))
+    | _ -> PlayerCantPlace
+
+let (|PlayerCanPickup|PlayerCantPickup|) (player: Model) =
+    let playerLimit = getPlayerPickupLimit player.CharacterState
+    match player.CharacterState with
+    | Small _ when player.Carrying.Length + 1 <= playerLimit -> PlayerCanPickup
+    | _ -> PlayerCantPickup
+
 
 let transformStart (characterState: State) =
     match characterState with

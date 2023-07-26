@@ -204,11 +204,10 @@ let pickUp (targetEntity: Entity.Model) (i: int) (tile: Tile) (model: Model) : M
 
 let pickUpEntityImpl (pickupFn: PickupEntityFn) (model: Model) (target: PlayerTarget) : Model =
     let player = model.Player
-    let playerLimit = Player.getPlayerPickupLimit player.CharacterState
 
-    match player.CharacterState with
-    | Player.Small _ when player.Carrying.Length + 1 <= playerLimit ->
-        option {
+    match player with
+    | Player.PlayerCanPickup ->
+        voption {
             let! (tile, i) = target
             let! targetEntity = tile.Entity
 
@@ -217,38 +216,48 @@ let pickUpEntityImpl (pickupFn: PickupEntityFn) (model: Model) (target: PlayerTa
             else
                 return! None
         }
-        |> Option.defaultValue model
-    | _ -> model
+        |> ValueOption.defaultValue model
+    | Player.PlayerCantPickup -> model
 
 let pickUpEntity (model: Model) : Model =
     pickUpEntityImpl pickUp model model.PlayerTarget
 
-type PlaceDownFn = Model -> Tiles -> List<Entity.Model> -> int64 -> Coords -> Model
+type PlaceDownFn = Model -> Tile * int32 -> Coords -> List<Entity.Model> -> Entity.Model -> int64 -> Model
 
-let placeDown (model: Model) (tiles: Tiles) (rest: List<Entity.Model>) (time: int64) (coords: Coords) : Model =
-    let curMulti = model.Player.MultiPlace
+let placeDown: PlaceDownFn =
+    fun model (tile,i) coords rest entity time ->
+        let curMulti = model.Player.MultiPlace
+        let tiles = updateTilesWithEntity model.Tiles i tile entity
 
-    let newMulti: Player.MultiPlace =
-        match curMulti with
-        | ValueSome multi ->
-            { multi with
-                LastTime = time
-                Coords = coords }
-        | ValueNone ->
-            let facing = vectorToFacingDefault model.Player.Facing
+        let newMulti: Player.MultiPlace =
+            match curMulti with
+            | ValueSome multi ->
+                { multi with
+                    LastTime = time
+                    Coords = coords }
+            | ValueNone ->
+                let facing = vectorToFacingDefault model.Player.Facing
 
-            { LastTime = time
-              Coords = coords
-              Facing = facing }
+                { LastTime = time
+                  Coords = coords
+                  Facing = facing }
 
-    { model with
-        Tiles = tiles
-        Player =
-            { model.Player with
-                Carrying = rest
-                MultiPlace = ValueSome newMulti } }
+        { model with
+            Tiles = tiles
+            Player =
+                { model.Player with
+                    Carrying = rest
+                    MultiPlace = ValueSome newMulti } }
 
-let placeEntityAtImpl (placeFn: PlaceDownFn) (coords: Coords) (tile: Tile) (i: int) (model: Model) time : Model =
+let placeEntityAtImpl
+    (placeFn: PlaceDownFn)
+    (noPlaceFn: Model -> Model)
+    (coords: Coords)
+    (tile: Tile)
+    (i: int)
+    (model: Model)
+    time
+    : Model =
     let player = model.Player
 
     match player with
@@ -266,21 +275,19 @@ let placeEntityAtImpl (placeFn: PlaceDownFn) (coords: Coords) (tile: Tile) (i: i
 
                 voption {
                     let! _ = Collision.noIntersectionAABB (Collision.playerCollider player.Pos) col
-                    let tiles = updateTilesWithEntity model.Tiles i tile entity
-                    return placeFn model tiles rest time coords
+                    return placeFn model (tile, i) coords rest entity time   //rest time coords
                 }
-                |> ValueOption.defaultValue model
-            | _ -> model
+                |> ValueOption.defaultValue (noPlaceFn model)
+            | _ -> noPlaceFn model
         | { Entity = ValueSome({ Type = CanPlaceIntoEntity toPlace.Type (newEntity) } as targetEntity) } ->
             let newTarg = Entity.updateSprite { targetEntity with Type = newEntity }
-            let tiles = updateTilesWithEntity model.Tiles i tile newTarg
-            placeFn model tiles rest time coords
-        | _ -> model
-    | _ -> model
+            placeFn model (tile, i) coords rest newTarg time
+        | _ -> noPlaceFn model
+    | Player.PlayerCantPlace -> (noPlaceFn model)
 
 
 let placeEntityAt (coords: Coords) (tile: Tile) (i: int) (model: Model) time : Model =
-    placeEntityAtImpl placeDown coords tile i model time
+    placeEntityAtImpl placeDown id coords tile i model time
 
 let placeEntity (model: Model) time =
     let tileAndIndex = model.PlayerTarget
@@ -297,27 +304,24 @@ let pushEntity model time =
     let width = getWidth model
 
     voption {
-        let! (_, i) = model.PlayerTarget
+        let! (tile, i) = model.PlayerTarget
         let coords = indexToCoords i width
         let nextCoords = addFacing coords facing
         let! nextI = coordsToIndex nextCoords model.Size
         let nextTile = getTileAtIndex nextI model.Tiles
-        
-        // wanted the below inside place anonymous function because then
-        // we know pickup will only happen if place can happen
-        // but place cannot happen before the player has picked something up lol
 
-        //I think I actually need to make a new pickUp function
-        // this will call pickUp and then try to place and revert the pickup
-
-        //actually this is all dumb... i need canPick and canPlace functions that only care about the world not the player
-        //and then I can simplify place and pick and decouple the player-related conditions from the world ones
         let modelAfterPick = pickUpEntity model //normal pick up
 
         return
             placeEntityAtImpl
-                (fun _ _ _ (time': int64) (coords': Coords) ->
+                (fun _ _ (coords': Coords) _ _ (time': int64) ->
                     placeEntityAt coords' nextTile nextI modelAfterPick time' //then place 1 block onwards
+                )
+                (fun model ->
+                    //put back the thing I picked up on failure to place
+                    match model.Player.Carrying with
+                    | pickedUp :: rest -> placeDown model (tile, i) coords rest pickedUp time
+                    | _ -> model
                 )
                 nextCoords
                 nextTile
