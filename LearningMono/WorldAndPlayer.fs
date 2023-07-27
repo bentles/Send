@@ -225,7 +225,7 @@ let pickUpEntity (model: Model) : Model =
 type PlaceDownFn = Model -> Tile * int32 -> Coords -> List<Entity.Model> -> Entity.Model -> int64 -> Model
 
 let placeDown: PlaceDownFn =
-    fun model (tile,i) coords rest entity time ->
+    fun model (tile, i) coords rest entity time ->
         let curMulti = model.Player.MultiPlace
         let tiles = updateTilesWithEntity model.Tiles i tile entity
 
@@ -275,7 +275,7 @@ let placeEntityAtImpl
 
                 voption {
                     let! _ = Collision.noIntersectionAABB (Collision.playerCollider player.Pos) col
-                    return placeFn model (tile, i) coords rest entity time   //rest time coords
+                    return placeFn model (tile, i) coords rest entity time //rest time coords
                 }
                 |> ValueOption.defaultValue (noPlaceFn model)
             | _ -> noPlaceFn model
@@ -321,8 +321,7 @@ let pushEntity model time =
                     //put back the thing I picked up on failure to place
                     match model.Player.Carrying with
                     | pickedUp :: rest -> placeDown model (tile, i) coords rest pickedUp time
-                    | _ -> model
-                )
+                    | _ -> model)
                 nextCoords
                 nextTile
                 nextI
@@ -403,7 +402,13 @@ let update (message: Message) (model: Model) : Model =
             PlayerAction = playerAction }
     | SongStarted name -> { model with Song = PlayingSong name }
     | PickUpEntity -> { model with PlayerAction = TryPickup }
-    | PushEntity -> { model with PlayerAction = TryPush }
+    | PushEntity ->
+        { model with
+            PlayerAction = TryPush
+            Player =
+                { model.Player with
+                    SpriteInfo = Sprite.switchAnimation (CharAnimations.BigAttack, 100, true) model.Player.SpriteInfo } }
+
     | PlaceEntity -> { model with PlayerAction = TryPlace }
     | Interact ->
         let maybeUpdate =

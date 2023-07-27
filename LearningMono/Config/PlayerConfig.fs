@@ -29,8 +29,14 @@ let bigCharImage =
       Rows = 7
       Columns = 8
       TextureName = "bigChar"
-      Offset = Vector2(0f, 27f)      
-    }
+      Offset = Vector2(0f, 27f) }
+
+let bigCharAttackImage =
+    { SpriteSize = (120, 114)
+      Rows = 3
+      Columns = 9
+      TextureName = "bigCharAttack"
+      Offset = Vector2(-8f, 32f) }
 
 let smallCharImage =
     { SpriteSize = (52, 62)
@@ -61,11 +67,16 @@ let CharAnimations =
         { Index = 9
           Looping = true
           Speed = CharConfig.BigFrames
-          Columns = 8 } |}
+          Columns = 8 }
+       BigAttack =
+        { Index = 11
+          Looping = false
+          Speed = 200
+          Columns = 9 } |}
 
 let charSprite: SpriteConfig =
     AnimatedSpriteConfig
-        { Images = [ smallCharImage; bigCharImage ]
+        { Images = [ smallCharImage; bigCharImage; bigCharAttackImage ]
           InitAnimation = CharAnimations.SmallWalk
           Started = false
           Tint = Color.White
@@ -73,4 +84,4 @@ let charSprite: SpriteConfig =
 
 // how much time to consider an old input for to see if the player is trying to
 // face diagonally since both fingers come off the keyboard at fractionally different times :(
-let diagonalReleaseDelay = 100L 
+let diagonalReleaseDelay = 100L

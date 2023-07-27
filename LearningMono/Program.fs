@@ -61,6 +61,7 @@ let main _ =
 
               //entities
               PipelineTexture("bigChar", "./content/sprites/entity/BigChar")
+              PipelineTexture("bigCharAttack", "./content/sprites/entity/BigCharAttack")
               PipelineTexture("smallChar", "./content/sprites/entity/SmallChar")
               PipelineTexture("rock", "./content/sprites/entity/Rock")
               PipelineTexture("id", "./content/sprites/entity/Id")
