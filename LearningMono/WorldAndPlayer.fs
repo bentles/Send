@@ -406,8 +406,11 @@ let update (message: Message) (model: Model) : Model =
         { model with
             PlayerAction = TryPush
             Player =
-                { model.Player with
-                    SpriteInfo = Sprite.switchAnimation (CharAnimations.BigAttack, 100, true) model.Player.SpriteInfo } }
+                match model.Player.CharacterState with
+                | Player.Small false ->
+                    { model.Player with
+                        SpriteInfo = Sprite.switchAnimation (CharAnimations.BigAttack, 50, true) model.Player.SpriteInfo }
+                | _ -> model.Player }
 
     | PlaceEntity -> { model with PlayerAction = TryPlace }
     | Interact ->
