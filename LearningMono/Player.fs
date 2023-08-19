@@ -21,6 +21,8 @@ type MultiPlace =
       Coords: Coords
       Facing: Facing }
 
+type PlayerTarget = voption<struct (Level.Tile * int)>
+
 type Model =
     { SpriteInfo: Sprite.Model
       CharacterState: State
@@ -37,6 +39,10 @@ type Model =
       Target: Vector2
       PlacementFacing: Facing
       MultiPlace: MultiPlace voption
+
+      Action: PlayerWorldInteraction      
+      TargetedTile: PlayerTarget
+      Feet: int voption
 
       //physics
       Facing: Vector2
@@ -61,6 +67,10 @@ let init (pos: Vector2) (carrying: Entity.Model list) (playerConfig: PlayerConfi
 
       Carrying = carrying
       CarryingDelta = 0
+
+      Action = NoAction
+      TargetedTile = ValueNone
+      Feet = ValueNone
 
       Facing = Vector2(1f, 0f)
       Target = pos + 55f * Vector2(1f, 0f)
@@ -292,6 +302,9 @@ let update (message: Message) (model: Model) =
         { model with
             MovementFrozen = theyDo
             ArrowsControlPlacement = theyDo }
+
+let setAction (player:Model) (action:PlayerWorldInteraction) : Model =
+    { player with Action = action }
 
 
 let viewCarrying

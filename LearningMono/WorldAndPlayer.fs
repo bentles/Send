@@ -18,7 +18,7 @@ type SongState =
     | PlayingSong of playing: string
     | Stopped
 
-type PlayerTarget = voption<struct (Tile * int)>
+
 
 type Model =
     { Tiles: Tiles
@@ -34,10 +34,8 @@ type Model =
       TicksElapsed: int64
 
       //player and camera
-      PlayerAction: PlayerWorldInteraction
       Player: Player.Model
-      PlayerTarget: PlayerTarget
-      PlayerFeet: int voption
+
       CameraPos: Vector2 }
 
 let getWidth (model: Model) : int32 =
@@ -58,15 +56,7 @@ let getCollidables (tiles: Tile seq) : AABB seq =
                 | _ -> ()
     }
 
-let getIndexAtPos (pos: Vector2) (size: Coords) : int voption =
-    let coords = offsetVectorToCoords pos
-    coordsToIndex coords size
 
-let getTileAtIndex index (tiles: Tiles) = PersistentVector.nth index tiles
-
-let getTileAtPos (pos: Vector2) (size: Coords) (tiles: Tiles) : struct (Tile * int) voption =
-    let index = getIndexAtPos pos size
-    index |> ValueOption.map (fun index -> getTileAtIndex index tiles, index)
 
 let init time =
     let levelIndex = 0 //Levels.levels.Length - 1
@@ -77,12 +67,11 @@ let init time =
       Size = level.Size
       LevelText = level.LevelText
       Level = levelIndex
-      PlayerAction = NoAction
+
       Player = Player.init level.PlayerStartsAtPos level.PlayerStartsCarrying playerConfig charSprite time
       Slow = false
       Dt = 0f
-      PlayerTarget = ValueNone
-      PlayerFeet = ValueNone
+
       TimeElapsed = 0
       TicksElapsed = 0
       CameraPos = Vector2(0f, -0f) }
@@ -202,13 +191,13 @@ let pickUp (targetEntity: Entity.Model) (i: int) (tile: Tile) (model: Model) : M
             { player with
                 Carrying = pickedUpEntity :: player.Carrying } }
 
-let pickUpEntityImpl (pickupFn: PickupEntityFn) (model: Model) (target: PlayerTarget) : Model =
+let pickUpEntityImpl (pickupFn: PickupEntityFn) (model: Model) (target: Player.PlayerTarget) : Model =
     let player = model.Player
 
     match player with
     | Player.PlayerCanPickup ->
         voption {
-            let! (tile, i) = target
+            let! (tile, i) = player.TargetedTile
             let! targetEntity = tile.Entity
 
             if targetEntity.CanBePickedUp then
@@ -218,8 +207,9 @@ let pickUpEntityImpl (pickupFn: PickupEntityFn) (model: Model) (target: PlayerTa
         }
         |> ValueOption.defaultValue model
     | Player.PlayerCantPickup -> model
+
 let pickUpEntity (model: Model) : Model =
-    pickUpEntityImpl pickUp model model.PlayerTarget
+    pickUpEntityImpl pickUp model model.Player.TargetedTile
 
 type PlaceDownFn = Model -> Tile * int32 -> Coords -> List<Entity.Model> -> Entity.Model -> int64 -> Model
 
@@ -264,7 +254,7 @@ let placeEntityAtImpl
         match tile with
         | { Entity = ValueNone
             Collider = ValueNone } ->
-            match model.PlayerFeet with
+            match model.Player.Feet with
             | ValueSome feet when feet <> i ->
                 let entity =
                     Entity.init toPlace.Type (coordsToPos coords) model.TimeElapsed player.PlacementFacing true
@@ -288,7 +278,7 @@ let placeEntityAt (coords: Coords) (tile: Tile) (i: int) (model: Model) time : M
     placeEntityAtImpl placeDown id coords tile i model time
 
 let placeEntity (model: Model) time =
-    let tileAndIndex = model.PlayerTarget
+    let tileAndIndex = model.Player.TargetedTile
 
     match tileAndIndex with
     | ValueSome(tile, i) ->
@@ -302,7 +292,7 @@ let pushEntity model time =
     let width = getWidth model
 
     voption {
-        let! (tile, i) = model.PlayerTarget
+        let! (tile, i) = model.Player.TargetedTile
         let coords = indexToCoords i width
         let nextCoords = addFacing coords facing
         let! nextI = coordsToIndex nextCoords model.Size
@@ -351,7 +341,7 @@ let orientEntity (model: Model) (facing: Facing) =
 
     match player.CharacterState with
     | Player.Small _ ->
-        let tileAndIndex = model.PlayerTarget
+        let tileAndIndex = model.Player.TargetedTile
 
         match tileAndIndex with
         | ValueSome({ Entity = ValueSome({ CanBePickedUp = true } as entityData) } as tile, i) ->
@@ -381,40 +371,47 @@ let interactionEvent (event: Entity.InteractionEvent) (model: Model) : Model =
     | NoEvent -> model
 
 let update (message: Message) (model: Model) : Model =
+    let player = model.Player
+    let setPlayerAction = Player.setAction player
+
     match message with
     | PlayerMessage playerMsg ->
-        let (newPlayerModel) = Player.update playerMsg model.Player
+        let newPlayer = Player.update playerMsg player
         // intercept orientation messages
         let playerAction =
             match playerMsg with
-            | Player.Message.Input dir when model.Player.ArrowsControlPlacement ->
+            | Player.Message.Input dir when player.ArrowsControlPlacement ->
                 let facing = vectorToFacing (Vector2(float32 dir.X, float32 dir.Y))
 
                 match facing with
                 | ValueSome facing -> TryOrient facing
-                | _ -> model.PlayerAction
-            | _ -> model.PlayerAction
+                | _ -> player.Action
+            | _ -> player.Action
 
         { model with
-            Player = newPlayerModel
-            PlayerAction = playerAction }
+            Player = Player.setAction newPlayer playerAction }
     | SongStarted name -> { model with Song = PlayingSong name }
-    | PickUpEntity -> { model with PlayerAction = TryPickup }
-    | PushEntity ->
+    | PickUpEntity ->
         { model with
-            PlayerAction = TryPush
-            Player =
-                match model.Player.CharacterState with
-                | Player.Small false ->
-                    { model.Player with
-                        SpriteInfo = Sprite.switchAnimation (CharAnimations.BigAttack, 50, true) model.Player.SpriteInfo }
-                | _ -> model.Player }
+            Player = setPlayerAction TryPickup }
+    | PushEntity ->
+        let newPlayer =
+            match player.CharacterState with
+            | Player.Small false ->
+                { player with
+                    SpriteInfo = Sprite.switchAnimation (CharAnimations.BigAttack, 50, true) player.SpriteInfo }
+            | _ -> player
 
-    | PlaceEntity -> { model with PlayerAction = TryPlace }
+        { model with
+            Player = Player.setAction newPlayer TryPush }
+
+    | PlaceEntity ->
+        { model with
+            Player = setPlayerAction TryPlace }
     | Interact ->
         let maybeUpdate =
             voption {
-                let! (tile, i) = model.PlayerTarget
+                let! (tile, i) = player.TargetedTile
                 let! entity = tile.Entity
                 let newEntity, event = Entity.interact entity
 
@@ -433,10 +430,10 @@ let update (message: Message) (model: Model) : Model =
         | ValueSome updatedModel -> updatedModel
 
     | PhysicsTick(time, slow) ->
-        let wasCarrying = model.Player.Carrying.Length
+        let wasCarrying = player.Carrying.Length
 
         let model =
-            match model.PlayerAction with
+            match model.Player.Action with
             | TryPickup -> pickUpEntity model
             | TryPlace -> placeEntity model time
             | TryPush -> pushEntity model time
@@ -456,8 +453,9 @@ let update (message: Message) (model: Model) : Model =
               PossibleObstacles = getCollidables model.Tiles }
 
         let player = Player.tick info model.Player
-        let maybeTarget = getTileAtPos player.Target model.Size model.Tiles
-        let maybeFeetIndex = getIndexAtPos player.Pos model.Size
+
+        let maybeTarget = Level.getTileAtPos player.Target model.Size model.Tiles
+        let maybeFeetIndex = Level.getIndexAtPos player.Pos model.Size
 
         let tiles = updateWorldReactive model.Tiles model.TicksElapsed model.Size
 
@@ -484,18 +482,19 @@ let update (message: Message) (model: Model) : Model =
                 CameraPos = newCameraPos
                 Player =
                     { player with
-                        CarryingDelta = isCarrying - wasCarrying }
-                PlayerTarget = maybeTarget
-                PlayerFeet = maybeFeetIndex
-                PlayerAction = NoAction }
+                        CarryingDelta = isCarrying - wasCarrying 
+                        TargetedTile = maybeTarget
+                        Feet = maybeFeetIndex
+                        Action = NoAction }
+                }
 
         if goToNextLevel then nextLevel model else model
     | MultiPlaceEntity ->
         { model with
-            PlayerAction = TryMultiPlace true }
+            Player = setPlayerAction (TryMultiPlace true) }
     | EndMultiPlace ->
         { model with
-            PlayerAction = TryMultiPlace false }
+            Player = setPlayerAction (TryMultiPlace false) }
 
 
 // VIEW
@@ -608,7 +607,7 @@ let viewWorld (model: Model) loadedAssets (spriteBatch: SpriteBatch) =
         //target
         let maybeTargetColor =
             voption {
-                let! (tile, ind) = model.PlayerTarget
+                let! (tile, ind) = model.Player.TargetedTile
                 let! target = if i = ind then ValueSome tile else ValueNone
                 let illegal = ValueOption.isSome target.Collider || ValueOption.isSome target.Entity
 
@@ -641,7 +640,7 @@ let viewWorld (model: Model) loadedAssets (spriteBatch: SpriteBatch) =
             )
         | ValueNone -> ()
 
-        match model.PlayerFeet with
+        match model.Player.Feet with
         | ValueSome index when index = i ->
             spriteBatch.Draw(
                 loadedAssets.textures["feet"],

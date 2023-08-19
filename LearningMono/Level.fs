@@ -44,6 +44,16 @@ type LevelData =
 type LevelBuilder = int64 -> LevelData
 
 // helpers
+let getIndexAtPos (pos: Vector2) (size: Coords) : int voption =
+    let coords = offsetVectorToCoords pos
+    coordsToIndex coords size
+
+let getTileAtIndex index (tiles: Tiles) = PersistentVector.nth index tiles
+
+let getTileAtPos (pos: Vector2) (size: Coords) (tiles: Tiles) : struct (Tile * int) voption =
+    let index = getIndexAtPos pos size
+    index |> ValueOption.map (fun index -> getTileAtIndex index tiles, index)
+    
 let createCollidableTile t (coords: Coords) =
     { defaultTile with
         Coords = coords
