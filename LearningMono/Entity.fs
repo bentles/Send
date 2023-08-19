@@ -48,7 +48,6 @@ and ObservableType =
 and EntityType =
     | Unit
     | Rock
-
     | Subject of SubjectData
     | Observable of ObservableData
 
