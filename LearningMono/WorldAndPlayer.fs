@@ -218,7 +218,6 @@ let pickUpEntityImpl (pickupFn: PickupEntityFn) (model: Model) (target: PlayerTa
         }
         |> ValueOption.defaultValue model
     | Player.PlayerCantPickup -> model
-
 let pickUpEntity (model: Model) : Model =
     pickUpEntityImpl pickUp model model.PlayerTarget
 
@@ -284,7 +283,6 @@ let placeEntityAtImpl
             placeFn model (tile, i) coords rest newTarg time
         | _ -> noPlaceFn model
     | Player.PlayerCantPlace -> (noPlaceFn model)
-
 
 let placeEntityAt (coords: Coords) (tile: Tile) (i: int) (model: Model) time : Model =
     placeEntityAtImpl placeDown id coords tile i model time

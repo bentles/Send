@@ -60,32 +60,6 @@ let createColliderFromCoords (coordsF: CoordsF) (half: Vector2) =
     { Pos = CoordsFToOffsetVector coordsF half
       Half = half }
 
-let imageWithSource
-    (key: string)
-    (colour: Color)
-    (srcSize: int * int)
-    (srcPos: int * int)
-    (destSize: int * int)
-    (destPos: int * int)
-    : Viewable =
-
-    OnDraw(fun loadedAssets _ (spriteBatch: SpriteBatch) ->
-        let (x, y) = destPos
-        let (width, height) = destSize
-        let (sourceX, sourceY) = srcPos
-        let (sourceWidth, sourceHeight) = srcSize
-
-        spriteBatch.Draw(
-            loadedAssets.textures[key],
-            Rectangle(x, y, width, height),
-            Rectangle(sourceX, sourceY, sourceWidth, sourceHeight),
-            colour,
-            0f,
-            Vector2.Zero,
-            Graphics.SpriteEffects.None,
-            0f
-        ))
-
 let round (x: float32) = int (System.Math.Round(float x))
 
 let debugText s (x, y) =
