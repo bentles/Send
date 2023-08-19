@@ -18,8 +18,6 @@ type SongState =
     | PlayingSong of playing: string
     | Stopped
 
-
-
 type Model =
     { Tiles: Tiles
       Song: SongState
@@ -33,9 +31,7 @@ type Model =
       TimeElapsed: int64
       TicksElapsed: int64
 
-      //player and camera
       Player: Player.Model
-
       CameraPos: Vector2 }
 
 let getWidth (model: Model) : int32 =
@@ -55,8 +51,6 @@ let getCollidables (tiles: Tile seq) : AABB seq =
                 | ValueSome { Collider = ValueSome collider } -> collider
                 | _ -> ()
     }
-
-
 
 let init time =
     let levelIndex = 0 //Levels.levels.Length - 1
@@ -261,12 +255,11 @@ let placeEntityAtImpl
 
                 // can't place if the block will intersect with the player
                 let col = entity.Collider |> ValueOption.defaultValue Collision.emptyCollider
+                let collidedWithPlayer = Collision.intersectAABB (Collision.playerCollider player.Pos) col
 
-                voption {
-                    let! _ = Collision.noIntersectionAABB (Collision.playerCollider player.Pos) col
-                    return placeFn model (tile, i) coords rest entity time //rest time coords
-                }
-                |> ValueOption.defaultValue (noPlaceFn model)
+                match collidedWithPlayer with 
+                | ValueSome _ -> noPlaceFn model
+                | ValueNone -> placeFn model (tile, i) coords rest entity time 
             | _ -> noPlaceFn model
         | { Entity = ValueSome({ Type = CanPlaceIntoEntity toPlace.Type (newEntity) } as targetEntity) } ->
             let newTarg = Entity.updateSprite { targetEntity with Type = newEntity }
@@ -305,11 +298,11 @@ let pushEntity model time =
                 (fun _ _ (coords': Coords) _ _ (time': int64) ->
                     placeEntityAt coords' nextTile nextI modelAfterPick time' //then place 1 block onwards
                 )
-                (fun model ->
+                (fun modl ->
                     //put back the thing I picked up on failure to place
-                    match model.Player.Carrying with
-                    | pickedUp :: rest -> placeDown model (tile, i) coords rest pickedUp time
-                    | _ -> model)
+                    match modl.Player.Carrying with
+                    | _ :: _ -> placeEntity modl time
+                    | _ -> modl)
                 nextCoords
                 nextTile
                 nextI
