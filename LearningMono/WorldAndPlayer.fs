@@ -185,7 +185,7 @@ let pickUp (targetEntity: Entity.Model) (i: int) (tile: Tile) (model: Model) : M
             { player with
                 Carrying = pickedUpEntity :: player.Carrying } }
 
-let pickUpEntityImpl (pickupFn: PickupEntityFn) (model: Model) (target: Player.PlayerTarget) : Model =
+let pickUpEntityImpl (pickupFn: PickupEntityFn) (model: Model) : Model =
     let player = model.Player
 
     match player with
@@ -203,7 +203,7 @@ let pickUpEntityImpl (pickupFn: PickupEntityFn) (model: Model) (target: Player.P
     | Player.PlayerCantPickup -> model
 
 let pickUpEntity (model: Model) : Model =
-    pickUpEntityImpl pickUp model model.Player.TargetedTile
+    pickUpEntityImpl pickUp model
 
 type PlaceDownFn = Model -> Tile * int32 -> Coords -> List<Entity.Model> -> Entity.Model -> int64 -> Model
 
@@ -285,7 +285,7 @@ let pushEntity model time =
     let width = getWidth model
 
     voption {
-        let! (tile, i) = model.Player.TargetedTile
+        let! (_, i) = model.Player.TargetedTile
         let coords = indexToCoords i width
         let nextCoords = addFacing coords facing
         let! nextI = coordsToIndex nextCoords model.Size
