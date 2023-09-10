@@ -525,90 +525,6 @@ let update (message: Message) (model: Model) : Model =
 
 // VIEW
 
-let viewEmitting
-    (entityType: EntityType)
-    (ticksSinceLast: int)
-    pos
-    (spriteBatch: SpriteBatch)
-    (texture: Graphics.Texture2D)
-    : unit =
-    let imageInfo = getEmitImage entityType
-    let struct (width, height) = (imageInfo.SpriteSize)
-    let timeToGone = 30
-
-    if ticksSinceLast < timeToGone then
-        let alpha = int ((float32 (30 - ticksSinceLast) / (float32 timeToGone)) * 220f)
-        let dwidth, dheight = (int ((float width) / 1.5), int ((float height) / 1.5))
-        let x, y = pos
-
-        spriteBatch.Draw(
-            texture,
-            Rectangle(x + 25, y - 10, dwidth, dheight),
-            Rectangle(0, 0, width, height),
-            Color.FromNonPremultiplied(255, 255, 255, alpha),
-            0f,
-            Vector2.Zero,
-            SpriteEffects.None,
-            DepthConfig.Emitting
-        )
-
-let viewObserverItem
-    (entityType: EntityType)
-    (ticksSinceLast: int)
-    pos
-    (spriteBatch: SpriteBatch)
-    (texture: Graphics.Texture2D)
-    : unit =
-    let imageInfo = getEmitImage entityType
-    let struct (width, height) = (imageInfo.SpriteSize)
-
-    if ticksSinceLast < 20 then
-        let alpha = int ((float32 (30 - ticksSinceLast) / 20f) * 220f)
-        let dwidth, dheight = (int ((float width) / 1.5), int ((float height) / 1.5))
-        let x, y = pos
-
-        spriteBatch.Draw(
-            texture,
-            Rectangle(x + 20, y + 18, dwidth, dheight),
-            Rectangle(0, 0, width, height),
-            (Color.FromNonPremultiplied(255, 255, 255, alpha)),
-            0f,
-            Vector2.Zero,
-            SpriteEffects.None,
-            DepthConfig.Emitting
-        )
-
-let blockWidth = WorldConfig.TileWidth
-let empty = "tile"
-let _void = "void"
-let grass = "grass"
-let wall = "wall"
-let leftWall = "leftWall"
-let rightWall = "rightWall"
-let topWall = "topWall"
-let bottomWall = "bottomWall"
-let floor = "floor"
-
-let viewFloor (tile:Tile) (xPixel:int) (yPixel:int) (sourceRect:Rectangle) loadedAssets (spriteBatch: SpriteBatch) = 
-    let texture =
-        match tile.FloorType with
-        | FloorType.Grass -> grass
-        | FloorType.Empty -> empty
-        | FloorType.Void -> _void
-        | FloorType.Wall -> wall
-        | FloorType.LeftWall -> leftWall
-        | FloorType.RightWall -> rightWall
-        | FloorType.TopWall -> topWall
-        | FloorType.BottomWall -> bottomWall
-        | FloorType.Floor -> floor
-
-    
-    spriteBatch.Draw(
-        loadedAssets.textures[texture],
-        Rectangle(xPixel, yPixel, sourceRect.Width, sourceRect.Height),
-        Color.White
-    )
-
 let targetColor (model:Model) (i:int) = 
     let alpha = 0.5f //TODO move to config
     voption {
@@ -622,6 +538,7 @@ let targetColor (model:Model) (i:int) =
             else
                 (Color.Green * alpha)
     }
+
 
 let viewTargets (maybeTargetColor:voption<Color>) (model:Model) (i:int) (xPixel:int) (yPixel:int) (sourceRect:Rectangle) loadedAssets (spriteBatch: SpriteBatch) = 
     let alpha = 0.5f //TODO move to config
@@ -660,58 +577,6 @@ let viewTargets (maybeTargetColor:voption<Color>) (model:Model) (i:int) (xPixel:
         )
     | _ -> ()
 
-let viewEntities (maybeTargetColor:voption<Color>) (cameraOffset:Vector2) (tile:Tile) (xPixel:int) (yPixel:int) loadedAssets (spriteBatch: SpriteBatch) = 
-    match tile.Entity with
-        | ValueSome entity ->
-            let depth =
-                match entity.Collider with
-                | ValueSome coll -> (coll.Pos.Y * DepthConfig.DepthFactor)
-                | ValueNone -> 0f
-
-            Sprite.viewSprite
-                entity.Sprite
-                -cameraOffset
-                loadedAssets
-                spriteBatch
-                (depth + DepthConfig.Entities_And_Player)
-
-            // match entity.Type with
-            // | EmittingObservable(_, _) -> loadedAssets.sounds["click"].Play(0.05f, 0.0f, 0.0f) |> ignore
-            // | _ -> ()
-
-            match entity.Type with
-            | RenderEmittingObservable(etype, t) ->
-                viewEmitting
-                    etype
-                    t
-                    (xPixel, yPixel)
-                    spriteBatch
-                    loadedAssets.textures[(getEmitImage etype).TextureName]
-            | _ -> ()
-
-            match entity.Type, maybeTargetColor with
-            | CanPickOutOfEntity(_, eType), ValueSome _ ->
-                viewObserverItem
-                    eType
-                    1
-                    (xPixel, yPixel)
-                    spriteBatch
-                    loadedAssets.textures[(getEmitImage eType).TextureName]
-            | CanPlaceIntoEntity Unit (_), ValueSome _ ->
-                viewObserverItem
-                    Unit
-                    1
-                    (xPixel, yPixel)
-                    spriteBatch
-                    loadedAssets.textures[(getEmitImage Unit).TextureName]
-            | _ -> ()
-
-        | ValueNone -> ()
-
-    match tile.Entity with
-        | ValueSome { Collider = ValueSome collider } ->
-            Collision.viewAABB collider (-cameraOffset) loadedAssets spriteBatch
-        | _ -> ()
 
 let viewWorldAndPlayer (model: Model) loadedAssets (spriteBatch: SpriteBatch) =
     let sourceRect = rect 0 0 blockWidth blockWidth
