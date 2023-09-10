@@ -46,6 +46,23 @@ type LevelData =
 
 type LevelBuilder = int64 -> LevelData
 
+[<Struct>]
+type SongState =
+    | PlaySong of song: string
+    | PlayingSong of playing: string
+    | Stopped
+
+type World =
+    { Tiles: Tiles
+      Song: SongState
+      LevelText: string
+      Level: int
+      Size: Coords
+      Dt: float32
+      Slow: bool
+      TimeElapsed: int64
+      TicksElapsed: int64 }
+
 // helpers
 let getIndexAtPos (pos: Vector2) (size: Coords) : int voption =
     let coords = offsetVectorToCoords pos

@@ -2,7 +2,7 @@
   <PropertyGroup>
     <OutputType>Exe</OutputType>
     <TargetFramework>net6.0</TargetFramework>
-   <!-- <RollForward>Major</RollForward>
+    <!-- <RollForward>Major</RollForward>
     <SelfContained>false</SelfContained>
     <RuntimeIdentifier>win-x64</RuntimeIdentifier>-->
     <GenerateRuntimeConfigurationFiles>true</GenerateRuntimeConfigurationFiles>
@@ -35,8 +35,9 @@
     <Compile Include="Entity.fs" />
     <Compile Include="Level.fs" />
     <Compile Include="Levels.fs" />
+    <Compile Include="LevelEditor.fs" />
     <Compile Include="Player.fs" />
-    <Compile Include="WorldAndPlayer.fs" />
+    <Compile Include="Game.fs" />
     <Compile Include="Program.fs" />
     <EmbeddedResource Include="Icon.ico" />
     <EmbeddedResource Include="Icon.bmp" />

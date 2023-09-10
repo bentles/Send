@@ -4,34 +4,36 @@ open Xelmish.Viewables // required to get access to helpers like 'colour'
 open GameConfig
 open Prelude
 
-type Model = { World: World.Model
+type Model = { Game: Game.Model
+               LevelEditor: LevelEditor.Model 
                TimeElapsed: int64
     }
 
 let init () =
-    { World = (World.init 0L)
+    { Game = Game.init 0L
+      LevelEditor = LevelEditor.init () 
       TimeElapsed = 0L
     }, Cmd.none
 
 type Message =
-    | WorldMessage of World.Message
+    | WorldMessage of Game.Message
     | Tick of int64
 
 let update message (model: Model) =
     match message with
     | WorldMessage p ->
-        let (newWorld) = World.update p model.World
-        { model with World = newWorld }, Cmd.none
+        let newWorld = Game.update p model.Game
+        { model with Game = newWorld }, Cmd.none
     | Tick time -> { model with TimeElapsed = time } , Cmd.none 
 
 
 let view (model: Model) (dispatch: Message -> unit) =
     [
         OnDraw(fun loadedAssets inputs spriteBatch -> 
-            World.view model.World (WorldMessage >> dispatch) loadedAssets inputs spriteBatch
+            Game.view model.Game (WorldMessage >> dispatch) loadedAssets inputs spriteBatch
         )
         OnUpdate(fun inputs -> 
-            World.inputs inputs (WorldMessage >> dispatch)
+            Game.inputs inputs (WorldMessage >> dispatch)
             dispatch (Tick inputs.totalGameTime) //TODO: probs don't need this
             if Keyboard.iskeydown Keys.Escape inputs then exit()
             )

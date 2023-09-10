@@ -1,4 +1,4 @@
-﻿module World
+﻿module Game
 
 open Xelmish.Model
 open Microsoft.Xna.Framework
@@ -11,23 +11,6 @@ open Entity
 open FSharpx.Collections
 open Microsoft.Xna.Framework.Graphics
 open Prelude
-
-[<Struct>]
-type SongState =
-    | PlaySong of song: string
-    | PlayingSong of playing: string
-    | Stopped
-
-type World =
-    { Tiles: Tiles
-      Song: SongState
-      LevelText: string
-      Level: int
-      Size: Coords
-      Dt: float32
-      Slow: bool
-      TimeElapsed: int64
-      TicksElapsed: int64 }
 
 type Model =
     { World: World
@@ -500,8 +483,7 @@ let update (message: Message) (model: Model) : Model =
                 Slow = slow
                 TimeElapsed = time
                 TicksElapsed = model.World.TicksElapsed + 1L
-                Tiles = tiles
-            }
+                Tiles = tiles }
 
         let model =
             { model with
@@ -525,8 +507,9 @@ let update (message: Message) (model: Model) : Model =
 
 // VIEW
 
-let targetColor (model:Model) (i:int) = 
+let targetColor (model: Model) (i: int) =
     let alpha = 0.5f //TODO move to config
+
     voption {
         let! (tile, ind) = model.Player.TargetedTile
         let! target = if i = ind then ValueSome tile else ValueNone
@@ -540,8 +523,18 @@ let targetColor (model:Model) (i:int) =
     }
 
 
-let viewTargets (maybeTargetColor:voption<Color>) (model:Model) (i:int) (xPixel:int) (yPixel:int) (sourceRect:Rectangle) loadedAssets (spriteBatch: SpriteBatch) = 
+let viewTargets
+    (maybeTargetColor: voption<Color>)
+    (model: Model)
+    (i: int)
+    (xPixel: int)
+    (yPixel: int)
+    (sourceRect: Rectangle)
+    loadedAssets
+    (spriteBatch: SpriteBatch)
+    =
     let alpha = 0.5f //TODO move to config
+
     let struct (texture, effect) =
         match model.Player.PlacementFacing with
         | FacingUp -> "facingUp", SpriteEffects.None
@@ -596,13 +589,12 @@ let viewWorldAndPlayer (model: Model) loadedAssets (spriteBatch: SpriteBatch) =
 
         let xPixel = startX + xBlockOffSet + int (cameraOffset.X)
         let yPixel = startY + yBlockOffSet + int (cameraOffset.Y)
-        
+
         //floor
         viewFloor tile xPixel yPixel sourceRect loadedAssets spriteBatch
-        let maybeTargetColor = targetColor model i        
+        let maybeTargetColor = targetColor model i
         viewTargets maybeTargetColor model i xPixel yPixel sourceRect loadedAssets spriteBatch
-        viewEntities maybeTargetColor cameraOffset tile xPixel yPixel loadedAssets spriteBatch        
-        )
+        viewEntities maybeTargetColor cameraOffset tile xPixel yPixel loadedAssets spriteBatch)
 
     Player.viewPlayer model.Player (halfScreenOffset model.CameraPos) loadedAssets spriteBatch
 
@@ -618,7 +610,7 @@ let view (model: Model) (dispatch: Message -> unit) loadedAssets _inputs spriteB
     | _ -> ()
 
     viewWorldAndPlayer model loadedAssets spriteBatch
-    
+
 
 let inputs (inputs: Inputs) (dispatch: Message -> unit) =
     if Keyboard.iskeydown Keys.X inputs then
