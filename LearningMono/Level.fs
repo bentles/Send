@@ -53,7 +53,7 @@ let getTileAtIndex index (tiles: Tiles) = PersistentVector.nth index tiles
 let getTileAtPos (pos: Vector2) (size: Coords) (tiles: Tiles) : struct (Tile * int) voption =
     let index = getIndexAtPos pos size
     index |> ValueOption.map (fun index -> getTileAtIndex index tiles, index)
-    
+
 let createCollidableTile t (coords: Coords) =
     { defaultTile with
         Coords = coords
@@ -142,7 +142,3 @@ let worldFromTemplate (template: List<List<Coords -> Tile>>) =
     |> PersistentVector.ofSeq,
     template.Head.Length,
     template.Length
-
-let updateTilesWithEntity (tiles:Tiles) (i:int) (tile:Tile) (entity:Entity.Model) : Tiles =
-    let newTile = { tile with Entity = ValueSome entity }
-    tiles |> PersistentVector.update i newTile

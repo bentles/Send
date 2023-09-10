@@ -52,6 +52,11 @@ let getCollidables (tiles: Tile seq) : AABB seq =
                 | _ -> ()
     }
 
+let calculateTargets (tiles: Tiles) (size: Coords) (player: Player.Model) =
+    let maybeTarget = Level.getTileAtPos player.Target size tiles
+    let maybeFeetIndex = Level.getIndexAtPos player.Pos size
+    struct (maybeTarget, maybeFeetIndex)
+
 let init time =
     let levelIndex = 0 //Levels.levels.Length - 1
     let level = Levels.levels[levelIndex]time
@@ -81,6 +86,18 @@ type Message =
     | Interact
     | SongStarted of string
     | PhysicsTick of time: int64 * slow: bool
+
+
+let updateTile (model: Model) (player: Player.Model) (i: int) (tile: Tile) : Model =
+    let newTiles = model.Tiles |> PersistentVector.update i tile
+    let struct (target, feet) = calculateTargets newTiles model.Size player
+
+    { model with
+        Tiles = newTiles
+        Player =
+            { player with
+                TargetedTile = target
+                Feet = feet } }
 
 let updateWorldReactive (tiles: Tiles) (ticksElapsed: int64) ((width, height): Coords) : Tiles =
     //only do reactive updates every TicksPerReactiveUpdate ticks
@@ -163,8 +180,6 @@ let mutable lastTick = 0L // we use a mutable tick counter here in order to ensu
 type PickupEntityFn = Entity.Model -> int32 -> Tile -> Model -> Model
 
 let pickUp (targetEntity: Entity.Model) (i: int) (tile: Tile) (model: Model) : Model =
-    let player = model.Player
-
     let newTile, pickedUpEntity =
         match targetEntity with
         | { Type = CanPickOutOfEntity(eData, entityType) } as targetEntity ->
@@ -178,12 +193,13 @@ let pickUp (targetEntity: Entity.Model) (i: int) (tile: Tile) (model: Model) : M
             tile, fromObserverEntity
         | _ -> { tile with Entity = ValueNone }, targetEntity
 
+    let model = updateTile model model.Player i newTile
 
-    { model with
-        Tiles = model.Tiles |> PersistentVector.update i newTile
-        Player =
-            { player with
-                Carrying = pickedUpEntity :: player.Carrying } }
+    let newPlayer =
+        { model.Player with
+            Carrying = pickedUpEntity :: model.Player.Carrying }
+
+    { model with Player = newPlayer }
 
 let pickUpEntityImpl (pickupFn: PickupEntityFn) (model: Model) : Model =
     let player = model.Player
@@ -202,15 +218,14 @@ let pickUpEntityImpl (pickupFn: PickupEntityFn) (model: Model) : Model =
         |> ValueOption.defaultValue model
     | Player.PlayerCantPickup -> model
 
-let pickUpEntity (model: Model) : Model =
-    pickUpEntityImpl pickUp model
+let pickUpEntity (model: Model) : Model = pickUpEntityImpl pickUp model
 
 type PlaceDownFn = Model -> Tile * int32 -> Coords -> List<Entity.Model> -> Entity.Model -> int64 -> Model
 
 let placeDown: PlaceDownFn =
     fun model (tile, i) coords rest entity time ->
         let curMulti = model.Player.MultiPlace
-        let tiles = updateTilesWithEntity model.Tiles i tile entity
+        let model = updateTile model model.Player i { tile with Entity = ValueSome entity }
 
         let newMulti: Player.MultiPlace =
             match curMulti with
@@ -226,7 +241,6 @@ let placeDown: PlaceDownFn =
                   Facing = facing }
 
         { model with
-            Tiles = tiles
             Player =
                 { model.Player with
                     Carrying = rest
@@ -255,11 +269,13 @@ let placeEntityAtImpl
 
                 // can't place if the block will intersect with the player
                 let col = entity.Collider |> ValueOption.defaultValue Collision.emptyCollider
-                let collidedWithPlayer = Collision.intersectAABB (Collision.playerCollider player.Pos) col
 
-                match collidedWithPlayer with 
+                let collidedWithPlayer =
+                    Collision.intersectAABB (Collision.playerCollider player.Pos) col
+
+                match collidedWithPlayer with
                 | ValueSome _ -> noPlaceFn model
-                | ValueNone -> placeFn model (tile, i) coords rest entity time 
+                | ValueNone -> placeFn model (tile, i) coords rest entity time
             | _ -> noPlaceFn model
         | { Entity = ValueSome({ Type = CanPlaceIntoEntity toPlace.Type (newEntity) } as targetEntity) } ->
             let newTarg = Entity.updateSprite { targetEntity with Type = newEntity }
@@ -293,21 +309,25 @@ let pushEntity model time =
 
         let modelAfterPick = pickUpEntity model //normal pick up
 
+        let hasPickedUp =
+            modelAfterPick.Player.Carrying.Length > model.Player.Carrying.Length
+
+
         return
-            placeEntityAtImpl
-                (fun _ _ (coords': Coords) _ _ (time': int64) ->
-                    placeEntityAt coords' nextTile nextI modelAfterPick time' //then place 1 block onwards
-                )
-                (fun modl ->
-                    //put back the thing I picked up on failure to place
-                    match modl.Player.Carrying with
-                    | _ :: _ -> placeEntity modl time
-                    | _ -> modl)
-                nextCoords
-                nextTile
-                nextI
-                modelAfterPick
-                time
+            if hasPickedUp then
+                placeEntityAtImpl
+                    (fun _ _ (coords': Coords) _ _ (time': int64) ->
+                        placeEntityAt coords' nextTile nextI modelAfterPick time' //then place 1 block onwards
+                    )
+                    (fun modl ->
+                        placeEntity modl time)
+                    nextCoords
+                    nextTile
+                    nextI
+                    modelAfterPick
+                    time
+            else
+                model
     }
     |> ValueOption.defaultValue model
 
@@ -339,8 +359,7 @@ let orientEntity (model: Model) (facing: Facing) =
         match tileAndIndex with
         | ValueSome({ Entity = ValueSome({ CanBePickedUp = true } as entityData) } as tile, i) ->
             let entity = Entity.updateSprite { entityData with Facing = facing }
-            let tiles = updateTilesWithEntity model.Tiles i tile entity
-            { model with Tiles = tiles }
+            updateTile model model.Player i { tile with Entity = ValueSome entity }
         | _ -> model
     | _ -> model
 
@@ -362,6 +381,7 @@ let interactionEvent (event: Entity.InteractionEvent) (model: Model) : Model =
     match event with
     | NextLevel -> nextLevel model
     | NoEvent -> model
+
 
 let update (message: Message) (model: Model) : Model =
     let player = model.Player
@@ -408,14 +428,16 @@ let update (message: Message) (model: Model) : Model =
                 let! entity = tile.Entity
                 let newEntity, event = Entity.interact entity
 
-                let tiles =
-                    model.Tiles
-                    |> PersistentVector.update
+                let model =
+                    updateTile
+                        model
+                        model.Player
                         i
                         { tile with
                             Entity = ValueSome newEntity }
 
-                return interactionEvent event { model with Tiles = tiles }
+
+                return interactionEvent event model
             }
 
         match maybeUpdate with
@@ -447,8 +469,8 @@ let update (message: Message) (model: Model) : Model =
 
         let player = Player.tick info model.Player
 
-        let maybeTarget = Level.getTileAtPos player.Target model.Size model.Tiles
-        let maybeFeetIndex = Level.getIndexAtPos player.Pos model.Size
+        let struct (maybeTarget, maybeFeetIndex) =
+            calculateTargets model.Tiles model.Size player
 
         let tiles = updateWorldReactive model.Tiles model.TicksElapsed model.Size
 
@@ -475,11 +497,10 @@ let update (message: Message) (model: Model) : Model =
                 CameraPos = newCameraPos
                 Player =
                     { player with
-                        CarryingDelta = isCarrying - wasCarrying 
+                        CarryingDelta = isCarrying - wasCarrying
                         TargetedTile = maybeTarget
                         Feet = maybeFeetIndex
-                        Action = NoAction }
-                }
+                        Action = NoAction } }
 
         if goToNextLevel then nextLevel model else model
     | MultiPlaceEntity ->
