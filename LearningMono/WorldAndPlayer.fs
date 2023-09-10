@@ -88,14 +88,14 @@ type Message =
     | PhysicsTick of time: int64 * slow: bool
 
 
-let updateTile (model: Model) (player: Player.Model) (i: int) (tile: Tile) : Model =
+let updateTile (model: Model) (i: int) (tile: Tile) : Model =
     let newTiles = model.Tiles |> PersistentVector.update i tile
-    let struct (target, feet) = calculateTargets newTiles model.Size player
+    let struct (target, feet) = calculateTargets newTiles model.Size model.Player
 
     { model with
         Tiles = newTiles
         Player =
-            { player with
+            { model.Player with
                 TargetedTile = target
                 Feet = feet } }
 
@@ -193,7 +193,7 @@ let pickUp (targetEntity: Entity.Model) (i: int) (tile: Tile) (model: Model) : M
             tile, fromObserverEntity
         | _ -> { tile with Entity = ValueNone }, targetEntity
 
-    let model = updateTile model model.Player i newTile
+    let model = updateTile model i newTile
 
     let newPlayer =
         { model.Player with
@@ -225,7 +225,7 @@ type PlaceDownFn = Model -> Tile * int32 -> Coords -> List<Entity.Model> -> Enti
 let placeDown: PlaceDownFn =
     fun model (tile, i) coords rest entity time ->
         let curMulti = model.Player.MultiPlace
-        let model = updateTile model model.Player i { tile with Entity = ValueSome entity }
+        let model = updateTile model i { tile with Entity = ValueSome entity }
 
         let newMulti: Player.MultiPlace =
             match curMulti with
@@ -319,8 +319,7 @@ let pushEntity model time =
                     (fun _ _ (coords': Coords) _ _ (time': int64) ->
                         placeEntityAt coords' nextTile nextI modelAfterPick time' //then place 1 block onwards
                     )
-                    (fun modl ->
-                        placeEntity modl time)
+                    (fun modl -> placeEntity modl time)
                     nextCoords
                     nextTile
                     nextI
@@ -359,7 +358,7 @@ let orientEntity (model: Model) (facing: Facing) =
         match tileAndIndex with
         | ValueSome({ Entity = ValueSome({ CanBePickedUp = true } as entityData) } as tile, i) ->
             let entity = Entity.updateSprite { entityData with Facing = facing }
-            updateTile model model.Player i { tile with Entity = ValueSome entity }
+            updateTile model i { tile with Entity = ValueSome entity }
         | _ -> model
     | _ -> model
 
@@ -428,15 +427,11 @@ let update (message: Message) (model: Model) : Model =
                 let! entity = tile.Entity
                 let newEntity, event = Entity.interact entity
 
-                let model =
-                    updateTile
-                        model
-                        model.Player
-                        i
-                        { tile with
-                            Entity = ValueSome newEntity }
+                let newTile =
+                    { tile with
+                        Entity = ValueSome newEntity }
 
-
+                let model = updateTile model i newTile
                 return interactionEvent event model
             }
 
