@@ -30,9 +30,10 @@ TODO:
 	- some of my partial active patterns could probs just be complete patterns
 	- create a flattened entity type tree??
 		- not sure if this replaces the existing one or just to be used for non reactive stuffs???
-- LEVEL editorrr with saving and loading of all the things
+
 - arms up animation for holding blocks??
 - jump animation?
+- LEVEL editorrr with saving and loading of all the things
 
 DOING:
 - merge levels

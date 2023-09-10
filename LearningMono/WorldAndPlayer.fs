@@ -18,24 +18,24 @@ type SongState =
     | PlayingSong of playing: string
     | Stopped
 
-type Model =
+type World =
     { Tiles: Tiles
       Song: SongState
       LevelText: string
       Level: int
-
       Size: Coords
-
       Dt: float32
       Slow: bool
       TimeElapsed: int64
-      TicksElapsed: int64
+      TicksElapsed: int64 }
 
+type Model =
+    { World: World
       Player: Player.Model
       CameraPos: Vector2 }
 
 let getWidth (model: Model) : int32 =
-    let struct (width, _) = model.Size
+    let struct (width, _) = model.World.Size
     width
 
 let halfScreenOffset (camPos: Vector2) : Vector2 =
@@ -61,18 +61,19 @@ let init time =
     let levelIndex = 0 //Levels.levels.Length - 1
     let level = Levels.levels[levelIndex]time
 
-    { Tiles = level.Tiles
-      Song = PlaySong "pewpew"
-      Size = level.Size
-      LevelText = level.LevelText
-      Level = levelIndex
+    { World =
+        { Tiles = level.Tiles
+          Song = PlaySong "pewpew"
+          Size = level.Size
+          LevelText = level.LevelText
+          Level = levelIndex
 
+          Slow = false
+          Dt = 0f
+
+          TimeElapsed = 0
+          TicksElapsed = 0 }
       Player = Player.init level.PlayerStartsAtPos level.PlayerStartsCarrying playerConfig charSprite time
-      Slow = false
-      Dt = 0f
-
-      TimeElapsed = 0
-      TicksElapsed = 0
       CameraPos = Vector2(0f, -0f) }
 
 // UPDATE
@@ -89,11 +90,11 @@ type Message =
 
 
 let updateTile (model: Model) (i: int) (tile: Tile) : Model =
-    let newTiles = model.Tiles |> PersistentVector.update i tile
-    let struct (target, feet) = calculateTargets newTiles model.Size model.Player
+    let newTiles = model.World.Tiles |> PersistentVector.update i tile
+    let struct (target, feet) = calculateTargets newTiles model.World.Size model.Player
 
     { model with
-        Tiles = newTiles
+        World = { model.World with Tiles = newTiles }
         Player =
             { model.Player with
                 TargetedTile = target
@@ -265,7 +266,7 @@ let placeEntityAtImpl
             match model.Player.Feet with
             | ValueSome feet when feet <> i ->
                 let entity =
-                    Entity.init toPlace.Type (coordsToPos coords) model.TimeElapsed player.PlacementFacing true
+                    Entity.init toPlace.Type (coordsToPos coords) model.World.TimeElapsed player.PlacementFacing true
 
                 // can't place if the block will intersect with the player
                 let col = entity.Collider |> ValueOption.defaultValue Collision.emptyCollider
@@ -304,8 +305,8 @@ let pushEntity model time =
         let! (_, i) = model.Player.TargetedTile
         let coords = indexToCoords i width
         let nextCoords = addFacing coords facing
-        let! nextI = coordsToIndex nextCoords model.Size
-        let nextTile = getTileAtIndex nextI model.Tiles
+        let! nextI = coordsToIndex nextCoords model.World.Size
+        let nextTile = getTileAtIndex nextI model.World.Tiles
 
         let modelAfterPick = pickUpEntity model //normal pick up
 
@@ -337,8 +338,8 @@ let multiPlaceEntity (model: Model) time : Model =
         let nextCoords = addFacing multiPlace.Coords multiPlace.Facing
 
         voption {
-            let! i = coordsToIndex nextCoords model.Size
-            let tile = getTileAtIndex i model.Tiles
+            let! i = coordsToIndex nextCoords model.World.Size
+            let tile = getTileAtIndex i model.World.Tiles
             return placeEntityAt nextCoords tile i model time
         }
         |> ValueOption.defaultValue model
@@ -363,18 +364,24 @@ let orientEntity (model: Model) (facing: Facing) =
     | _ -> model
 
 let nextLevel (model: Model) : Model =
-    let levelIndex = (model.Level + 1) % Levels.levels.Length
-    let newLevel = Levels.levels[levelIndex]model.TimeElapsed
+    let levelIndex = (model.World.Level + 1) % Levels.levels.Length
+    let newLevel = Levels.levels[levelIndex]model.World.TimeElapsed
+
+    let newWorld =
+        { model.World with
+            Size = newLevel.Size
+            Tiles = newLevel.Tiles
+            LevelText = newLevel.LevelText
+            Level = levelIndex }
+
+    let newPlayer =
+        { model.Player with
+            Pos = newLevel.PlayerStartsAtPos
+            Carrying = newLevel.PlayerStartsCarrying }
 
     { model with
-        Size = newLevel.Size
-        Tiles = newLevel.Tiles
-        LevelText = newLevel.LevelText
-        Level = levelIndex
-        Player =
-            { model.Player with
-                Pos = newLevel.PlayerStartsAtPos
-                Carrying = newLevel.PlayerStartsCarrying } }
+        World = newWorld
+        Player = newPlayer }
 
 let interactionEvent (event: Entity.InteractionEvent) (model: Model) : Model =
     match event with
@@ -402,7 +409,11 @@ let update (message: Message) (model: Model) : Model =
 
         { model with
             Player = Player.setAction newPlayer playerAction }
-    | SongStarted name -> { model with Song = PlayingSong name }
+    | SongStarted name ->
+        { model with
+            World =
+                { model.World with
+                    Song = PlayingSong name } }
     | PickUpEntity ->
         { model with
             Player = setPlayerAction TryPickup }
@@ -460,14 +471,15 @@ let update (message: Message) (model: Model) : Model =
         let (info: PhysicsInfo) =
             { Time = time
               Dt = dt
-              PossibleObstacles = getCollidables model.Tiles }
+              PossibleObstacles = getCollidables model.World.Tiles }
 
         let player = Player.tick info model.Player
 
         let struct (maybeTarget, maybeFeetIndex) =
-            calculateTargets model.Tiles model.Size player
+            calculateTargets model.World.Tiles model.World.Size player
 
-        let tiles = updateWorldReactive model.Tiles model.TicksElapsed model.Size
+        let tiles =
+            updateWorldReactive model.World.Tiles model.World.TicksElapsed model.World.Size
 
         let goToNextLevel =
             tiles
@@ -482,13 +494,18 @@ let update (message: Message) (model: Model) : Model =
         let tiles = updateWorldSprites time tiles
         let newCameraPos = updateCameraPos player.Pos model.CameraPos
 
-        let model =
-            { model with
+        let newWorld =
+            { model.World with
                 Dt = dt
                 Slow = slow
                 TimeElapsed = time
-                TicksElapsed = model.TicksElapsed + 1L
+                TicksElapsed = model.World.TicksElapsed + 1L
                 Tiles = tiles
+            }
+
+        let model =
+            { model with
+                World = newWorld
                 CameraPos = newCameraPos
                 Player =
                     { player with
@@ -573,13 +590,13 @@ let bottomWall = "bottomWall"
 let floor = "floor"
 
 
-let viewWorld (model: Model) loadedAssets (spriteBatch: SpriteBatch) =
+let viewWorldAndPlayer (model: Model) loadedAssets (spriteBatch: SpriteBatch) =
     let sourceRect = rect 0 0 blockWidth blockWidth
     let cameraOffset = -(halfScreenOffset model.CameraPos)
 
-    spriteBatch.DrawString(loadedAssets.fonts["defaultFont"], model.LevelText, Vector2(0f, 0f), Color.White)
+    spriteBatch.DrawString(loadedAssets.fonts["defaultFont"], model.World.LevelText, Vector2(0f, 0f), Color.White)
 
-    model.Tiles
+    model.World.Tiles
     |> PersistentVector.toSeq
     |> Seq.iteri (fun i tile ->
 
@@ -716,8 +733,8 @@ let viewWorld (model: Model) loadedAssets (spriteBatch: SpriteBatch) =
         | _ -> ())
 
 
-let view model (dispatch: Message -> unit) loadedAssets _inputs spriteBatch =
-    match model.Song with
+let view (model: Model) (dispatch: Message -> unit) loadedAssets _inputs spriteBatch =
+    match model.World.Song with
     | PlaySong songName ->
         Media.MediaPlayer.Volume <- 0.4f
         //Media.MediaPlayer.Play(loadedAssets.music[songName])
@@ -726,7 +743,7 @@ let view model (dispatch: Message -> unit) loadedAssets _inputs spriteBatch =
     | Stopped -> Media.MediaPlayer.Stop()
     | _ -> ()
 
-    viewWorld model loadedAssets spriteBatch
+    viewWorldAndPlayer model loadedAssets spriteBatch
     Player.viewPlayer model.Player (halfScreenOffset model.CameraPos) loadedAssets spriteBatch
 
 let inputs (inputs: Inputs) (dispatch: Message -> unit) =
