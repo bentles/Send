@@ -589,98 +589,79 @@ let topWall = "topWall"
 let bottomWall = "bottomWall"
 let floor = "floor"
 
+let viewFloor (tile:Tile) (xPixel:int) (yPixel:int) (sourceRect:Rectangle) loadedAssets (spriteBatch: SpriteBatch) = 
+    let texture =
+        match tile.FloorType with
+        | FloorType.Grass -> grass
+        | FloorType.Empty -> empty
+        | FloorType.Void -> _void
+        | FloorType.Wall -> wall
+        | FloorType.LeftWall -> leftWall
+        | FloorType.RightWall -> rightWall
+        | FloorType.TopWall -> topWall
+        | FloorType.BottomWall -> bottomWall
+        | FloorType.Floor -> floor
 
-let viewWorldAndPlayer (model: Model) loadedAssets (spriteBatch: SpriteBatch) =
-    let sourceRect = rect 0 0 blockWidth blockWidth
-    let cameraOffset = -(halfScreenOffset model.CameraPos)
+    
+    spriteBatch.Draw(
+        loadedAssets.textures[texture],
+        Rectangle(xPixel, yPixel, sourceRect.Width, sourceRect.Height),
+        Color.White
+    )
 
-    spriteBatch.DrawString(loadedAssets.fonts["defaultFont"], model.World.LevelText, Vector2(0f, 0f), Color.White)
+let targetColor (model:Model) (i:int) = 
+    let alpha = 0.5f //TODO move to config
+    voption {
+        let! (tile, ind) = model.Player.TargetedTile
+        let! target = if i = ind then ValueSome tile else ValueNone
+        let illegal = ValueOption.isSome target.Collider || ValueOption.isSome target.Entity
 
-    model.World.Tiles
-    |> PersistentVector.toSeq
-    |> Seq.iteri (fun i tile ->
+        return
+            if illegal then
+                (Color.Orange * alpha)
+            else
+                (Color.Green * alpha)
+    }
 
-        let texture =
-            match tile.FloorType with
-            | FloorType.Grass -> grass
-            | FloorType.Empty -> empty
-            | FloorType.Void -> _void
-            | FloorType.Wall -> wall
-            | FloorType.LeftWall -> leftWall
-            | FloorType.RightWall -> rightWall
-            | FloorType.TopWall -> topWall
-            | FloorType.BottomWall -> bottomWall
-            | FloorType.Floor -> floor
+let viewTargets (maybeTargetColor:voption<Color>) (model:Model) (i:int) (xPixel:int) (yPixel:int) (sourceRect:Rectangle) loadedAssets (spriteBatch: SpriteBatch) = 
+    let alpha = 0.5f //TODO move to config
+    let struct (texture, effect) =
+        match model.Player.PlacementFacing with
+        | FacingUp -> "facingUp", SpriteEffects.None
+        | FacingRight -> "facingRight", SpriteEffects.None
+        | FacingDown -> "facingUp", SpriteEffects.FlipVertically
+        | FacingLeft -> "facingRight", SpriteEffects.FlipHorizontally
 
-        let startX = 0
-        let startY = 0
-        let width = getWidth model
-
-        let xBlockOffSet = (i % width) * blockWidth
-        let yBlockOffSet = (i / width) * blockWidth
-
-        let actualX = startX + xBlockOffSet + int (cameraOffset.X)
-        let actualY = startY + yBlockOffSet + int (cameraOffset.Y)
-
-        //floor
+    match maybeTargetColor with
+    | ValueSome color ->
         spriteBatch.Draw(
             loadedAssets.textures[texture],
-            Rectangle(actualX, actualY, sourceRect.Width, sourceRect.Height),
-            Color.White
+            Rectangle(xPixel, yPixel, sourceRect.Width, sourceRect.Height),
+            System.Nullable<Rectangle>(),
+            color,
+            0f,
+            Vector2.Zero,
+            effect,
+            DepthConfig.Target
         )
+    | ValueNone -> ()
 
-        let alpha = 0.5f
-        //target
-        let maybeTargetColor =
-            voption {
-                let! (tile, ind) = model.Player.TargetedTile
-                let! target = if i = ind then ValueSome tile else ValueNone
-                let illegal = ValueOption.isSome target.Collider || ValueOption.isSome target.Entity
+    match model.Player.Feet with
+    | ValueSome index when index = i ->
+        spriteBatch.Draw(
+            loadedAssets.textures["feet"],
+            Rectangle(xPixel, yPixel, sourceRect.Width, sourceRect.Height),
+            System.Nullable<Rectangle>(),
+            Color.Green * alpha,
+            0f,
+            Vector2.Zero,
+            effect,
+            DepthConfig.Target
+        )
+    | _ -> ()
 
-                return
-                    if illegal then
-                        (Color.Orange * alpha)
-                    else
-                        (Color.Green * alpha)
-            }
-
-        let struct (texture, effect) =
-            match model.Player.PlacementFacing with
-            | FacingUp -> "facingUp", SpriteEffects.None
-            | FacingRight -> "facingRight", SpriteEffects.None
-            | FacingDown -> "facingUp", SpriteEffects.FlipVertically
-            | FacingLeft -> "facingRight", SpriteEffects.FlipHorizontally
-
-
-        match maybeTargetColor with
-        | ValueSome color ->
-            spriteBatch.Draw(
-                loadedAssets.textures[texture],
-                Rectangle(actualX, actualY, sourceRect.Width, sourceRect.Height),
-                System.Nullable<Rectangle>(),
-                color,
-                0f,
-                Vector2.Zero,
-                effect,
-                DepthConfig.Target
-            )
-        | ValueNone -> ()
-
-        match model.Player.Feet with
-        | ValueSome index when index = i ->
-            spriteBatch.Draw(
-                loadedAssets.textures["feet"],
-                Rectangle(actualX, actualY, sourceRect.Width, sourceRect.Height),
-                System.Nullable<Rectangle>(),
-                Color.Green * alpha,
-                0f,
-                Vector2.Zero,
-                effect,
-                DepthConfig.Target
-            )
-        | _ -> ()
-
-        match tile.Entity with
+let viewEntities (maybeTargetColor:voption<Color>) (cameraOffset:Vector2) (tile:Tile) (xPixel:int) (yPixel:int) loadedAssets (spriteBatch: SpriteBatch) = 
+    match tile.Entity with
         | ValueSome entity ->
             let depth =
                 match entity.Collider with
@@ -703,7 +684,7 @@ let viewWorldAndPlayer (model: Model) loadedAssets (spriteBatch: SpriteBatch) =
                 viewEmitting
                     etype
                     t
-                    (actualX, actualY)
+                    (xPixel, yPixel)
                     spriteBatch
                     loadedAssets.textures[(getEmitImage etype).TextureName]
             | _ -> ()
@@ -713,24 +694,52 @@ let viewWorldAndPlayer (model: Model) loadedAssets (spriteBatch: SpriteBatch) =
                 viewObserverItem
                     eType
                     1
-                    (actualX, actualY)
+                    (xPixel, yPixel)
                     spriteBatch
                     loadedAssets.textures[(getEmitImage eType).TextureName]
             | CanPlaceIntoEntity Unit (_), ValueSome _ ->
                 viewObserverItem
                     Unit
                     1
-                    (actualX, actualY)
+                    (xPixel, yPixel)
                     spriteBatch
                     loadedAssets.textures[(getEmitImage Unit).TextureName]
             | _ -> ()
 
         | ValueNone -> ()
 
-        match tile.Entity with
+    match tile.Entity with
         | ValueSome { Collider = ValueSome collider } ->
             Collision.viewAABB collider (-cameraOffset) loadedAssets spriteBatch
-        | _ -> ())
+        | _ -> ()
+
+let viewWorldAndPlayer (model: Model) loadedAssets (spriteBatch: SpriteBatch) =
+    let sourceRect = rect 0 0 blockWidth blockWidth
+    let cameraOffset = -(halfScreenOffset model.CameraPos)
+
+    spriteBatch.DrawString(loadedAssets.fonts["defaultFont"], model.World.LevelText, Vector2(0f, 0f), Color.White)
+
+    model.World.Tiles
+    |> PersistentVector.toSeq
+    |> Seq.iteri (fun i tile ->
+        let startX = 0
+        let startY = 0
+        let width = getWidth model
+
+        let xBlockOffSet = (i % width) * blockWidth
+        let yBlockOffSet = (i / width) * blockWidth
+
+        let xPixel = startX + xBlockOffSet + int (cameraOffset.X)
+        let yPixel = startY + yBlockOffSet + int (cameraOffset.Y)
+        
+        //floor
+        viewFloor tile xPixel yPixel sourceRect loadedAssets spriteBatch
+        let maybeTargetColor = targetColor model i        
+        viewTargets maybeTargetColor model i xPixel yPixel sourceRect loadedAssets spriteBatch
+        viewEntities maybeTargetColor cameraOffset tile xPixel yPixel loadedAssets spriteBatch        
+        )
+
+    Player.viewPlayer model.Player (halfScreenOffset model.CameraPos) loadedAssets spriteBatch
 
 
 let view (model: Model) (dispatch: Message -> unit) loadedAssets _inputs spriteBatch =
@@ -744,7 +753,7 @@ let view (model: Model) (dispatch: Message -> unit) loadedAssets _inputs spriteB
     | _ -> ()
 
     viewWorldAndPlayer model loadedAssets spriteBatch
-    Player.viewPlayer model.Player (halfScreenOffset model.CameraPos) loadedAssets spriteBatch
+    
 
 let inputs (inputs: Inputs) (dispatch: Message -> unit) =
     if Keyboard.iskeydown Keys.X inputs then
