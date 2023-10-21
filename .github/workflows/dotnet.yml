@@ -12,7 +12,7 @@ on:
 jobs:
   build:
 
-    runs-on: windows-latest
+    runs-on: ubuntu-latest
 
     steps:
     - uses: actions/checkout@v3
@@ -20,10 +20,8 @@ jobs:
       uses: actions/setup-dotnet@v3
       with:
         dotnet-version: 6.0.x
-    - name: Checkout submodules
-  # You may pin to the exact commit or the version.
-  # uses: textbook/git-checkout-submodule-action@0cb23c7e6a67085e1dc5e884920bd620f7b9c469
-      uses: textbook/git-checkout-submodule-action@2.1.1
+    - name: Get Da submodules
+      run: git submodule init && git submodule update
     - name: Restore dependencies
       run: dotnet restore
     - name: Build
