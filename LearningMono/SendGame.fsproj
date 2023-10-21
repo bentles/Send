@@ -59,7 +59,7 @@
     <Folder Include="Content\bin\DesktopGL\Content\" />
   </ItemGroup>
   <ItemGroup>
-    <ProjectReference Include="..\..\Xelmish\src\Xelmish.fsproj" />
+    <ProjectReference Include="..\Xelmish\src\Xelmish.fsproj" />
   </ItemGroup>
   <ItemGroup>
     <PackageReference Update="FSharp.Core" Version="7.0.0" />
