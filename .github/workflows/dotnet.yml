@@ -28,5 +28,10 @@ jobs:
       run: dotnet publish -r osx-arm64 --self-contained
     - name: Publish win
       run: dotnet publish -r win-x64 --self-contained
+    - name: Upload Build Artifact
+      uses: actions/upload-artifact@v2
+      with:
+        name: Application_Artifact
+        path: /home/runner/work/Send/Send/LearningMono/bin/Debug/net6.0/osx-arm64/publish/
     - name: Test
       run: dotnet test --no-build --verbosity normal
