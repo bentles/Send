@@ -14,7 +14,9 @@ Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Solution Items", "Solution 
 		LearningMono\TODO.md = LearningMono\TODO.md
 	EndProjectSection
 EndProject
-Project("{6EC3EE1D-3C4E-46DD-8F32-0CC8E7565705}") = "Xelmish", "..\Xelmish\src\Xelmish.fsproj", "{E03C5917-B17D-43C6-AB71-680F1178C4AB}"
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Xelmish", "Xelmish", "{37490FE1-722C-4385-859D-55BD535D85A0}"
+EndProject
+Project("{F2A71F9B-5D33-465A-A702-920D77279786}") = "Xelmish", "Xelmish\src\Xelmish.fsproj", "{E03C5917-B17D-43C6-AB71-680F1178C4AB}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
@@ -68,5 +70,8 @@ Global
 	EndGlobalSection
 	GlobalSection(ExtensibilityGlobals) = postSolution
 		SolutionGuid = {1AF0C015-7B5B-40D7-A196-9E4017903727}
+	EndGlobalSection
+	GlobalSection(NestedProjects) = preSolution
+		{E03C5917-B17D-43C6-AB71-680F1178C4AB} = {37490FE1-722C-4385-859D-55BD535D85A0}
 	EndGlobalSection
 EndGlobal

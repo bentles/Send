@@ -1,8 +1,6 @@
 ﻿open Elmish
-open Xelmish.Model // required for config types used when using program.run
-open Xelmish.Viewables // required to get access to helpers like 'colour'
+open Xelmish.Model
 open GameConfig
-open Prelude
 
 type Model = { Game: Game.Model
                LevelEditor: LevelEditor.Model 

@@ -1,3 +1,4 @@
+[<RequireQualifiedAccess>]
 module LevelEditor
 
 open Level
