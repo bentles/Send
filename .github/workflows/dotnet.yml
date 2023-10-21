@@ -25,9 +25,9 @@ jobs:
     - name: Restore dependencies
       run: dotnet restore
     - name: Publish osx
-      run: dotnet publish -r osx-arm64 --self-contained
+      run: dotnet publish -r osx-arm64 -p:PublishSingleFile=true --self-contained
     - name: Publish win
-      run: dotnet publish -r win-x64 --self-contained
+      run: dotnet publish -r win-x64 -p:PublishSingleFile=true --self-contained
     - name: Upload Build Artifact
       uses: actions/upload-artifact@v2
       with:
