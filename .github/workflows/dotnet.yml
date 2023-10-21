@@ -33,5 +33,10 @@ jobs:
       with:
         name: Application_Artifact
         path: /home/runner/work/Send/Send/LearningMono/bin/Debug/net6.0/osx-arm64/publish/
+    - name: Upload Build Artifact windows
+      uses: actions/upload-artifact@v2
+      with:
+        name: Application_Artifact
+        path: /home/runner/work/Send/Send/LearningMono/bin/Debug/net6.0/win-x64/publish/
     - name: Test
       run: dotnet test --no-build --verbosity normal
