@@ -12,8 +12,14 @@ open FSharpx.Collections
 open Microsoft.Xna.Framework.Graphics
 open Prelude
 
+type LevelTransition = {
+    Message: string
+    TimeToShow: float32
+}
+
 type Model =
     { World: World
+      LevelTransition: voption<LevelTransition>
       Player: Player.Model
       CameraPos: Vector2 }
 
@@ -56,6 +62,7 @@ let init time =
 
           TimeElapsed = 0
           TicksElapsed = 0 }
+      LevelTransition = ValueSome { Message = "Test"; TimeToShow = 0.5f }
       Player = Player.init level.PlayerStartsAtPos level.PlayerStartsCarrying playerConfig charSprite time
       CameraPos = Vector2(0f, -0f) }
 
@@ -363,6 +370,7 @@ let nextLevel (model: Model) : Model =
             Carrying = newLevel.PlayerStartsCarrying }
 
     { model with
+        LevelTransition = ValueSome { Message = "aloha"; TimeToShow = 0.8f }
         World = newWorld
         Player = newPlayer }
 
@@ -434,69 +442,75 @@ let update (message: Message) (model: Model) : Model =
         | ValueSome updatedModel -> updatedModel
 
     | PhysicsTick(time, slow) ->
-        let wasCarrying = player.Carrying.Length
-
-        let model =
-            match model.Player.Action with
-            | TryPickup -> pickUpEntity model
-            | TryPlace -> placeEntity model time
-            | TryPush -> pushEntity model time
-            | TryMultiPlace true -> multiPlaceEntity model time
-            | TryMultiPlace false -> endMultiPlace model
-            | TryOrient facing -> orientEntity model facing
-            | NoAction -> model
-
-        let isCarrying = model.Player.Carrying.Length
-
         let dt = (float32 (time - lastTick)) / 1000f
         lastTick <- time
 
-        let (info: PhysicsInfo) =
-            { Time = time
-              Dt = dt
-              PossibleObstacles = getCollidables model.World.Tiles }
+        match model.LevelTransition with
+        | ValueSome transition -> 
+            let newTime = transition.TimeToShow - dt
+            if newTime < 0f then {model with LevelTransition = ValueNone } else {model with LevelTransition = ValueSome { transition with TimeToShow = newTime }}
+        | ValueNone ->
+            let wasCarrying = player.Carrying.Length
 
-        let player = Player.tick info model.Player
+            let model =
+                match model.Player.Action with
+                | TryPickup -> pickUpEntity model
+                | TryPlace -> placeEntity model time
+                | TryPush -> pushEntity model time
+                | TryMultiPlace true -> multiPlaceEntity model time
+                | TryMultiPlace false -> endMultiPlace model
+                | TryOrient facing -> orientEntity model facing
+                | NoAction -> model
 
-        let struct (maybeTarget, maybeFeetIndex) =
-            calculateTargets model.World.Tiles model.World.Size player
+            let isCarrying = model.Player.Carrying.Length
 
-        let tiles =
-            updateWorldReactive model.World.Tiles model.World.TicksElapsed model.World.Size
 
-        let goToNextLevel =
-            tiles
-            |> PersistentVector.fold
-                (fun curr next ->
-                    curr
-                    || match next with
-                       | { Entity = ValueSome { Type = Unit } } -> true
-                       | _ -> false)
-                false
+            let (info: PhysicsInfo) =
+                { Time = time
+                  Dt = dt
+                  PossibleObstacles = getCollidables model.World.Tiles }
 
-        let tiles = updateWorldSprites time tiles
-        let newCameraPos = updateCameraPos player.Pos model.CameraPos
+            let player = Player.tick info model.Player
 
-        let newWorld =
-            { model.World with
-                Dt = dt
-                Slow = slow
-                TimeElapsed = time
-                TicksElapsed = model.World.TicksElapsed + 1L
-                Tiles = tiles }
+            let struct (maybeTarget, maybeFeetIndex) =
+                calculateTargets model.World.Tiles model.World.Size player
 
-        let model =
-            { model with
-                World = newWorld
-                CameraPos = newCameraPos
-                Player =
-                    { player with
-                        CarryingDelta = isCarrying - wasCarrying
-                        TargetedTile = maybeTarget
-                        Feet = maybeFeetIndex
-                        Action = NoAction } }
+            let tiles =
+                updateWorldReactive model.World.Tiles model.World.TicksElapsed model.World.Size
 
-        if goToNextLevel then nextLevel model else model
+            let goToNextLevel =
+                tiles
+                |> PersistentVector.fold
+                    (fun curr next ->
+                        curr
+                        || match next with
+                        | { Entity = ValueSome { Type = Unit } } -> true
+                        | _ -> false)
+                    false
+
+            let tiles = updateWorldSprites time tiles
+            let newCameraPos = updateCameraPos player.Pos model.CameraPos
+
+            let newWorld =
+                { model.World with
+                    Dt = dt
+                    Slow = slow
+                    TimeElapsed = time
+                    TicksElapsed = model.World.TicksElapsed + 1L
+                    Tiles = tiles }
+
+            let model =
+                { model with
+                    World = newWorld
+                    CameraPos = newCameraPos
+                    Player =
+                        { player with
+                            CarryingDelta = isCarrying - wasCarrying
+                            TargetedTile = maybeTarget
+                            Feet = maybeFeetIndex
+                            Action = NoAction } }
+
+            if goToNextLevel then nextLevel model else model
     | MultiPlaceEntity ->
         { model with
             Player = setPlayerAction (TryMultiPlace true) }
@@ -609,8 +623,9 @@ let view (model: Model) (dispatch: Message -> unit) loadedAssets _inputs spriteB
     | Stopped -> Media.MediaPlayer.Stop()
     | _ -> ()
 
-    viewWorldAndPlayer model loadedAssets spriteBatch
-
+    match model.LevelTransition with
+    | ValueSome transition -> ()
+    | ValueNone -> viewWorldAndPlayer model loadedAssets spriteBatch
 
 let inputs (inputs: Inputs) (dispatch: Message -> unit) =
     if Keyboard.iskeydown Keys.X inputs then
