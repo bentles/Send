@@ -65,6 +65,7 @@ let main _ =
               PipelineTexture("smallChar", "./content/sprites/entity/SmallChar")
               PipelineTexture("rock", "./content/sprites/entity/Rock")
               PipelineTexture("id", "./content/sprites/entity/Id")
+              PipelineTexture("push", "./content/sprites/entity/Push")
               PipelineTexture("map", "./content/sprites/entity/Map")
               PipelineTexture("filter", "./content/sprites/entity/Filter")
               PipelineTexture("timer", "./content/sprites/entity/Timer")

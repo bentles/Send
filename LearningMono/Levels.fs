@@ -826,14 +826,14 @@ let levelSandBox: LevelBuilder =
             createEntityOn
                 (buildBox
                     { Items =
-                        [ (observing (Compare))
-                          (observing (Compare))
-                          (observing (Compare))
-                          (observing (Compare))
-                          (observing (Compare))
-                          (observing (Compare))
-                          (observing (Compare))
-                          (observing (Compare)) ]
+                        [ (observing (Push))
+                          (observing (Push))
+                          (observing (Push))
+                          (observing (Push))
+                          (observing (Push))
+                          (observing (Push))
+                          (observing (Push))
+                          (observing (Push)) ]
                       IsOpen = false })
                 Grass
                 time
@@ -863,23 +863,23 @@ let levelSandBox: LevelBuilder =
 
 let levels: LevelBuilder[] =
     [| 
-        level_playerMoves
-        level_playerPickUp
-        level_left
-        level_dangRocks
-        level_observers
-        level_observers2
-        level_observers3
-        level_observers4
-        level_observers5
-        level_box0
-        level_box1
-        level_box2
-        level_toggles
-        level_toggles2
-        level_merge1
-        //level_merge2
-        level_filter1
-        level_filter11
-        level_filter2
+        // level_playerMoves
+        // level_playerPickUp
+        // level_left
+        // level_dangRocks
+        // level_observers
+        // level_observers2
+        // level_observers3
+        // level_observers4
+        // level_observers5
+        // level_box0
+        // level_box1
+        // level_box2
+        // level_toggles
+        // level_toggles2
+        // level_merge1
+        // //level_merge2
+        // level_filter1
+        // level_filter11
+        // level_filter2
         levelSandBox |]

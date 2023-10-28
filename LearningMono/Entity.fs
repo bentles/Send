@@ -40,6 +40,7 @@ and ObservableType =
     | GoToNextLevel
     | Toggle of bool
    // | MultiToggle of bool
+    | Push
     | Map of EntityType
     | Filter of EntityType
     | Compare
@@ -90,6 +91,7 @@ let getSpriteConfig (eType: EntityType) : SpriteConfig =
         match ob with
         | GoToNextLevel _ -> nextLevelSpriteConfig
         | Id -> idSpriteConfig
+        | Push -> pushSpriteConfig
         | Toggle true -> toggleOnSpriteConfig
         | Toggle false -> toggleOffSpriteConfig
         | Map _ -> mapSpriteConfig
@@ -112,6 +114,7 @@ let getEmitImage (eType: EntityType) =
         | GoToNextLevel _ -> nextLevelImage
         | Toggle _ -> toggleOnImage
         | Id -> idImage
+        | Push -> pushImage
         | Map _ -> mapImage
         | Merge -> mergeImage
         | Filter _ -> filterImage
@@ -208,6 +211,7 @@ let private behaviorFunc (observable: ObservableData) (a: EntityType voption) (b
     match observable.Type with
     | Id
     | GoToNextLevel
+    | Push
     | Toggle _ ->
         match a with
         | (ValueSome e1) -> WillEmit e1
