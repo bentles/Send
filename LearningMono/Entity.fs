@@ -39,7 +39,7 @@ and ObservableType =
     | Id
     | GoToNextLevel
     | Toggle of bool
-   // | MultiToggle of bool
+    // | MultiToggle of bool
     | Map of EntityType
     | Filter of EntityType
     | Compare
@@ -129,7 +129,7 @@ let rec entityEq (e1: EntityType) (e2: EntityType) =
     | Observable { Type = Merge }, Observable { Type = Merge } -> true
     | Subject { Type = Timer _ }, Subject { Type = Timer _ } -> true
     | Subject { Type = Button _ }, Subject { Type = Button _ } -> true
-    | Subject { Type = Box { IsOpen = a} }, Subject { Type = Box {IsOpen = b} } when a = b -> true // check contents ?? check open/closed
+    | Subject { Type = Box { IsOpen = a } }, Subject { Type = Box { IsOpen = b } } when a = b -> true // check contents ?? check open/closed
     | _, _ -> false
 
 let getCollider (eType: EntityType) (pos: Vector2) : AABB voption =
@@ -182,27 +182,30 @@ let (|CanPlaceIntoEntity|_|) (inputEntity: EntityType) (entityType: EntityType) 
                             { IsOpen = true
                               Items = inputEntity :: items } }
         )
-    | _ -> ValueNone
+    | other ->
+        ValueSome(
+            Subject
+                { defaultSubjectData with
+                    Type = Box { IsOpen = true; Items = [ inputEntity; other ] } }
+        )
 
 [<return: Struct>]
-let (|CanPickOutOfEntity|_|) (entityType: EntityType) : voption<EntityType * EntityType> =
+let (|CanPickOutOfEntity|_|) (entityType: EntityType) : voption<voption<EntityType> * EntityType> =
     match entityType with
     | Observable { Type = Map Unit }
     | Observable { Type = Filter Unit } -> ValueNone
-    | Observable({ Type = Map e } as obs) -> ValueSome(Observable { obs with Type = Map Unit }, e)
-    | Observable({ Type = Filter e } as obs) -> ValueSome(Observable { obs with Type = Filter Unit }, e)
-    | Subject({ Type = Box { IsOpen = true; Items = e :: rest } } as sub) ->
-        ValueSome(Subject { sub with Type = Box { IsOpen = true; Items = rest } }, e)
+    | Observable({ Type = Map e } as obs) -> ValueSome (ValueSome(Observable { obs with Type = Map Unit }), e)
+    | Observable({ Type = Filter e } as obs) -> ValueSome (ValueSome(Observable { obs with Type = Filter Unit }), e)
+    | Subject({ Type = Box { IsOpen = true; Items = e :: (_ :: _ as rest) } } as sub) ->
+        ValueSome (ValueSome(
+            Subject
+                { sub with
+                    Type = Box { IsOpen = true; Items = rest } }),
+             e)      
+    | Subject({ Type = Box { IsOpen = true; Items = e :: [] } }) ->
+        ValueSome( ValueNone, e )   
     | _ -> ValueNone
 
-
-let takeOutOf (existingEntity: EntityType) =
-    match existingEntity with
-    | Observable({ Type = Map _ } as oData) -> Observable { oData with Type = Map Unit }
-    | Observable({ Type = Filter _ } as oData) -> Observable { oData with Type = Filter Unit }
-    | Subject({ Type = Box { IsOpen = true; Items = _ :: rest } } as sub) ->
-        Subject { sub with Type = Box { IsOpen = true; Items = rest } }
-    | _ -> existingEntity
 
 let private behaviorFunc (observable: ObservableData) (a: EntityType voption) (b: EntityType voption) =
     match observable.Type with
@@ -228,7 +231,11 @@ let private behaviorFunc (observable: ObservableData) (a: EntityType voption) (b
     | Merge ->
         match (a, b) with
         | (ValueSome e1), (ValueSome e2) ->
-            WillEmit(Subject { defaultSubjectData with Type = Box { Items = [ e1; e2 ]; IsOpen = false } })
+            WillEmit(
+                Subject
+                    { defaultSubjectData with
+                        Type = Box { Items = [ e1; e2 ]; IsOpen = false } }
+            )
         | (ValueSome e1), ValueNone -> WillEmit e1
         | ValueNone, ValueSome e2 -> WillEmit e2
         | _ -> Nothing
@@ -283,7 +290,10 @@ let getOnEmit (obs: EntityType) (pos: Vector2) =
                  else
                      toggleOffSpriteConfig)
 
-            let newObs = Observable { obData with Type = (Toggle(not state)) }
+            let newObs =
+                Observable
+                    { obData with
+                        Type = (Toggle(not state)) }
 
             { entity with
                 Type = newObs
@@ -330,7 +340,7 @@ let getSubjectFunc (sub: SubjectType) =
     | Button _ -> subjectStep
     | Box _ -> subjectStep
 
-let getBoxYPos (boxType:BoxData) = 
+let getBoxYPos (boxType: BoxData) =
     match boxType with
     | { IsOpen = false } -> 0
     | { Items = _ :: _ } -> 1
@@ -372,7 +382,14 @@ let initNoCollider (entityType: EntityType) (pos: Vector2) time (facing: Facing)
 
 let updateSprite (entity: Model) =
     let yPos = getYpos entity.Type entity.Facing
-    { entity with Sprite = Sprite.switchAnimation ({ imageSpriteConfig with Index = yPos }, 0, false) entity.Sprite }
+
+    //concept of one entity changing into another not modeled here
+    let spriteConfig = getSpriteConfig entity.Type
+
+    { entity with
+        Sprite = Sprite.reInit entity.Sprite spriteConfig (ValueSome yPos)
+        //Sprite = Sprite.switchAnimation ({ imageSpriteConfig with Index = yPos }, 0, false) entity.Sprite }
+    }
 
 let buildRepeatItemEmitEvery (every: int) (item: EntityType) =
     buildRepeatListEmittingEvery { Items = [ item ]; IsOpen = false } every
@@ -412,24 +429,34 @@ let interact (entity: Model) : Model * InteractionEvent =
             Type =
                 Subject
                     { subData with
-                        ToEmit = (WillEmit << Subject) { defaultSubjectData with Type = Button }
+                        ToEmit =
+                            (WillEmit << Subject)
+                                { defaultSubjectData with
+                                    Type = Button }
                         TicksSinceEmit = 0
                         GenerationNumber = subData.GenerationNumber + 1 } },
         InteractionEvent.NoEvent
     | Subject({ Type = Box({ IsOpen = isOpen } as boxType) } as subj) ->
         let boxData = { boxType with IsOpen = not isOpen }
         let animIndex = getBoxYPos boxData
-        let boxImageConfig = if boxData.IsOpen then boxOpenSpriteConfig else boxClosedSpriteConfig
 
-        let newSprite =
-            Sprite.reInit entity.Sprite boxImageConfig (ValueSome animIndex)
+        let boxImageConfig =
+            if boxData.IsOpen then
+                boxOpenSpriteConfig
+            else
+                boxClosedSpriteConfig
+
+        let newSprite = Sprite.reInit entity.Sprite boxImageConfig (ValueSome animIndex)
 
         { entity with
             Type =
                 Subject
                     { subj with
                         Type = Box boxData
-                        ToEmit = (WillEmit << Subject) { defaultSubjectData with Type = Box boxData }
+                        ToEmit =
+                            (WillEmit << Subject)
+                                { defaultSubjectData with
+                                    Type = Box boxData }
                         TicksSinceEmit = 0
                         GenerationNumber = subj.GenerationNumber + 1 }
             Sprite = newSprite },
