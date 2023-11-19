@@ -277,30 +277,34 @@ let observerFunc (observable: ObservableData) (observing: EntityType voption) (o
         ToEmit = toEmit
         TicksSinceEmit = ticks }
 
-let getOnEmit (obs: EntityType) (pos: Vector2) =
+type EmitEvent = PushEmitEvent of Facing
+                | NoEmitEvent
+
+let onEmit (entity: Model) (pos: Vector2) =
+    let { Type = obs } = entity
     match obs with
-    | Observable({ Type = Toggle state } as obData) ->
-        fun (entity: Model) ->
-            let newSprite =
-                (if not state then
-                     toggleOnSpriteConfig
-                 else
-                     toggleOffSpriteConfig)
+    | Observable({ Type = Toggle state } as obData) ->        
+        let newSprite =
+            (if not state then
+                    toggleOnSpriteConfig
+                else
+                    toggleOffSpriteConfig)
 
-            let newObs = Observable { obData with Type = (Toggle(not state)) }
+        let newObs = Observable { obData with Type = (Toggle(not state)) }
 
-            { entity with
-                Type = newObs
-                Collider = if not state then getCollider newObs pos else ValueNone
-                Sprite = Sprite.reInit entity.Sprite newSprite ValueNone }
-    | Observable({ Type = GoToNextLevel }) ->
-        fun (entity: Model) ->
-            let newObs = Unit
+        { entity with
+            Type = newObs
+            Collider = if not state then getCollider newObs pos else ValueNone
+            Sprite = Sprite.reInit entity.Sprite newSprite ValueNone }, NoEmitEvent
+    | Observable ({Type = Push}) -> 
+        entity, PushEmitEvent entity.Facing
+    | Observable({ Type = GoToNextLevel }) ->       
+        let newObs = Unit
 
-            { entity with
-                Type = newObs
-                Sprite = Sprite.reInit entity.Sprite unitSpriteConfig ValueNone }
-    | _ -> (id)
+        { entity with
+            Type = newObs
+            Sprite = Sprite.reInit entity.Sprite unitSpriteConfig ValueNone }, NoEmitEvent
+    | _ -> entity, NoEmitEvent
 
 
 let subjectStep (subject: SubjectData) =

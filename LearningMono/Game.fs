@@ -90,55 +90,57 @@ let updateTile (model: Model) (i: int) (tile: Tile) : Model =
                 TargetedTile = target
                 Feet = feet } }
 
+
 let updateWorldReactive (tiles: Tiles) (ticksElapsed: int64) ((width, height): Coords) : Tiles =
     //only do reactive updates every TicksPerReactiveUpdate ticks
     if (ticksElapsed % WorldConfig.TicksPerReactiveUpdate) = 0 then
-        tiles
-        |> PersistentVector.map (fun tile ->
-            let maybeEntity =
-                voption {
-                    let! entity = tile.Entity
 
-                    let newEntityType =
-                        match entity.Type with
-                        | Subject subject -> Subject((getSubjectFunc subject.Type) subject)
-                        | Observable({ Type = oType } as oData) ->
+        let newTiles = 
+            tiles
+            |> PersistentVector.map (fun tile ->
+                let maybeEntity, event =
+                    match tile.Entity with
+                    | ValueSome entity ->
+                        let newEntityType =
+                            match entity.Type with
+                            | Subject subject -> Subject((getSubjectFunc subject.Type) subject)
+                            | Observable({ Type = oType } as oData) ->
 
-                            // get what is being is observed if anything
-                            let getObserved (tile: Tile) (facing: Facing) =
-                                voption {
-                                    let struct (tx, ty) = facingToCoords (facing)
-                                    let struct (x, y) = tile.Coords
-                                    let! targetIndex = (coordsToIndex (x + tx, y + ty) (width, height))
-                                    let tile = PersistentVector.nth targetIndex tiles
-                                    let! e = tile.Entity
-                                    return e.Type
-                                }
+                                // get what is being is observed if anything
+                                let getObserved (tile: Tile) (facing: Facing) =
+                                    voption {
+                                        let struct (tx, ty) = facingToCoords (facing)
+                                        let struct (x, y) = tile.Coords
+                                        let! targetIndex = (coordsToIndex (x + tx, y + ty) (width, height))
+                                        let tile = PersistentVector.nth targetIndex tiles
+                                        let! e = tile.Entity
+                                        return e.Type
+                                    }
 
-                            let observerType = getObserverType oType
+                                let observerType = getObserverType oType
 
-                            let eType1, eType2 =
-                                match observerType with
-                                | SingleObserver -> (getObserved tile entity.Facing), ValueNone
-                                | DoubleObserver ->
-                                    (getObserved tile entity.Facing),
-                                    (getObserved tile (rotateFacing entity.Facing true))
+                                let eType1, eType2 =
+                                    match observerType with
+                                    | SingleObserver -> (getObserved tile entity.Facing), ValueNone
+                                    | DoubleObserver ->
+                                        (getObserved tile entity.Facing),
+                                        (getObserved tile (rotateFacing entity.Facing true))
 
-                            Observable(observerFunc oData eType1 eType2)
-                        | other -> other
+                                Observable(observerFunc oData eType1 eType2)
+                            | other -> other
+                        
+                        let newEntity = { entity with Type = newEntityType }
 
-                    // if emitting and has an onEmit fun then apply that
-                    let onEmit =
-                        match newEntityType with
-                        | EmittingObservable _ ->
-                            let pos = (CoordsFToOffsetVector (toCoordsF tile.Coords) half)
-                            getOnEmit newEntityType pos
-                        | _ -> id
-
-                    return onEmit { entity with Type = newEntityType }
-                }
-
-            { tile with Entity = maybeEntity })
+                        let newEntity, event = 
+                            match newEntityType with
+                                | EmittingObservable _ ->
+                                    let pos = (CoordsFToOffsetVector (toCoordsF tile.Coords) half)
+                                    onEmit newEntity pos
+                                | _ -> newEntity, NoEmitEvent 
+                        ValueSome newEntity, event
+                    | ValueNone -> ValueNone, NoEmitEvent                    
+                { tile with Entity = maybeEntity }, event)
+        newTiles
     else
         tiles
 
@@ -170,7 +172,7 @@ let mutable lastTick = 0L // we use a mutable tick counter here in order to ensu
 
 type PickupEntityFn = Entity.Model -> int32 -> Tile -> Model -> Model
 
-let pickUp (targetEntity: Entity.Model) (i: int) (tile: Tile) (model: Model) : Model =
+let pickUp (targetEntity: Entity.Model) (i: int) (tile: Tile) (model: Model) : Model * Entity.Model =
     let newTile, pickedUpEntity =
         match targetEntity with
         | { Type = CanPickOutOfEntity(eData, entityType) } as targetEntity ->
@@ -185,11 +187,13 @@ let pickUp (targetEntity: Entity.Model) (i: int) (tile: Tile) (model: Model) : M
         | _ -> { tile with Entity = ValueNone }, targetEntity
 
     let model = updateTile model i newTile
+    model, pickedUpEntity
 
+let pickUpSetPlayer (targetEntity: Entity.Model) (i: int) (tile: Tile) (model: Model) : Model =
+    let model, pickedUpEntity = pickUp targetEntity i tile model
     let newPlayer =
         { model.Player with
             Carrying = pickedUpEntity :: model.Player.Carrying }
-
     { model with Player = newPlayer }
 
 let pickUpEntityImpl (pickupFn: PickupEntityFn) (model: Model) : Model =
@@ -209,7 +213,7 @@ let pickUpEntityImpl (pickupFn: PickupEntityFn) (model: Model) : Model =
         |> ValueOption.defaultValue model
     | Player.PlayerCantPickup -> model
 
-let pickUpEntity (model: Model) : Model = pickUpEntityImpl pickUp model
+let pickUpEntity (model: Model) : Model = pickUpEntityImpl pickUpSetPlayer model
 
 type PlaceDownFn = Model -> Tile * int32 -> Coords -> List<Entity.Model> -> Entity.Model -> int64 -> Model
 
