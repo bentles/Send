@@ -88,7 +88,7 @@ let getSpriteConfig (eType: EntityType) : SpriteConfig =
         | Box { IsOpen = false } -> boxClosedSpriteConfig
     | Observable { Type = ob } ->
         match ob with
-        | GoToNextLevel _ -> nextLevelSpriteConfig
+        | GoToNextLevel -> nextLevelSpriteConfig
         | Id -> idSpriteConfig
         | Toggle true -> toggleOnSpriteConfig
         | Toggle false -> toggleOffSpriteConfig
@@ -128,7 +128,7 @@ let rec entityEq (e1: EntityType) (e2: EntityType) =
     | Observable { Type = Compare }, Observable { Type = Compare } -> true
     | Observable { Type = Merge }, Observable { Type = Merge } -> true
     | Subject { Type = Timer _ }, Subject { Type = Timer _ } -> true
-    | Subject { Type = Button _ }, Subject { Type = Button _ } -> true
+    | Subject { Type = Button }, Subject { Type = Button } -> true
     | Subject { Type = Box { IsOpen = a } }, Subject { Type = Box { IsOpen = b } } when a = b -> true // check contents ?? check open/closed
     | _, _ -> false
 
@@ -337,7 +337,7 @@ let buildRepeatListEmittingEvery (box: BoxData) (every: int) =
 let getSubjectFunc (sub: SubjectType) =
     match sub with
     | Timer(box, time) -> buildRepeatListEmittingEvery box time
-    | Button _ -> subjectStep
+    | Button -> subjectStep
     | Box _ -> subjectStep
 
 let getBoxYPos (boxType: BoxData) =
