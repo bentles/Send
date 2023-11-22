@@ -173,13 +173,20 @@ type PickupEntityFn = Entity.Model -> int32 -> Tile -> Model -> Model
 let pickUp (targetEntity: Entity.Model) (i: int) (tile: Tile) (model: Model) : Model =
     let newTile, pickedUpEntity =
         match targetEntity with
-        | { Type = CanPickOutOfEntity(eData, entityType) } as targetEntity ->
+        | { Type = CanPickOutOfEntity(ValueSome eData, entityType) } as targetEntity ->
             let newTarget = Entity.updateSprite { targetEntity with Type = eData }
             let fromObserverEntity = Entity.init entityType Vector2.Zero 0 FacingRight true
 
             let tile =
                 { tile with
                     Entity = ValueSome newTarget }
+
+            tile, fromObserverEntity
+        | { Type = CanPickOutOfEntity(ValueNone, entityType) } ->
+            let fromObserverEntity = Entity.init entityType Vector2.Zero 0 FacingRight true
+            let tile =
+                { tile with
+                    Entity = ValueNone }
 
             tile, fromObserverEntity
         | _ -> { tile with Entity = ValueNone }, targetEntity
@@ -484,8 +491,8 @@ let update (message: Message) (model: Model) : Model =
                     (fun curr next ->
                         curr
                         || match next with
-                        | { Entity = ValueSome { Type = Unit } } -> true
-                        | _ -> false)
+                            | { Entity = ValueSome { Type = Unit } } -> true
+                            | _ -> false)
                     false
 
             let tiles = updateWorldSprites time tiles

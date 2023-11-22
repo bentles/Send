@@ -264,10 +264,12 @@ let viewEntities (maybeTargetColor:voption<Color>) (cameraOffset:Vector2) (tile:
                 spriteBatch
                 (depth + DepthConfig.Entities_And_Player)
 
-            // match entity.Type with
-            // | EmittingObservable(_, _) -> loadedAssets.sounds["click"].Play(0.05f, 0.0f, 0.0f) |> ignore
-            // | _ -> ()
+            match entity.Type with
+            | EmittingObservable(_, _) -> 
+                loadedAssets.sounds["click"].Play(0.05f, 0.0f, 0.0f) |> ignore
+            | _ -> ()
 
+            // emitting
             match entity.Type with
             | RenderEmittingObservable(etype, t) ->
                 viewEmitting
@@ -278,6 +280,7 @@ let viewEntities (maybeTargetColor:voption<Color>) (cameraOffset:Vector2) (tile:
                     loadedAssets.textures[(getEmitImage etype).TextureName]
             | _ -> ()
 
+            //
             match entity.Type, maybeTargetColor with
             | CanPickOutOfEntity(_, eType), ValueSome _ ->
                 viewObserverItem
