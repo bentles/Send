@@ -196,14 +196,14 @@ let (|CanPickOutOfEntity|_|) (entityType: EntityType) : voption<voption<EntityTy
     | Observable { Type = Filter Unit } -> ValueNone
     | Observable({ Type = Map e } as obs) -> ValueSome (ValueSome(Observable { obs with Type = Map Unit }), e)
     | Observable({ Type = Filter e } as obs) -> ValueSome (ValueSome(Observable { obs with Type = Filter Unit }), e)
-    | Subject({ Type = Box { IsOpen = true; Items = e :: (_ :: _ as rest) } } as sub) ->
+    | Subject({ Type = Box { IsOpen = true; Items = e :: (_ :: _ :: _ as rest) } } as sub) ->
         ValueSome (ValueSome(
             Subject
                 { sub with
                     Type = Box { IsOpen = true; Items = rest } }),
              e)      
-    | Subject({ Type = Box { IsOpen = true; Items = e :: [] } }) ->
-        ValueSome( ValueNone, e )   
+    | Subject({ Type = Box { IsOpen = true; Items = e :: f :: [] } }) ->
+        ValueSome( ValueSome f, e )   
     | _ -> ValueNone
 
 
