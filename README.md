@@ -6,3 +6,10 @@ Built with Xelmish by Chris Pritchard which lets you use the Elm architecture on
 https://github.com/ChrisPritchard/Xelmish
 
 ![screenshot](https://raw.githubusercontent.com/bentles/MonoGameXelmish/main/screen.png)
+
+Setup
+
+- clone the thing
+- update submodules: `git submodule update --init --remote --recursive`
+- `cd LearningMono`
+- `dotnet run`
