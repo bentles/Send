@@ -1,20 +1,20 @@
 [<RequireQualifiedAccess>]
-module Keyboard
+module Controls
 open Xelmish.Model
 open Microsoft.Xna.Framework
 open System
 open Microsoft.Xna.Framework.Input
    
-let iskeydown key (inputs:Inputs) =
+let isKeyDown key (inputs:Inputs) =
     inputs.keyboardState.IsKeyDown key 
     && not (inputs.lastKeyboardState.IsKeyDown key) 
 
-let whilekeydown key (inputs:Inputs) =
+let whileKeyDown key (inputs:Inputs) =
     inputs.keyboardState.IsKeyDown key 
     && inputs.lastKeyboardState.IsKeyDown key
 
 /// Run the given event if the given key has just been released
-let iskeyup key (inputs:Inputs)  =
+let isKeyUp key (inputs:Inputs)  =
     not (inputs.keyboardState.IsKeyDown key)
     && inputs.lastKeyboardState.IsKeyDown key
 

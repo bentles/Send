@@ -341,22 +341,22 @@ let viewPlayer (model: Model) (cameraPos: Vector2) loadedAssets (spriteBatch: Sp
     hearCarrying model.CarryingDelta loadedAssets
 
 let inputs (inputs: Inputs) (dispatch: Message -> unit) =
-    let gamepadDirection = Keyboard.directionsGamePad inputs
-    let keyboardDirection = Keyboard.directions Keys.Up Keys.Down Keys.Left Keys.Right inputs
+    let gamepadDirection = Controls.directionsGamePad inputs
+    let keyboardDirection = Controls.directions Keys.Up Keys.Down Keys.Left Keys.Right inputs
 
     dispatch (Input (gamepadDirection + keyboardDirection)) //this gets normalised anyway
 
-    if Keyboard.iskeydown Keys.Space inputs then
+    if Controls.isKeyDown Keys.Space inputs then
         (dispatch TransformCharacter)
 
-    if Keyboard.iskeydown Keys.LeftControl inputs then
+    if Controls.isKeyDown Keys.LeftControl inputs then
         (dispatch (FreezeMovement true))
 
-    if Keyboard.iskeyup Keys.LeftControl inputs then
+    if Controls.isKeyUp Keys.LeftControl inputs then
         (dispatch (FreezeMovement false))
 
-    if Keyboard.iskeydown Keys.LeftShift inputs then
+    if Controls.isKeyDown Keys.LeftShift inputs then
         (dispatch (ArrowsControlPlacement true))
 
-    if Keyboard.iskeyup Keys.LeftShift inputs then
+    if Controls.isKeyUp Keys.LeftShift inputs then
         (dispatch (ArrowsControlPlacement false))
