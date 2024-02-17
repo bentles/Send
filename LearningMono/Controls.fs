@@ -37,8 +37,9 @@ let whileButtonDown (button:Buttons) (inputs:Inputs) =
 let isButtonUp (button:Buttons) (inputs:Inputs)  =
     not (inputs.gamepadState.IsButtonDown button)
     && inputs.lastGamepadState.IsButtonDown button
-    
-let directionsGamePad (inputs:Inputs) =
-    let y = -inputs.gamepadState.ThumbSticks.Left.Y 
-    let x = inputs.gamepadState.ThumbSticks.Left.X
-    Vector2(float32 x, float32 y)
+
+let leftStick (inputs:Inputs) =
+    inputs.gamepadState.ThumbSticks.Left * Vector2(1f, -1f)
+
+let rightStick (inputs:Inputs) =
+    inputs.gamepadState.ThumbSticks.Right * Vector2(1f, -1f)

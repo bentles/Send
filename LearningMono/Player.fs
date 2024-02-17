@@ -40,7 +40,7 @@ type Model =
       PlacementFacing: Facing
       MultiPlace: MultiPlace voption
 
-      Action: PlayerWorldInteraction      
+      Action: PlayerWorldInteraction
       TargetedTile: PlayerTarget
       Feet: int voption
 
@@ -90,6 +90,7 @@ let getPlayerPickupLimit (characterState: State) =
 
 type Message =
     | Input of dir: Vector2
+    | PlacementInput of dir: Vector2
     | TransformCharacter
     | FreezeMovement of bool
     | ArrowsControlPlacement of bool
@@ -238,6 +239,7 @@ let (|PlayerCanPlace|PlayerCantPlace|) (player: Model) =
 
 let (|PlayerCanPickup|PlayerCantPickup|) (player: Model) =
     let playerLimit = getPlayerPickupLimit player.CharacterState
+
     match player.CharacterState with
     | Small _ when player.Carrying.Length + 1 <= playerLimit -> PlayerCanPickup
     | _ -> PlayerCantPickup
@@ -290,6 +292,8 @@ let tick (info: PhysicsInfo) (model: Model) : Model =
 let update (message: Message) (model: Model) =
     match message with
     | Input direction -> { model with Input = direction }
+    | PlacementInput direction ->
+        { model with PlacementFacing = vectorToFacing direction |> ValueOption.defaultValue model.PlacementFacing }
     | TransformCharacter ->
         let (newState, transformAnimation) = transformStart model.CharacterState
 
@@ -303,8 +307,7 @@ let update (message: Message) (model: Model) =
             MovementFrozen = theyDo
             ArrowsControlPlacement = theyDo }
 
-let setAction (player:Model) (action:PlayerWorldInteraction) : Model =
-    { player with Action = action }
+let setAction (player: Model) (action: PlayerWorldInteraction) : Model = { player with Action = action }
 
 
 let viewCarrying
@@ -324,16 +327,24 @@ let viewCarrying
     carrying
     |> Seq.iteri (fun i item ->
         let offSetPos = cameraPos + offsetStart + (Vector2(0f, 25f) * (float32 i))
-        Sprite.viewSprite item.Sprite offSetPos loadedAssets spriteBatch (depth + (float32 i) * DepthConfig.DepthSubFactor))
+
+        Sprite.viewSprite
+            item.Sprite
+            offSetPos
+            loadedAssets
+            spriteBatch
+            (depth + (float32 i) * DepthConfig.DepthSubFactor))
 
 let hearCarrying (carryingDelta: int) (loadedAssets: LoadedAssets) =
     match carryingDelta with
-    | 1 -> loadedAssets.sounds["pickUp"].Play(0.5f, 0f, 0f) |> ignore
-    | -1 -> loadedAssets.sounds["place"].Play(0.5f, 0f, 0f) |> ignore
+    | 1 -> loadedAssets.sounds[ "pickUp" ].Play(0.5f, 0f, 0f) |> ignore
+    | -1 -> loadedAssets.sounds[ "place" ].Play(0.5f, 0f, 0f) |> ignore
     | _ -> ()
 
 let viewPlayer (model: Model) (cameraPos: Vector2) loadedAssets (spriteBatch: SpriteBatch) =
-    let playerDepth = (model.Pos.Y * DepthConfig.DepthFactor + DepthConfig.Entities_And_Player)
+    let playerDepth =
+        (model.Pos.Y * DepthConfig.DepthFactor + DepthConfig.Entities_And_Player)
+
     Sprite.viewSprite model.SpriteInfo cameraPos loadedAssets spriteBatch playerDepth
 
     viewAABB (playerCollider model.Pos) cameraPos loadedAssets spriteBatch
@@ -341,10 +352,12 @@ let viewPlayer (model: Model) (cameraPos: Vector2) loadedAssets (spriteBatch: Sp
     hearCarrying model.CarryingDelta loadedAssets
 
 let inputs (inputs: Inputs) (dispatch: Message -> unit) =
-    let gamepadDirection = Controls.directionsGamePad inputs
-    let keyboardDirection = Controls.directions Keys.Up Keys.Down Keys.Left Keys.Right inputs
+    let gamepadDirection = Controls.leftStick inputs 
+    let keyboardDirection =
+        Controls.directions Keys.Up Keys.Down Keys.Left Keys.Right inputs
 
-    dispatch (Input (gamepadDirection + keyboardDirection)) //this gets normalised anyway
+    dispatch (Input(gamepadDirection + keyboardDirection)) //this gets normalised anyway
+    dispatch (PlacementInput (Controls.rightStick inputs))
 
     if Controls.isKeyDown Keys.Space inputs then
         (dispatch TransformCharacter)

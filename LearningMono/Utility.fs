@@ -91,8 +91,11 @@ let facingToCoords (facing: Facing) : Coords =
     | FacingUp -> (0, -1)
     | FacingDown -> (0, 1)
 
+let normalise (x:float32) =
+    if x < 0f then -1f else if x > 0f then 1f else 0f
+
 let vectorToFacing (vec: Vector2) : Facing voption =
-    match vec.X, vec.Y with
+    match normalise(vec.X), normalise(vec.Y) with
     | 1f, 0f -> ValueSome FacingRight
     | -1f, 0f -> ValueSome FacingLeft
     | 0f, -1f -> ValueSome FacingUp
