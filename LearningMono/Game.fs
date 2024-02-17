@@ -11,6 +11,7 @@ open Entity
 open FSharpx.Collections
 open Microsoft.Xna.Framework.Graphics
 open Prelude
+open Microsoft.Xna.Framework.Input
 
 type LevelTransition = {
     Message: string
@@ -635,22 +636,22 @@ let view (model: Model) (dispatch: Message -> unit) loadedAssets _inputs spriteB
     | ValueNone -> viewWorldAndPlayer model loadedAssets spriteBatch
 
 let inputs (inputs: Inputs) (dispatch: Message -> unit) =
-    if Keyboard.iskeydown Keys.X inputs then
+    if Keyboard.iskeydown Keys.X inputs || Keyboard.isButtonDown Buttons.A inputs then
         (dispatch (PickUpEntity))
 
-    if Keyboard.iskeydown Keys.S inputs then
+    if Keyboard.iskeydown Keys.S inputs || Keyboard.isButtonDown Buttons.X inputs then
         (dispatch (PushEntity))
 
-    if Keyboard.iskeydown Keys.C inputs then
+    if Keyboard.iskeydown Keys.C inputs || Keyboard.isButtonDown Buttons.B inputs then
         (dispatch (PlaceEntity))
 
-    if Keyboard.whilekeydown Keys.C inputs then
+    if Keyboard.whilekeydown Keys.C inputs || Keyboard.whileButtonDown Buttons.B inputs then
         (dispatch (MultiPlaceEntity))
 
-    if Keyboard.iskeyup Keys.C inputs then
+    if Keyboard.iskeyup Keys.C inputs || Keyboard.isButtonUp Buttons.B inputs then
         (dispatch (EndMultiPlace))
 
-    if Keyboard.iskeydown Keys.Z inputs then
+    if Keyboard.iskeydown Keys.Z inputs || Keyboard.isButtonDown Buttons.Y inputs then
         (dispatch (Interact))
 
     Player.inputs inputs (PlayerMessage >> dispatch)

@@ -341,10 +341,10 @@ let viewPlayer (model: Model) (cameraPos: Vector2) loadedAssets (spriteBatch: Sp
     hearCarrying model.CarryingDelta loadedAssets
 
 let inputs (inputs: Inputs) (dispatch: Message -> unit) =
-    let currentInputsAsVector =
-        Keyboard.directions Keys.Up Keys.Down Keys.Left Keys.Right inputs
+    let gamepadDirection = Keyboard.directionsGamePad inputs
+    let keyboardDirection = Keyboard.directions Keys.Up Keys.Down Keys.Left Keys.Right inputs
 
-    dispatch (Input currentInputsAsVector)
+    dispatch (Input (gamepadDirection + keyboardDirection)) //this gets normalised anyway
 
     if Keyboard.iskeydown Keys.Space inputs then
         (dispatch TransformCharacter)
