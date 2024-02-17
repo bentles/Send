@@ -636,19 +636,22 @@ let view (model: Model) (dispatch: Message -> unit) loadedAssets _inputs spriteB
     | ValueNone -> viewWorldAndPlayer model loadedAssets spriteBatch
 
 let inputs (inputs: Inputs) (dispatch: Message -> unit) =
+    let placeKey = Keys.C
+    let placeButton = Buttons.B
+
     if Controls.isKeyDown Keys.X inputs || Controls.isButtonDown Buttons.A inputs then
         (dispatch (PickUpEntity))
 
     if Controls.isKeyDown Keys.S inputs || Controls.isButtonDown Buttons.X inputs then
         (dispatch (PushEntity))
 
-    if Controls.isKeyDown Keys.C inputs || Controls.isButtonDown Buttons.B inputs then
+    if Controls.isKeyDown placeKey inputs || Controls.isButtonDown placeButton inputs then
         (dispatch (PlaceEntity))
 
-    if Controls.whileKeyDown Keys.C inputs || Controls.whileButtonDown Buttons.B inputs then
+    if Controls.whileKeyDown placeKey inputs || Controls.whileButtonDown placeButton inputs then
         (dispatch (MultiPlaceEntity))
 
-    if Controls.isKeyUp Keys.C inputs || Controls.isButtonUp Buttons.B inputs then
+    if Controls.isKeyUp placeKey inputs || Controls.isButtonUp placeButton inputs then
         (dispatch (EndMultiPlace))
 
     if Controls.isKeyDown Keys.Z inputs || Controls.isButtonDown Buttons.Y inputs then
