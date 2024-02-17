@@ -654,7 +654,7 @@ let inputs (inputs: Inputs) (dispatch: Message -> unit) =
     if Controls.isKeyUp placeKey inputs || Controls.isButtonUp placeButton inputs then
         (dispatch (EndMultiPlace))
 
-    if Controls.isKeyDown Keys.Z inputs || Controls.isButtonDown Buttons.Y inputs then
+    if Controls.isKeyDown Keys.Z inputs || Controls.isButtonDown Buttons.RightTrigger inputs then
         (dispatch (Interact))
 
     Player.inputs inputs (PlayerMessage >> dispatch)

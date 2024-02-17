@@ -266,7 +266,7 @@ let viewEntities (maybeTargetColor:voption<Color>) (cameraOffset:Vector2) (tile:
 
             match entity.Type with
             | EmittingObservable(_, _) -> 
-                loadedAssets.sounds["click"].Play(0.05f, 0.0f, 0.0f) |> ignore
+                loadedAssets.sounds["click"].Play(0.5f, 0.0f, 0.0f) |> ignore
             | _ -> ()
 
             // emitting

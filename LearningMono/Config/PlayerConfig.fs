@@ -16,7 +16,7 @@ type PlayerConfig =
 
 let playerConfig =
     { BigMaxVelocity = 2f
-      SmallMaxVelocity = 4.5f
+      SmallMaxVelocity = 5.5f
       MultiPlaceDelayMs = 250
       Acc = 30f
       Slow = 40f
